@@ -8,7 +8,7 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
 .
 ├── main.py                  # CLI entry point
 ├── query_data.py           # Query helper functions with CSV export
-├── artemis_pull_config.csv # Configuration for Artemis API pulls
+├── artemis_pull_config.csv # Configuration for Artemis API pulls (matrix format)
 ├── db/
 │   ├── __init__.py
 │   └── setup.py            # Database connection and schema setup
@@ -47,16 +47,27 @@ python main.py sources
 
 ## Adding New Sources
 1. Create a new file in `sources/` (e.g., `sources/newsource.py`)
-2. Extend `BaseSource` class and implement `source_name` property and `pull()` method
+2. Extend `BaseSource` class and implement:
+   - `source_name` property
+   - `pull()` method
 3. Register in `sources/__init__.py` by adding to the `SOURCES` dict
 
 ## Environment Variables
 - `DATABASE_URL`: PostgreSQL connection string (auto-configured)
 - `ARTEMIS_API_KEY`: API key for Artemis data (required for artemis pulls)
 
-## Configuration
-Edit `artemis_pull_config.csv` to specify which metrics and symbols to pull:
-- `metric`: The metric name to fetch
-- `symbols`: Pipe-separated list of symbols (e.g., BTC|ETH|SOL)
+## Artemis Configuration
+The `artemis_pull_config.csv` uses a matrix format:
+- Rows: Assets (with name, asset ID, category)
+- Column `Pull`: Set to 1 to include asset
+- Metric columns: Set to 1 to pull that metric for the asset
 
-Symbols are batched in groups of 250 per API request.
+Friendly metric names are mapped to API IDs automatically (e.g., "Fees" → "FEES").
+Symbols are batched in groups of 250 per API request for efficiency.
+
+## Garbage Value Filtering
+The following API responses are filtered out automatically:
+- "Metric not found."
+- "Metric not available for asset."
+- "Market data not available for asset."
+- "Latest data not available for this asset."
