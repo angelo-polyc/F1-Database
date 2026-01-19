@@ -1,8 +1,10 @@
 from sources.base import BaseSource
 from sources.artemis import ArtemisSource
+from sources.defillama import DefiLlamaSource
 
 SOURCES = {
     "artemis": ArtemisSource,
+    "defillama": DefiLlamaSource,
 }
 
 def get_source(name):

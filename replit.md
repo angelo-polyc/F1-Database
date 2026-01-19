@@ -9,13 +9,15 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
 ├── main.py                  # CLI entry point
 ├── query_data.py           # Query helper functions with CSV export
 ├── artemis_pull_config.csv # Configuration for Artemis API pulls (matrix format)
+├── defillama_config.csv    # Configuration for DefiLlama API pulls
 ├── db/
 │   ├── __init__.py
 │   └── setup.py            # Database connection and schema setup
 └── sources/
     ├── __init__.py         # Source registry
     ├── base.py             # BaseSource abstract class
-    └── artemis.py          # Artemis API source implementation
+    ├── artemis.py          # Artemis API source implementation
+    └── defillama.py        # DefiLlama API source implementation
 ```
 
 ## Database Schema
@@ -32,7 +34,8 @@ python main.py setup
 
 ### Pull Data
 ```bash
-python main.py pull artemis
+python main.py pull artemis     # Pull from Artemis
+python main.py pull defillama   # Pull from DefiLlama
 ```
 
 ### Query Data (Interactive)
@@ -45,6 +48,20 @@ python main.py query
 python main.py sources
 ```
 
+## Data Sources
+
+### Artemis
+- **Assets:** 287 crypto assets and equities
+- **Metrics:** 25 (PRICE, MC, FEES, REVENUE, DAU, TXNS, etc.)
+- **ID Format:** Short IDs (e.g., `sol`, `eth`, `aave`)
+- **Requires:** ARTEMIS_API_KEY secret
+
+### DefiLlama
+- **Assets:** 323 protocols and chains
+- **Metrics:** 42 (TVL, CHAIN_TVL, DEX_VOLUME_24H, FEES_24H, etc.)
+- **ID Format:** CoinGecko IDs (e.g., `solana`, `ethereum`, `aave`)
+- **Requires:** No API key (free API)
+
 ## Adding New Sources
 1. Create a new file in `sources/` (e.g., `sources/newsource.py`)
 2. Extend `BaseSource` class and implement:
@@ -56,18 +73,12 @@ python main.py sources
 - `DATABASE_URL`: PostgreSQL connection string (auto-configured)
 - `ARTEMIS_API_KEY`: API key for Artemis data (required for artemis pulls)
 
-## Artemis Configuration
-The `artemis_pull_config.csv` uses a matrix format:
-- Rows: Assets (with name, asset ID, category)
-- Column `Pull`: Set to 1 to include asset
-- Metric columns: Set to 1 to pull that metric for the asset
+## Entity ID Mapping
+Artemis and DefiLlama use different ID systems:
+- Artemis: `sol` → DefiLlama: `solana`
+- Artemis: `eth` → DefiLlama: `ethereum`
 
-Friendly metric names are mapped to API IDs automatically (e.g., "Fees" → "FEES").
-Symbols are batched in groups of 250 per API request for efficiency.
+Cross-source queries require joining on the `source` column or using entity mapping.
 
-## Garbage Value Filtering
-The following API responses are filtered out automatically:
-- "Metric not found."
-- "Metric not available for asset."
-- "Market data not available for asset."
-- "Latest data not available for this asset."
+## Scheduled Deployment
+Configured to run `python main.py pull artemis` daily at 9am CET.

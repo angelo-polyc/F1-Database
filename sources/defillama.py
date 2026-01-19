@@ -1,0 +1,294 @@
+import csv
+import time
+import requests
+from typing import Optional
+from sources.base import BaseSource
+
+METRIC_MAP = {
+    'protocols_tvl': 'TVL',
+    'chains_tvl': 'CHAIN_TVL',
+    'protocols_mcap': 'MC',
+    'protocols_fdv': 'FDMC',
+    'protocols_staking': 'STAKING',
+    'protocols_borrowed': 'BORROWED',
+    'protocols_pool2': 'POOL2',
+    'protocols_change_1h': 'CHANGE_1H',
+    'protocols_change_1d': 'CHANGE_1D',
+    'protocols_change_7d': 'CHANGE_7D',
+    'fees_total24h': 'FEES_24H',
+    'fees_total7d': 'FEES_7D',
+    'fees_total30d': 'FEES_30D',
+    'fees_total1y': 'FEES_1Y',
+    'fees_totalAllTime': 'FEES_ALL_TIME',
+    'fees_dailyRevenue': 'REVENUE_24H',
+    'fees_dailyProtocolRevenue': 'PROTOCOL_REVENUE_24H',
+    'fees_dailySupplySideRevenue': 'SUPPLY_SIDE_REVENUE_24H',
+    'fees_dailyUserFees': 'USER_FEES_24H',
+    'fees_dailyHoldersRevenue': 'HOLDERS_REVENUE_24H',
+    'fees_average1y': 'FEES_AVERAGE_1Y',
+    'fees_change_1d': 'FEES_CHANGE_1D',
+    'fees_change_7d': 'FEES_CHANGE_7D',
+    'fees_change_1m': 'FEES_CHANGE_1M',
+    'dexs_total24h': 'DEX_VOLUME_24H',
+    'dexs_total7d': 'DEX_VOLUME_7D',
+    'dexs_total30d': 'DEX_VOLUME_30D',
+    'dexs_totalAllTime': 'DEX_VOLUME_ALL_TIME',
+    'dexs_change_1d': 'DEX_CHANGE_1D',
+    'dexs_change_7d': 'DEX_CHANGE_7D',
+    'dexs_change_1m': 'DEX_CHANGE_1M',
+    'derivatives_total24h': 'DERIVATIVES_VOLUME_24H',
+    'derivatives_total7d': 'DERIVATIVES_VOLUME_7D',
+    'derivatives_total30d': 'DERIVATIVES_VOLUME_30D',
+    'derivatives_change_1d': 'DERIVATIVES_CHANGE_1D',
+    'derivatives_change_7d': 'DERIVATIVES_CHANGE_7D',
+    'options_total24h': 'OPTIONS_VOLUME_24H',
+    'options_total7d': 'OPTIONS_VOLUME_7D',
+    'options_total30d': 'OPTIONS_VOLUME_30D',
+    'options_dailyNotionalVolume': 'OPTIONS_NOTIONAL_24H',
+    'options_dailyPremiumVolume': 'OPTIONS_PREMIUM_24H',
+    'aggregators_total24h': 'AGGREGATOR_VOLUME_24H',
+    'aggregators_total7d': 'AGGREGATOR_VOLUME_7D',
+    'aggregators_total30d': 'AGGREGATOR_VOLUME_30D',
+    'bridges_lastDailyVolume': 'BRIDGE_VOLUME_24H',
+    'bridges_weeklyVolume': 'BRIDGE_VOLUME_7D',
+    'bridges_monthlyVolume': 'BRIDGE_VOLUME_30D',
+    'stablecoins_circulating_peggedUSD': 'STABLECOIN_SUPPLY',
+    'stablecoins_circulatingPrevDay_peggedUSD': 'STABLECOIN_SUPPLY_PREV_DAY',
+    'stablecoins_circulatingPrevWeek_peggedUSD': 'STABLECOIN_SUPPLY_PREV_WEEK',
+    'stablecoins_price': 'STABLECOIN_PRICE',
+}
+
+REQUEST_DELAY = 1.0
+
+class DefiLlamaSource(BaseSource):
+    
+    @property
+    def source_name(self) -> str:
+        return "defillama"
+    
+    def __init__(self):
+        self.config_path = "defillama_config.csv"
+    
+    def fetch_json(self, url: str) -> Optional[dict]:
+        try:
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            print(f"  Error fetching {url}: {e}")
+            return None
+    
+    def build_lookup(self, data: list, key_fields: list) -> dict:
+        lookup = {}
+        for record in data:
+            for field in key_fields:
+                key = str(record.get(field, '')).lower().strip()
+                if key:
+                    lookup[key] = record
+        return lookup
+    
+    def load_config(self) -> list:
+        entities = []
+        with open(self.config_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row.get('gecko_id'):
+                    entities.append(row)
+        return entities
+    
+    def pull(self) -> int:
+        try:
+            config_entities = self.load_config()
+        except FileNotFoundError:
+            print(f"Config file not found: {self.config_path}")
+            self.log_pull("error", 0)
+            return 0
+        
+        print("=" * 60)
+        print("DEFILLAMA DATA PULL")
+        print("=" * 60)
+        print(f"Entities to process: {len(config_entities)}")
+        print("=" * 60)
+        
+        print("Fetching DefiLlama data...")
+        
+        print("  Fetching protocols...")
+        protocols = self.fetch_json('https://api.llama.fi/protocols') or []
+        time.sleep(REQUEST_DELAY)
+        
+        print("  Fetching chains...")
+        chains = self.fetch_json('https://api.llama.fi/v2/chains') or []
+        time.sleep(REQUEST_DELAY)
+        
+        print("  Fetching fees...")
+        fees_resp = self.fetch_json('https://api.llama.fi/overview/fees') or {}
+        fees = fees_resp.get('protocols', []) if isinstance(fees_resp, dict) else []
+        time.sleep(REQUEST_DELAY)
+        
+        print("  Fetching dexs...")
+        dexs_resp = self.fetch_json('https://api.llama.fi/overview/dexs') or {}
+        dexs = dexs_resp.get('protocols', []) if isinstance(dexs_resp, dict) else []
+        time.sleep(REQUEST_DELAY)
+        
+        print("  Fetching derivatives...")
+        deriv_resp = self.fetch_json('https://api.llama.fi/overview/derivatives') or {}
+        derivatives = deriv_resp.get('protocols', []) if isinstance(deriv_resp, dict) else []
+        time.sleep(REQUEST_DELAY)
+        
+        print("  Fetching options...")
+        opts_resp = self.fetch_json('https://api.llama.fi/overview/options') or {}
+        options = opts_resp.get('protocols', []) if isinstance(opts_resp, dict) else []
+        time.sleep(REQUEST_DELAY)
+        
+        print("  Fetching aggregators...")
+        agg_resp = self.fetch_json('https://api.llama.fi/overview/aggregators') or {}
+        aggregators = agg_resp.get('protocols', []) if isinstance(agg_resp, dict) else []
+        time.sleep(REQUEST_DELAY)
+        
+        print("  Fetching bridges...")
+        bridges_resp = self.fetch_json('https://bridges.llama.fi/bridges') or {}
+        bridges = bridges_resp.get('bridges', []) if isinstance(bridges_resp, dict) else []
+        time.sleep(REQUEST_DELAY)
+        
+        print("  Fetching stablecoins...")
+        stables_resp = self.fetch_json('https://stablecoins.llama.fi/stablecoins') or {}
+        stablecoins = stables_resp.get('peggedAssets', []) if isinstance(stables_resp, dict) else []
+        
+        protocols_lookup = self.build_lookup(protocols, ['gecko_id', 'slug', 'name'])
+        chains_lookup = self.build_lookup(chains, ['gecko_id', 'name'])
+        fees_lookup = self.build_lookup(fees, ['slug', 'name', 'displayName'])
+        dexs_lookup = self.build_lookup(dexs, ['slug', 'name', 'displayName'])
+        derivatives_lookup = self.build_lookup(derivatives, ['slug', 'name', 'displayName'])
+        options_lookup = self.build_lookup(options, ['slug', 'name', 'displayName'])
+        aggregators_lookup = self.build_lookup(aggregators, ['slug', 'name', 'displayName'])
+        bridges_lookup = self.build_lookup(bridges, ['name', 'displayName'])
+        stablecoins_lookup = self.build_lookup(stablecoins, ['gecko_id', 'name', 'symbol'])
+        
+        print(f"\nProcessing {len(config_entities)} entities...")
+        
+        all_records = []
+        entities_with_data = 0
+        
+        for entity in config_entities:
+            gecko_id = entity.get('gecko_id', '').lower()
+            slug = entity.get('slug', '').lower()
+            name = entity.get('name', '').lower()
+            
+            if not gecko_id:
+                continue
+            
+            raw_metrics = {}
+            
+            p = protocols_lookup.get(gecko_id) or protocols_lookup.get(slug) or protocols_lookup.get(name)
+            if p:
+                raw_metrics['protocols_tvl'] = p.get('tvl')
+                raw_metrics['protocols_mcap'] = p.get('mcap')
+                raw_metrics['protocols_fdv'] = p.get('fdv')
+                raw_metrics['protocols_staking'] = p.get('staking')
+                raw_metrics['protocols_borrowed'] = p.get('borrowed')
+                raw_metrics['protocols_pool2'] = p.get('pool2')
+                raw_metrics['protocols_change_1h'] = p.get('change_1h')
+                raw_metrics['protocols_change_1d'] = p.get('change_1d')
+                raw_metrics['protocols_change_7d'] = p.get('change_7d')
+            
+            c = chains_lookup.get(gecko_id) or chains_lookup.get(name)
+            if c:
+                raw_metrics['chains_tvl'] = c.get('tvl')
+            
+            f = fees_lookup.get(slug) or fees_lookup.get(name)
+            if f:
+                raw_metrics['fees_total24h'] = f.get('total24h')
+                raw_metrics['fees_total7d'] = f.get('total7d')
+                raw_metrics['fees_total30d'] = f.get('total30d')
+                raw_metrics['fees_total1y'] = f.get('total1y')
+                raw_metrics['fees_totalAllTime'] = f.get('totalAllTime')
+                raw_metrics['fees_dailyRevenue'] = f.get('dailyRevenue')
+                raw_metrics['fees_dailyProtocolRevenue'] = f.get('dailyProtocolRevenue')
+                raw_metrics['fees_dailySupplySideRevenue'] = f.get('dailySupplySideRevenue')
+                raw_metrics['fees_dailyUserFees'] = f.get('dailyUserFees')
+                raw_metrics['fees_dailyHoldersRevenue'] = f.get('dailyHoldersRevenue')
+                raw_metrics['fees_average1y'] = f.get('average1y')
+                raw_metrics['fees_change_1d'] = f.get('change_1d')
+                raw_metrics['fees_change_7d'] = f.get('change_7d')
+                raw_metrics['fees_change_1m'] = f.get('change_1m')
+            
+            d = dexs_lookup.get(slug) or dexs_lookup.get(name)
+            if d:
+                raw_metrics['dexs_total24h'] = d.get('total24h')
+                raw_metrics['dexs_total7d'] = d.get('total7d')
+                raw_metrics['dexs_total30d'] = d.get('total30d')
+                raw_metrics['dexs_totalAllTime'] = d.get('totalAllTime')
+                raw_metrics['dexs_change_1d'] = d.get('change_1d')
+                raw_metrics['dexs_change_7d'] = d.get('change_7d')
+                raw_metrics['dexs_change_1m'] = d.get('change_1m')
+            
+            deriv = derivatives_lookup.get(slug) or derivatives_lookup.get(name)
+            if deriv:
+                raw_metrics['derivatives_total24h'] = deriv.get('total24h')
+                raw_metrics['derivatives_total7d'] = deriv.get('total7d')
+                raw_metrics['derivatives_total30d'] = deriv.get('total30d')
+                raw_metrics['derivatives_change_1d'] = deriv.get('change_1d')
+                raw_metrics['derivatives_change_7d'] = deriv.get('change_7d')
+            
+            opt = options_lookup.get(slug) or options_lookup.get(name)
+            if opt:
+                raw_metrics['options_total24h'] = opt.get('total24h')
+                raw_metrics['options_total7d'] = opt.get('total7d')
+                raw_metrics['options_total30d'] = opt.get('total30d')
+                raw_metrics['options_dailyNotionalVolume'] = opt.get('dailyNotionalVolume')
+                raw_metrics['options_dailyPremiumVolume'] = opt.get('dailyPremiumVolume')
+            
+            agg = aggregators_lookup.get(slug) or aggregators_lookup.get(name)
+            if agg:
+                raw_metrics['aggregators_total24h'] = agg.get('total24h')
+                raw_metrics['aggregators_total7d'] = agg.get('total7d')
+                raw_metrics['aggregators_total30d'] = agg.get('total30d')
+            
+            br = bridges_lookup.get(name)
+            if br:
+                raw_metrics['bridges_lastDailyVolume'] = br.get('lastDailyVolume')
+                raw_metrics['bridges_weeklyVolume'] = br.get('weeklyVolume')
+                raw_metrics['bridges_monthlyVolume'] = br.get('monthlyVolume')
+            
+            st = stablecoins_lookup.get(gecko_id) or stablecoins_lookup.get(name)
+            if st:
+                circ = st.get('circulating', {})
+                raw_metrics['stablecoins_circulating_peggedUSD'] = circ.get('peggedUSD') if isinstance(circ, dict) else circ
+                circ_prev = st.get('circulatingPrevDay', {})
+                raw_metrics['stablecoins_circulatingPrevDay_peggedUSD'] = circ_prev.get('peggedUSD') if isinstance(circ_prev, dict) else None
+                circ_week = st.get('circulatingPrevWeek', {})
+                raw_metrics['stablecoins_circulatingPrevWeek_peggedUSD'] = circ_week.get('peggedUSD') if isinstance(circ_week, dict) else None
+                raw_metrics['stablecoins_price'] = st.get('price')
+            
+            entity_records = 0
+            for raw_field, value in raw_metrics.items():
+                if value is not None and value != '' and value != 0:
+                    try:
+                        numeric_value = float(value)
+                        metric_name = METRIC_MAP.get(raw_field, raw_field.upper())
+                        all_records.append({
+                            "asset": gecko_id,
+                            "metric_name": metric_name,
+                            "value": numeric_value
+                        })
+                        entity_records += 1
+                    except (ValueError, TypeError):
+                        continue
+            
+            if entity_records > 0:
+                entities_with_data += 1
+        
+        total_records = 0
+        if all_records:
+            total_records = self.insert_metrics(all_records)
+        
+        status = "success" if total_records > 0 else "no_data"
+        self.log_pull(status, total_records)
+        
+        print("\n" + "=" * 60)
+        print("COMPLETE")
+        print(f"  Entities with data: {entities_with_data}/{len(config_entities)}")
+        print(f"  Records inserted: {total_records}")
+        print("=" * 60)
+        
+        return total_records
