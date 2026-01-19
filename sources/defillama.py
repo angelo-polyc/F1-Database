@@ -20,11 +20,11 @@ METRIC_MAP = {
     'fees_total30d': 'FEES_30D',
     'fees_total1y': 'FEES_1Y',
     'fees_totalAllTime': 'FEES_ALL_TIME',
-    'fees_dailyRevenue': 'REVENUE_24H',
-    'fees_dailyProtocolRevenue': 'PROTOCOL_REVENUE_24H',
-    'fees_dailySupplySideRevenue': 'SUPPLY_SIDE_REVENUE_24H',
-    'fees_dailyUserFees': 'USER_FEES_24H',
-    'fees_dailyHoldersRevenue': 'HOLDERS_REVENUE_24H',
+    'revenue_total24h': 'REVENUE_24H',
+    'revenue_total7d': 'REVENUE_7D',
+    'revenue_total30d': 'REVENUE_30D',
+    'revenue_total1y': 'REVENUE_1Y',
+    'revenue_totalAllTime': 'REVENUE_ALL_TIME',
     'fees_average1y': 'FEES_AVERAGE_1Y',
     'fees_change_1d': 'FEES_CHANGE_1D',
     'fees_change_7d': 'FEES_CHANGE_7D',
@@ -125,6 +125,11 @@ class DefiLlamaSource(BaseSource):
         fees = fees_resp.get('protocols', []) if isinstance(fees_resp, dict) else []
         time.sleep(REQUEST_DELAY)
         
+        print("  Fetching revenue...")
+        revenue_resp = self.fetch_json('https://api.llama.fi/overview/fees?dataType=dailyRevenue') or {}
+        revenue = revenue_resp.get('protocols', []) if isinstance(revenue_resp, dict) else []
+        time.sleep(REQUEST_DELAY)
+        
         print("  Fetching dexs...")
         dexs_resp = self.fetch_json('https://api.llama.fi/overview/dexs') or {}
         dexs = dexs_resp.get('protocols', []) if isinstance(dexs_resp, dict) else []
@@ -157,6 +162,7 @@ class DefiLlamaSource(BaseSource):
         protocols_lookup = self.build_lookup(protocols, ['gecko_id', 'slug', 'name'])
         chains_lookup = self.build_lookup(chains, ['gecko_id', 'name'])
         fees_lookup = self.build_lookup(fees, ['slug', 'name', 'displayName'])
+        revenue_lookup = self.build_lookup(revenue, ['slug', 'name', 'displayName'])
         dexs_lookup = self.build_lookup(dexs, ['slug', 'name', 'displayName'])
         derivatives_lookup = self.build_lookup(derivatives, ['slug', 'name', 'displayName'])
         options_lookup = self.build_lookup(options, ['slug', 'name', 'displayName'])
@@ -202,15 +208,18 @@ class DefiLlamaSource(BaseSource):
                 raw_metrics['fees_total30d'] = f.get('total30d')
                 raw_metrics['fees_total1y'] = f.get('total1y')
                 raw_metrics['fees_totalAllTime'] = f.get('totalAllTime')
-                raw_metrics['fees_dailyRevenue'] = f.get('dailyRevenue')
-                raw_metrics['fees_dailyProtocolRevenue'] = f.get('dailyProtocolRevenue')
-                raw_metrics['fees_dailySupplySideRevenue'] = f.get('dailySupplySideRevenue')
-                raw_metrics['fees_dailyUserFees'] = f.get('dailyUserFees')
-                raw_metrics['fees_dailyHoldersRevenue'] = f.get('dailyHoldersRevenue')
                 raw_metrics['fees_average1y'] = f.get('average1y')
                 raw_metrics['fees_change_1d'] = f.get('change_1d')
                 raw_metrics['fees_change_7d'] = f.get('change_7d')
                 raw_metrics['fees_change_1m'] = f.get('change_1m')
+            
+            r = revenue_lookup.get(slug) or revenue_lookup.get(name)
+            if r:
+                raw_metrics['revenue_total24h'] = r.get('total24h')
+                raw_metrics['revenue_total7d'] = r.get('total7d')
+                raw_metrics['revenue_total30d'] = r.get('total30d')
+                raw_metrics['revenue_total1y'] = r.get('total1y')
+                raw_metrics['revenue_totalAllTime'] = r.get('totalAllTime')
             
             d = dexs_lookup.get(slug) or dexs_lookup.get(name)
             if d:
