@@ -8,6 +8,7 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
 .
 ├── main.py                  # CLI entry point
 ├── scheduler.py             # Automated pull scheduler (1h DefiLlama, 24h Artemis)
+├── backfill_defillama.py   # Historical data backfill script
 ├── query_data.py           # Query helper functions with CSV export
 ├── artemis_config.csv      # Configuration for Artemis API pulls (matrix format)
 ├── defillama_config.csv    # Configuration for DefiLlama API pulls
@@ -24,7 +25,7 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
 ## Database Schema
 - **pulls**: Logs each API pull (pull_id, source_name, pulled_at, status, records_count)
 - **metrics**: Time series data (id, pulled_at, source, asset, metric_name, value)
-- Index on (source, asset, metric_name, pulled_at) for fast queries
+- Unique index on (source, asset, metric_name, pulled_at) for fast queries and deduplication
 
 ## Usage
 
@@ -89,3 +90,19 @@ The `scheduler.py` runs continuously and executes pulls at different intervals:
 Both pulls run immediately on startup, then follow their respective intervals.
 
 Run manually: `python scheduler.py`
+
+## Historical Backfill
+The `backfill_defillama.py` script fetches historical time series data from DefiLlama summary endpoints:
+- **Endpoints:** fees, revenue, dexs, derivatives, aggregators, tvl (protocol)
+- **Data:** Daily time series going back to 2011 for some assets
+- **Idempotent:** Uses ON CONFLICT DO NOTHING to prevent duplicates
+
+Run backfill: `python backfill_defillama.py`
+
+### Historical Data Coverage (as of Jan 2026)
+- **Total Records:** ~500,000+ across 323 assets
+- **TVL:** 228k records from 2019
+- **FEES:** 139k records from 2011
+- **REVENUE:** 88k records from 2020
+- **DEX_VOLUME:** 30k records from 2020
+- **DERIVATIVES_VOLUME:** 7k records from 2021
