@@ -28,6 +28,11 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
 - **metrics**: Time series data (id, pulled_at, source, asset, metric_name, value)
 - Unique index on (source, asset, metric_name, pulled_at) for fast queries and deduplication
 
+## Duplicate Prevention
+- **Backfills**: Use original API timestamps with ON CONFLICT DO NOTHING (skip exact duplicates)
+- **Live pulls**: Truncate timestamp to midnight UTC with ON CONFLICT DO UPDATE (upsert today's values)
+- This ensures historical data integrity while preventing scheduler duplicates
+
 ## Usage
 
 ### Setup Database
