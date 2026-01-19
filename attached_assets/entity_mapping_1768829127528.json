@@ -1,0 +1,2697 @@
+{
+  "aave": {
+    "gecko_id": "aave",
+    "artemis_id": "aave",
+    "name": "Aave",
+    "symbol": "aave",
+    "category": ""
+  },
+  "acala": {
+    "gecko_id": "acala",
+    "artemis_id": "acala",
+    "name": "Acala",
+    "symbol": "aca",
+    "category": ""
+  },
+  "across-protocol": {
+    "gecko_id": "across-protocol",
+    "artemis_id": "across",
+    "name": "Across",
+    "symbol": "acx",
+    "category": ""
+  },
+  "aerodrome-finance": {
+    "gecko_id": "aerodrome-finance",
+    "artemis_id": "aerodrome",
+    "name": "Aerodrome Finance",
+    "symbol": "aero",
+    "category": ""
+  },
+  "aethir": {
+    "gecko_id": "aethir",
+    "artemis_id": "aethir",
+    "name": "Aethir",
+    "symbol": "ath",
+    "category": ""
+  },
+  "anchored-coins-eur": {
+    "gecko_id": "anchored-coins-eur",
+    "artemis_id": "aeur",
+    "name": "AEUR",
+    "symbol": "aeur",
+    "category": ""
+  },
+  "aevo-exchange": {
+    "gecko_id": "aevo-exchange",
+    "artemis_id": "aevo",
+    "name": "Aevo",
+    "symbol": "aevo",
+    "category": ""
+  },
+  "aioz-network": {
+    "gecko_id": "aioz-network",
+    "artemis_id": "aioz",
+    "name": "Aioz Network",
+    "symbol": "aioz",
+    "category": ""
+  },
+  "akash-network": {
+    "gecko_id": "akash-network",
+    "artemis_id": "akash",
+    "name": "Akash Network",
+    "symbol": "akt",
+    "category": ""
+  },
+  "aleo": {
+    "gecko_id": "aleo",
+    "artemis_id": "aleo",
+    "name": "Aleo",
+    "symbol": "aleo",
+    "category": ""
+  },
+  "algorand": {
+    "gecko_id": "algorand",
+    "artemis_id": "algorand",
+    "name": "Algorand",
+    "symbol": "algo",
+    "category": ""
+  },
+  "angle-usd": {
+    "gecko_id": "angle-usd",
+    "artemis_id": "angle_usd",
+    "name": "USDA",
+    "symbol": "angle_usd",
+    "category": ""
+  },
+  "apex-token-2": {
+    "gecko_id": "apex-token-2",
+    "artemis_id": "apex",
+    "name": "ApeX",
+    "symbol": "apex",
+    "category": ""
+  },
+  "aptos": {
+    "gecko_id": "aptos",
+    "artemis_id": "aptos",
+    "name": "Aptos",
+    "symbol": "apt",
+    "category": ""
+  },
+  "arbitrum": {
+    "gecko_id": "arbitrum",
+    "artemis_id": "arbitrum",
+    "name": "Arbitrum",
+    "symbol": "arb",
+    "category": ""
+  },
+  "arweave": {
+    "gecko_id": "arweave",
+    "artemis_id": "arweave",
+    "name": "Arweave",
+    "symbol": "ar",
+    "category": ""
+  },
+  "astar": {
+    "gecko_id": "astar",
+    "artemis_id": "astar",
+    "name": "Astar",
+    "symbol": "astr",
+    "category": ""
+  },
+  "aster-2": {
+    "gecko_id": "aster-2",
+    "artemis_id": "aster",
+    "name": "Aster",
+    "symbol": "aster",
+    "category": ""
+  },
+  "aurory": {
+    "gecko_id": "aurory",
+    "artemis_id": "aurory",
+    "name": null,
+    "symbol": "aury",
+    "category": ""
+  },
+  "agora-dollar": {
+    "gecko_id": "agora-dollar",
+    "artemis_id": "ausd",
+    "name": "AUSD",
+    "symbol": "ausd",
+    "category": ""
+  },
+  "avalanche-2": {
+    "gecko_id": "avalanche-2",
+    "artemis_id": "avalanche",
+    "name": "Avalanche C-Chain",
+    "symbol": "avax",
+    "category": ""
+  },
+  "avantis": {
+    "gecko_id": "avantis",
+    "artemis_id": "avantis",
+    "name": "Avantis",
+    "symbol": "avantis",
+    "category": ""
+  },
+  "avant-usd": {
+    "gecko_id": "avant-usd",
+    "artemis_id": "avusd",
+    "name": null,
+    "symbol": "avusd",
+    "category": ""
+  },
+  "axelar": {
+    "gecko_id": "axelar",
+    "artemis_id": "axelar",
+    "name": "Axelar",
+    "symbol": "axl",
+    "category": ""
+  },
+  "axie-infinity": {
+    "gecko_id": "axie-infinity",
+    "artemis_id": "axie_infinity",
+    "name": "Axie Infinity",
+    "symbol": "axs",
+    "category": ""
+  },
+  "babylon": {
+    "gecko_id": "babylon",
+    "artemis_id": "babylon",
+    "name": "Babylon",
+    "symbol": "baby",
+    "category": ""
+  },
+  "balancer": {
+    "gecko_id": "balancer",
+    "artemis_id": "balancer",
+    "name": "Balancer",
+    "symbol": "bal",
+    "category": ""
+  },
+  "banana-gun": {
+    "gecko_id": "banana-gun",
+    "artemis_id": "bananagun",
+    "name": "Banana Gun",
+    "symbol": "banana",
+    "category": ""
+  },
+  "placeholder-bbrl": {
+    "gecko_id": "placeholder-bbrl",
+    "artemis_id": "bbrl",
+    "name": null,
+    "symbol": "bbrl",
+    "category": ""
+  },
+  "beam-2": {
+    "gecko_id": "beam-2",
+    "artemis_id": "beam",
+    "name": "Beam",
+    "symbol": "beam",
+    "category": ""
+  },
+  "beldex": {
+    "gecko_id": "beldex",
+    "artemis_id": "beldex",
+    "name": null,
+    "symbol": "bdx",
+    "category": ""
+  },
+  "ben-pasternak": {
+    "gecko_id": "ben-pasternak",
+    "artemis_id": "believe",
+    "name": "Launch Coin on Believe",
+    "symbol": "launchcoin",
+    "category": ""
+  },
+  "franklin-templeton-benji": {
+    "gecko_id": "franklin-templeton-benji",
+    "artemis_id": "benji",
+    "name": "Franklin Templeton BENJI",
+    "symbol": "benji",
+    "category": ""
+  },
+  "benqi": {
+    "gecko_id": "benqi",
+    "artemis_id": "benqi_finance",
+    "name": "Benqi Finance",
+    "symbol": "qi",
+    "category": ""
+  },
+  "berachain-bera": {
+    "gecko_id": "berachain-bera",
+    "artemis_id": "berachain",
+    "name": "Berachain",
+    "symbol": "bera",
+    "category": ""
+  },
+  "bifrost-native-coin": {
+    "gecko_id": "bifrost-native-coin",
+    "artemis_id": "bifrost",
+    "name": "Bifrost",
+    "symbol": "bnc",
+    "category": ""
+  },
+  "bitcoin": {
+    "gecko_id": "bitcoin",
+    "artemis_id": "bitcoin",
+    "name": "Bitcoin",
+    "symbol": "btc",
+    "category": ""
+  },
+  "bitcoin-cash": {
+    "gecko_id": "bitcoin-cash",
+    "artemis_id": "bitcoin_cash",
+    "name": "Bitcoin Cash",
+    "symbol": "bch",
+    "category": ""
+  },
+  "bitcoin-cash-sv": {
+    "gecko_id": "bitcoin-cash-sv",
+    "artemis_id": "bitcoin_sv",
+    "name": null,
+    "symbol": "bsv",
+    "category": ""
+  },
+  "bitget-token": {
+    "gecko_id": "bitget-token",
+    "artemis_id": "bitget",
+    "name": "Bitget",
+    "symbol": "bgb",
+    "category": ""
+  },
+  "bitrock": {
+    "gecko_id": "bitrock",
+    "artemis_id": "bitrock",
+    "name": null,
+    "symbol": "brock",
+    "category": ""
+  },
+  "bittensor": {
+    "gecko_id": "bittensor",
+    "artemis_id": "bittensor",
+    "name": "Bittensor",
+    "symbol": "tao",
+    "category": ""
+  },
+  "bittorrent": {
+    "gecko_id": "bittorrent",
+    "artemis_id": "bittorrent",
+    "name": "Bittorrent",
+    "symbol": "btt",
+    "category": ""
+  },
+  "blackhole": {
+    "gecko_id": "blackhole",
+    "artemis_id": "blackhole",
+    "name": "Blackhole ",
+    "symbol": "black",
+    "category": ""
+  },
+  "blast": {
+    "gecko_id": "blast",
+    "artemis_id": "blast",
+    "name": "Blast",
+    "symbol": "blast",
+    "category": ""
+  },
+  "bluefin": {
+    "gecko_id": "bluefin",
+    "artemis_id": "bluefin",
+    "name": "Bluefin",
+    "symbol": "blue",
+    "category": ""
+  },
+  "blur": {
+    "gecko_id": "blur",
+    "artemis_id": "blur",
+    "name": "Blur",
+    "symbol": "blur",
+    "category": ""
+  },
+  "bob-build-on-bitcoin": {
+    "gecko_id": "bob-build-on-bitcoin",
+    "artemis_id": "bob",
+    "name": "Bob",
+    "symbol": "bob",
+    "category": ""
+  },
+  "boba-network": {
+    "gecko_id": "boba-network",
+    "artemis_id": "boba",
+    "name": null,
+    "symbol": "boba",
+    "category": ""
+  },
+  "liquity-bold": {
+    "gecko_id": "liquity-bold",
+    "artemis_id": "bold",
+    "name": "BOLD",
+    "symbol": "bold",
+    "category": ""
+  },
+  "bonk": {
+    "gecko_id": "bonk",
+    "artemis_id": "bonk",
+    "name": "Bonk",
+    "symbol": "bonk",
+    "category": ""
+  },
+  "braintrust": {
+    "gecko_id": "braintrust",
+    "artemis_id": "braintrust",
+    "name": null,
+    "symbol": "btrst",
+    "category": ""
+  },
+  "based-brett": {
+    "gecko_id": "based-brett",
+    "artemis_id": "brett",
+    "name": "Based Brett",
+    "symbol": "brett",
+    "category": ""
+  },
+  "brla-digital-brla": {
+    "gecko_id": "brla-digital-brla",
+    "artemis_id": "brla",
+    "name": "BRLA",
+    "symbol": "brla",
+    "category": ""
+  },
+  "brz": {
+    "gecko_id": "brz",
+    "artemis_id": "brz",
+    "name": "BRZ",
+    "symbol": "brz",
+    "category": ""
+  },
+  "binancecoin": {
+    "gecko_id": "binancecoin",
+    "artemis_id": "bsc",
+    "name": "BNB Chain",
+    "symbol": "bnb",
+    "category": ""
+  },
+  "blackrock-usd-institutional-digital-liquidity-fund": {
+    "gecko_id": "blackrock-usd-institutional-digital-liquidity-fund",
+    "artemis_id": "buidl",
+    "name": "BUIDL",
+    "symbol": "buidl",
+    "category": ""
+  },
+  "binance-usd": {
+    "gecko_id": "binance-usd",
+    "artemis_id": "busd",
+    "name": "BUSD",
+    "symbol": "busd",
+    "category": ""
+  },
+  "canto": {
+    "gecko_id": "canto",
+    "artemis_id": "canto",
+    "name": null,
+    "symbol": "canto",
+    "category": ""
+  },
+  "cardano": {
+    "gecko_id": "cardano",
+    "artemis_id": "cardano",
+    "name": "Cardano",
+    "symbol": "ada",
+    "category": ""
+  },
+  "cash-4": {
+    "gecko_id": "cash-4",
+    "artemis_id": "cash",
+    "name": "CASH",
+    "symbol": "cash",
+    "category": ""
+  },
+  "celo-australian-dollar": {
+    "gecko_id": "celo-australian-dollar",
+    "artemis_id": "caud",
+    "name": "cAUD",
+    "symbol": "caud",
+    "category": ""
+  },
+  "celo-canadian-dollar": {
+    "gecko_id": "celo-canadian-dollar",
+    "artemis_id": "ccad",
+    "name": "cCAD",
+    "symbol": "ccad",
+    "category": ""
+  },
+  "cchf": {
+    "gecko_id": "cchf",
+    "artemis_id": "cchf",
+    "name": "cCHF",
+    "symbol": "cchf",
+    "category": ""
+  },
+  "celestia": {
+    "gecko_id": "celestia",
+    "artemis_id": "celestia",
+    "name": "Celestia",
+    "symbol": "tia",
+    "category": ""
+  },
+  "celo": {
+    "gecko_id": "celo",
+    "artemis_id": "celo",
+    "name": "Celo",
+    "symbol": "celo",
+    "category": ""
+  },
+  "centrifuge": {
+    "gecko_id": "centrifuge",
+    "artemis_id": "centrifuge",
+    "name": "Centrifuge",
+    "symbol": "cfg",
+    "category": ""
+  },
+  "cetus-protocol": {
+    "gecko_id": "cetus-protocol",
+    "artemis_id": "cetus",
+    "name": "Cetus Finance",
+    "symbol": "cetus",
+    "category": ""
+  },
+  "celo-euro": {
+    "gecko_id": "celo-euro",
+    "artemis_id": "ceur",
+    "name": "cEUR",
+    "symbol": "ceur",
+    "category": ""
+  },
+  "celo-british-pound": {
+    "gecko_id": "celo-british-pound",
+    "artemis_id": "cgbp",
+    "name": "cGBP",
+    "symbol": "cgbp",
+    "category": ""
+  },
+  "cghs": {
+    "gecko_id": "cghs",
+    "artemis_id": "cghs",
+    "name": "cGHS",
+    "symbol": "cghs",
+    "category": ""
+  },
+  "cygnus-finance-global-usd": {
+    "gecko_id": "cygnus-finance-global-usd",
+    "artemis_id": "cgusd",
+    "name": "cgUSD",
+    "symbol": "cgusd",
+    "category": ""
+  },
+  "chainlink": {
+    "gecko_id": "chainlink",
+    "artemis_id": "chainlink",
+    "name": "Chainlink",
+    "symbol": "link",
+    "category": ""
+  },
+  "chiliz": {
+    "gecko_id": "chiliz",
+    "artemis_id": "chiliz",
+    "name": "Chiliz",
+    "symbol": "chz",
+    "category": ""
+  },
+  "celo-japanese-yen": {
+    "gecko_id": "celo-japanese-yen",
+    "artemis_id": "cjpy",
+    "name": "cJPY",
+    "symbol": "cjpy",
+    "category": ""
+  },
+  "celo-kenyan-shilling": {
+    "gecko_id": "celo-kenyan-shilling",
+    "artemis_id": "ckes",
+    "name": "cKES",
+    "symbol": "ckes",
+    "category": ""
+  },
+  "celo-nigerian-naira": {
+    "gecko_id": "celo-nigerian-naira",
+    "artemis_id": "cngn",
+    "name": "cNGN",
+    "symbol": "cngn",
+    "category": ""
+  },
+  "collector-crypt": {
+    "gecko_id": "collector-crypt",
+    "artemis_id": "collector_crypt",
+    "name": "Collector Crypt",
+    "symbol": "cards",
+    "category": ""
+  },
+  "compound-governance-token": {
+    "gecko_id": "compound-governance-token",
+    "artemis_id": "compound",
+    "name": "Compound",
+    "symbol": "comp",
+    "category": ""
+  },
+  "conflux-token": {
+    "gecko_id": "conflux-token",
+    "artemis_id": "conflux",
+    "name": "Conflux",
+    "symbol": "cfx",
+    "category": ""
+  },
+  "convex-finance": {
+    "gecko_id": "convex-finance",
+    "artemis_id": "convex",
+    "name": "Convex Finance",
+    "symbol": "cvx",
+    "category": ""
+  },
+  "coredaoorg": {
+    "gecko_id": "coredaoorg",
+    "artemis_id": "coredao",
+    "name": null,
+    "symbol": "core",
+    "category": ""
+  },
+  "cosmos": {
+    "gecko_id": "cosmos",
+    "artemis_id": "cosmoshub",
+    "name": "CosmosHub",
+    "symbol": "atom",
+    "category": ""
+  },
+  "celo-real-creal": {
+    "gecko_id": "celo-real-creal",
+    "artemis_id": "creal",
+    "name": "cREAL",
+    "symbol": "creal",
+    "category": ""
+  },
+  "crypto-com-chain": {
+    "gecko_id": "crypto-com-chain",
+    "artemis_id": "cronos",
+    "name": "Cronos",
+    "symbol": "cro",
+    "category": ""
+  },
+  "cronos-zkevm-cro": {
+    "gecko_id": "cronos-zkevm-cro",
+    "artemis_id": "cronos_zkevm",
+    "name": "Cronos ZK-EVM",
+    "symbol": "zkcro",
+    "category": ""
+  },
+  "crossfi-2": {
+    "gecko_id": "crossfi-2",
+    "artemis_id": "crossfi",
+    "name": "CrossFi",
+    "symbol": "xfi",
+    "category": ""
+  },
+  "crvusd": {
+    "gecko_id": "crvusd",
+    "artemis_id": "crvusd",
+    "name": "crvUSD",
+    "symbol": "crvusd",
+    "category": ""
+  },
+  "crypto-raiders": {
+    "gecko_id": "crypto-raiders",
+    "artemis_id": "crypto-raiders",
+    "name": null,
+    "symbol": "raider",
+    "category": ""
+  },
+  "curve-dao-token": {
+    "gecko_id": "curve-dao-token",
+    "artemis_id": "curve",
+    "name": "Curve",
+    "symbol": "crv",
+    "category": ""
+  },
+  "celo-dollar": {
+    "gecko_id": "celo-dollar",
+    "artemis_id": "cusd",
+    "name": "cUSD",
+    "symbol": "cusd",
+    "category": ""
+  },
+  "celo-south-african-rand": {
+    "gecko_id": "celo-south-african-rand",
+    "artemis_id": "czar",
+    "name": "cZAR",
+    "symbol": "czar",
+    "category": ""
+  },
+  "dai": {
+    "gecko_id": "dai",
+    "artemis_id": "dai",
+    "name": "DAI",
+    "symbol": "dai",
+    "category": ""
+  },
+  "debridge": {
+    "gecko_id": "debridge",
+    "artemis_id": "debridge",
+    "name": "deBridge",
+    "symbol": "dbr",
+    "category": ""
+  },
+  "decentraland": {
+    "gecko_id": "decentraland",
+    "artemis_id": "decentraland",
+    "name": null,
+    "symbol": "mana",
+    "category": ""
+  },
+  "decentral-games": {
+    "gecko_id": "decentral-games",
+    "artemis_id": "decentral-games",
+    "name": null,
+    "symbol": "dg",
+    "category": ""
+  },
+  "deep": {
+    "gecko_id": "deep",
+    "artemis_id": "deepbook",
+    "name": "Deepbook",
+    "symbol": "deep",
+    "category": ""
+  },
+  "defi-kingdoms": {
+    "gecko_id": "defi-kingdoms",
+    "artemis_id": "defi-kingdoms",
+    "name": "Defi Kingdoms",
+    "symbol": "jewel",
+    "category": ""
+  },
+  "defi-kingdoms-crystal": {
+    "gecko_id": "defi-kingdoms-crystal",
+    "artemis_id": "defi-kingdoms-crystal",
+    "name": null,
+    "symbol": "crystal",
+    "category": ""
+  },
+  "elixir-deusd": {
+    "gecko_id": "elixir-deusd",
+    "artemis_id": "deusd",
+    "name": "DEUSD",
+    "symbol": "deusd",
+    "category": ""
+  },
+  "dexalot": {
+    "gecko_id": "dexalot",
+    "artemis_id": "dexalot",
+    "name": "Dexalot",
+    "symbol": "alot",
+    "category": ""
+  },
+  "dexe": {
+    "gecko_id": "dexe",
+    "artemis_id": "dexe",
+    "name": null,
+    "symbol": "dexe",
+    "category": ""
+  },
+  "dimo": {
+    "gecko_id": "dimo",
+    "artemis_id": "dimo",
+    "name": "Dimo",
+    "symbol": "dimo",
+    "category": ""
+  },
+  "dodo": {
+    "gecko_id": "dodo",
+    "artemis_id": "dodo",
+    "name": "Dodo",
+    "symbol": "dodo",
+    "category": ""
+  },
+  "dogecoin": {
+    "gecko_id": "dogecoin",
+    "artemis_id": "dogecoin",
+    "name": "Dogecoin",
+    "symbol": "doge",
+    "category": ""
+  },
+  "dola-usd": {
+    "gecko_id": "dola-usd",
+    "artemis_id": "dola",
+    "name": "DOLA",
+    "symbol": "dola",
+    "category": ""
+  },
+  "drift-protocol": {
+    "gecko_id": "drift-protocol",
+    "artemis_id": "drift",
+    "name": "Drift Protocol",
+    "symbol": "drift",
+    "category": ""
+  },
+  "re-protocol-reusd": {
+    "gecko_id": "re-protocol-reusd",
+    "artemis_id": "reusd",
+    "name": null,
+    "symbol": "reusd",
+    "category": ""
+  },
+  "dydx-chain": {
+    "gecko_id": "dydx-chain",
+    "artemis_id": "dydx_v4",
+    "name": "dYdX v4",
+    "symbol": "dydx_v4",
+    "category": ""
+  },
+  "ecash": {
+    "gecko_id": "ecash",
+    "artemis_id": "ecash",
+    "name": "eCash",
+    "symbol": "xec",
+    "category": ""
+  },
+  "eigenlayer": {
+    "gecko_id": "eigenlayer",
+    "artemis_id": "eigenlayer",
+    "name": "Eigenlayer",
+    "symbol": "eigen",
+    "category": ""
+  },
+  "eigenpie": {
+    "gecko_id": "eigenpie",
+    "artemis_id": "eigenpie",
+    "name": "Eigenpie",
+    "symbol": "egp",
+    "category": ""
+  },
+  "ethereum-name-service": {
+    "gecko_id": "ethereum-name-service",
+    "artemis_id": "ens",
+    "name": "Ethereum Name Service",
+    "symbol": "ens",
+    "category": ""
+  },
+  "melon": {
+    "gecko_id": "melon",
+    "artemis_id": "enzyme",
+    "name": null,
+    "symbol": "mln",
+    "category": ""
+  },
+  "eos": {
+    "gecko_id": "eos",
+    "artemis_id": "eos",
+    "name": "EOS",
+    "symbol": "eos",
+    "category": ""
+  },
+  "ethena": {
+    "gecko_id": "ethena",
+    "artemis_id": "ethena",
+    "name": "Ethena",
+    "symbol": "ena",
+    "category": ""
+  },
+  "ethereum": {
+    "gecko_id": "ethereum",
+    "artemis_id": "ethereum",
+    "name": "Ethereum",
+    "symbol": "eth",
+    "category": ""
+  },
+  "ethereum-classic": {
+    "gecko_id": "ethereum-classic",
+    "artemis_id": "ethereum_classic",
+    "name": "Ethereum Classic",
+    "symbol": "etc",
+    "category": ""
+  },
+  "ether-fi": {
+    "gecko_id": "ether-fi",
+    "artemis_id": "etherfi",
+    "name": "EtherFi",
+    "symbol": "ethfi",
+    "category": ""
+  },
+  "euler": {
+    "gecko_id": "euler",
+    "artemis_id": "euler",
+    "name": "Euler",
+    "symbol": "eul",
+    "category": ""
+  },
+  "ageur": {
+    "gecko_id": "ageur",
+    "artemis_id": "eura",
+    "name": "EURA",
+    "symbol": "eura",
+    "category": ""
+  },
+  "euro-coin": {
+    "gecko_id": "euro-coin",
+    "artemis_id": "eurc",
+    "name": "EURC",
+    "symbol": "eurc",
+    "category": ""
+  },
+  "societe-generale-forge-eurcv": {
+    "gecko_id": "societe-generale-forge-eurcv",
+    "artemis_id": "eurcv",
+    "name": "EURCV",
+    "symbol": "eurcv",
+    "category": ""
+  },
+  "euroe-stablecoin": {
+    "gecko_id": "euroe-stablecoin",
+    "artemis_id": "euroe",
+    "name": "EUROe",
+    "symbol": "euroe",
+    "category": ""
+  },
+  "quantoz-eurq": {
+    "gecko_id": "quantoz-eurq",
+    "artemis_id": "eurq",
+    "name": null,
+    "symbol": "eurq",
+    "category": ""
+  },
+  "stasis-eurs": {
+    "gecko_id": "stasis-eurs",
+    "artemis_id": "eurs",
+    "name": "EURS",
+    "symbol": "eurs",
+    "category": ""
+  },
+  "tether-eurt": {
+    "gecko_id": "tether-eurt",
+    "artemis_id": "eurt",
+    "name": "EURT",
+    "symbol": "eurt",
+    "category": ""
+  },
+  "fantom": {
+    "gecko_id": "fantom",
+    "artemis_id": "fantom",
+    "name": "Fantom",
+    "symbol": "ftm",
+    "category": ""
+  },
+  "fartcoin": {
+    "gecko_id": "fartcoin",
+    "artemis_id": "fartcoin",
+    "name": "Fartcoin",
+    "symbol": "fartcoin",
+    "category": ""
+  },
+  "fasttoken": {
+    "gecko_id": "fasttoken",
+    "artemis_id": "fasttoken",
+    "name": "Fasttoken",
+    "symbol": "ftn",
+    "category": ""
+  },
+  "fidelity-digital-interest-token": {
+    "gecko_id": "fidelity-digital-interest-token",
+    "artemis_id": "fdit",
+    "name": null,
+    "symbol": "fdit",
+    "category": ""
+  },
+  "first-digital-usd": {
+    "gecko_id": "first-digital-usd",
+    "artemis_id": "fdusd",
+    "name": "FDUSD",
+    "symbol": "fdusd",
+    "category": ""
+  },
+  "fetch-ai": {
+    "gecko_id": "fetch-ai",
+    "artemis_id": "fetch",
+    "name": "Artificial Superintelligence Alliance",
+    "symbol": "fet",
+    "category": ""
+  },
+  "felix-feusd": {
+    "gecko_id": "felix-feusd",
+    "artemis_id": "feusd",
+    "name": "feUSD",
+    "symbol": "feusd",
+    "category": ""
+  },
+  "filecoin": {
+    "gecko_id": "filecoin",
+    "artemis_id": "filecoin",
+    "name": null,
+    "symbol": "fil",
+    "category": ""
+  },
+  "flare-networks": {
+    "gecko_id": "flare-networks",
+    "artemis_id": "flare",
+    "name": "Flare",
+    "symbol": "flr",
+    "category": ""
+  },
+  "flex-usd": {
+    "gecko_id": "flex-usd",
+    "artemis_id": "flexusd",
+    "name": "FLEXUSD",
+    "symbol": "flexusd",
+    "category": ""
+  },
+  "floki": {
+    "gecko_id": "floki",
+    "artemis_id": "floki",
+    "name": "Floki",
+    "symbol": "floki",
+    "category": ""
+  },
+  "flow": {
+    "gecko_id": "flow",
+    "artemis_id": "flow",
+    "name": "Flow",
+    "symbol": "flow",
+    "category": ""
+  },
+  "instadapp": {
+    "gecko_id": "instadapp",
+    "artemis_id": "fluid",
+    "name": "Fluid",
+    "symbol": "fluid",
+    "category": ""
+  },
+  "four": {
+    "gecko_id": "four",
+    "artemis_id": "four_meme",
+    "name": null,
+    "symbol": "form",
+    "category": ""
+  },
+  "frax-share": {
+    "gecko_id": "frax-share",
+    "artemis_id": "frax",
+    "name": "Frax",
+    "symbol": "fxs",
+    "category": ""
+  },
+  "frax": {
+    "gecko_id": "frax",
+    "artemis_id": "frax_usd",
+    "name": "FRAX",
+    "symbol": "frax_usd",
+    "category": ""
+  },
+  "frax-usd": {
+    "gecko_id": "frax-usd",
+    "artemis_id": "frxusd",
+    "name": "FRXUSD",
+    "symbol": "frxusd",
+    "category": ""
+  },
+  "fuse-network-token": {
+    "gecko_id": "fuse-network-token",
+    "artemis_id": "fuse",
+    "name": "Fuse",
+    "symbol": "fuse",
+    "category": ""
+  },
+  "f-x-protocol-fxusd": {
+    "gecko_id": "f-x-protocol-fxusd",
+    "artemis_id": "fxusd",
+    "name": "fxUSD",
+    "symbol": "fxusd",
+    "category": ""
+  },
+  "gains-network": {
+    "gecko_id": "gains-network",
+    "artemis_id": "gains-network",
+    "name": "Gains Network",
+    "symbol": "gns",
+    "category": ""
+  },
+  "gala": {
+    "gecko_id": "gala",
+    "artemis_id": "gala",
+    "name": null,
+    "symbol": "gala",
+    "category": ""
+  },
+  "gatechain-token": {
+    "gecko_id": "gatechain-token",
+    "artemis_id": "gate",
+    "name": null,
+    "symbol": "gt",
+    "category": ""
+  },
+  "geodnet": {
+    "gecko_id": "geodnet",
+    "artemis_id": "geodnet",
+    "name": "GEODNET",
+    "symbol": "geod",
+    "category": ""
+  },
+  "gho": {
+    "gecko_id": "gho",
+    "artemis_id": "gho",
+    "name": "GHO",
+    "symbol": "gho",
+    "category": ""
+  },
+  "gmx": {
+    "gecko_id": "gmx",
+    "artemis_id": "gmx",
+    "name": "GMX",
+    "symbol": "gmx",
+    "category": ""
+  },
+  "gnosis": {
+    "gecko_id": "gnosis",
+    "artemis_id": "gnosis",
+    "name": "Gnosis Chain",
+    "symbol": "gno",
+    "category": ""
+  },
+  "gods-unchained": {
+    "gecko_id": "gods-unchained",
+    "artemis_id": "gods-unchained",
+    "name": null,
+    "symbol": "gods",
+    "category": ""
+  },
+  "goldfinch": {
+    "gecko_id": "goldfinch",
+    "artemis_id": "goldfinch",
+    "name": "Goldfinch",
+    "symbol": "gfi",
+    "category": ""
+  },
+  "the-graph": {
+    "gecko_id": "the-graph",
+    "artemis_id": "graph",
+    "name": "The Graph",
+    "symbol": "grt",
+    "category": ""
+  },
+  "grass": {
+    "gecko_id": "grass",
+    "artemis_id": "grass",
+    "name": "Grass",
+    "symbol": "grass",
+    "category": ""
+  },
+  "guild-of-guardians": {
+    "gecko_id": "guild-of-guardians",
+    "artemis_id": "guild-of-guardians",
+    "name": null,
+    "symbol": "gog",
+    "category": ""
+  },
+  "gemini-dollar": {
+    "gecko_id": "gemini-dollar",
+    "artemis_id": "gusd",
+    "name": "GUSD",
+    "symbol": "gusd",
+    "category": ""
+  },
+  "gyen": {
+    "gecko_id": "gyen",
+    "artemis_id": "gyen",
+    "name": "GYEN",
+    "symbol": "gyen",
+    "category": ""
+  },
+  "haedal": {
+    "gecko_id": "haedal",
+    "artemis_id": "haedal",
+    "name": null,
+    "symbol": "haedal",
+    "category": ""
+  },
+  "heaven": {
+    "gecko_id": "heaven",
+    "artemis_id": "heaven",
+    "name": "Heaven",
+    "symbol": "light",
+    "category": ""
+  },
+  "hedera-hashgraph": {
+    "gecko_id": "hedera-hashgraph",
+    "artemis_id": "hedera",
+    "name": "Hedera",
+    "symbol": "hbar",
+    "category": ""
+  },
+  "helium": {
+    "gecko_id": "helium",
+    "artemis_id": "helium",
+    "name": "Helium",
+    "symbol": "hnt",
+    "category": ""
+  },
+  "hivemapper": {
+    "gecko_id": "hivemapper",
+    "artemis_id": "hivemapper",
+    "name": "Hivemapper",
+    "symbol": "honey",
+    "category": ""
+  },
+  "holdstation": {
+    "gecko_id": "holdstation",
+    "artemis_id": "holdstation",
+    "name": "Holdstation",
+    "symbol": "hold",
+    "category": ""
+  },
+  "humidifi": {
+    "gecko_id": "humidifi",
+    "artemis_id": "humidifi",
+    "name": "HumidiFi",
+    "symbol": "wet",
+    "category": ""
+  },
+  "hydradx": {
+    "gecko_id": "hydradx",
+    "artemis_id": "hydration",
+    "name": "Hydration",
+    "symbol": "hdx",
+    "category": ""
+  },
+  "hyperliquid": {
+    "gecko_id": "hyperliquid",
+    "artemis_id": "hyperliquid",
+    "name": "Hyperliquid",
+    "symbol": "hype",
+    "category": ""
+  },
+  "rupiah-token": {
+    "gecko_id": "rupiah-token",
+    "artemis_id": "idrt",
+    "name": "IDRT",
+    "symbol": "idrt",
+    "category": ""
+  },
+  "idrx": {
+    "gecko_id": "idrx",
+    "artemis_id": "idrx",
+    "name": "IDRX",
+    "symbol": "idrx",
+    "category": ""
+  },
+  "illuvium": {
+    "gecko_id": "illuvium",
+    "artemis_id": "illuvium",
+    "name": null,
+    "symbol": "ilv",
+    "category": ""
+  },
+  "immutable-x": {
+    "gecko_id": "immutable-x",
+    "artemis_id": "immutable_x",
+    "name": null,
+    "symbol": "imx",
+    "category": ""
+  },
+  "injective-protocol": {
+    "gecko_id": "injective-protocol",
+    "artemis_id": "injective",
+    "name": "Injective",
+    "symbol": "inj",
+    "category": ""
+  },
+  "internet-computer": {
+    "gecko_id": "internet-computer",
+    "artemis_id": "internet-computer",
+    "name": "Internet Computer",
+    "symbol": "icp",
+    "category": ""
+  },
+  "iota": {
+    "gecko_id": "iota",
+    "artemis_id": "iota",
+    "name": null,
+    "symbol": "iota",
+    "category": ""
+  },
+  "iotex": {
+    "gecko_id": "iotex",
+    "artemis_id": "iotex",
+    "name": "IoTeX",
+    "symbol": "iotx",
+    "category": ""
+  },
+  "jasmycoin": {
+    "gecko_id": "jasmycoin",
+    "artemis_id": "jasmy",
+    "name": null,
+    "symbol": "jasmy",
+    "category": ""
+  },
+  "jito-governance-token": {
+    "gecko_id": "jito-governance-token",
+    "artemis_id": "jito",
+    "name": "Jito",
+    "symbol": "jto",
+    "category": ""
+  },
+  "janus-henderson-anemoy-treasury-fund": {
+    "gecko_id": "janus-henderson-anemoy-treasury-fund",
+    "artemis_id": "jtrsy",
+    "name": null,
+    "symbol": "jtrsy",
+    "category": ""
+  },
+  "jupiter-exchange-solana": {
+    "gecko_id": "jupiter-exchange-solana",
+    "artemis_id": "jupiter",
+    "name": "Jupiter",
+    "symbol": "jup",
+    "category": ""
+  },
+  "jupusd": {
+    "gecko_id": "jupusd",
+    "artemis_id": "jupusd",
+    "name": "jupUSD",
+    "symbol": "jupusd",
+    "category": ""
+  },
+  "kaia": {
+    "gecko_id": "kaia",
+    "artemis_id": "kaia",
+    "name": "Kaia",
+    "symbol": "kaia",
+    "category": ""
+  },
+  "kamino": {
+    "gecko_id": "kamino",
+    "artemis_id": "kamino",
+    "name": "Kamino",
+    "symbol": "kmno",
+    "category": ""
+  },
+  "karura": {
+    "gecko_id": "karura",
+    "artemis_id": "karura",
+    "name": "Karura ",
+    "symbol": "kar",
+    "category": ""
+  },
+  "kava": {
+    "gecko_id": "kava",
+    "artemis_id": "kava",
+    "name": "Kava",
+    "symbol": "kava",
+    "category": ""
+  },
+  "kelp-earned-points": {
+    "gecko_id": "kelp-earned-points",
+    "artemis_id": "kelp_dao",
+    "name": "Kelp DAO",
+    "symbol": "kep",
+    "category": ""
+  },
+  "kinetiq": {
+    "gecko_id": "kinetiq",
+    "artemis_id": "kinetiq_markets",
+    "name": "Kinetiq Markets",
+    "symbol": "kinetiq_markets",
+    "category": ""
+  },
+  "ktx-finance": {
+    "gecko_id": "ktx-finance",
+    "artemis_id": "ktx_finance",
+    "name": "KTX Finance",
+    "symbol": "ktc",
+    "category": ""
+  },
+  "kucoin-shares": {
+    "gecko_id": "kucoin-shares",
+    "artemis_id": "kucoin",
+    "name": "Kucoin",
+    "symbol": "kcs",
+    "category": ""
+  },
+  "layerzero": {
+    "gecko_id": "layerzero",
+    "artemis_id": "layerzero",
+    "name": "LayerZero",
+    "symbol": "zro",
+    "category": ""
+  },
+  "leo-token": {
+    "gecko_id": "leo-token",
+    "artemis_id": "leo",
+    "name": "UNUS SED LEO",
+    "symbol": "leo",
+    "category": ""
+  },
+  "lido-dao": {
+    "gecko_id": "lido-dao",
+    "artemis_id": "lido",
+    "name": "Lido",
+    "symbol": "ldo",
+    "category": ""
+  },
+  "lifinity": {
+    "gecko_id": "lifinity",
+    "artemis_id": "lifinity",
+    "name": null,
+    "symbol": "lifinity",
+    "category": ""
+  },
+  "lighter": {
+    "gecko_id": "lighter",
+    "artemis_id": "lighter",
+    "name": "Lighter",
+    "symbol": "lighter",
+    "category": ""
+  },
+  "lightlink": {
+    "gecko_id": "lightlink",
+    "artemis_id": "lightlink",
+    "name": "Lightlink",
+    "symbol": "ll",
+    "category": ""
+  },
+  "linea": {
+    "gecko_id": "linea",
+    "artemis_id": "linea",
+    "name": "Linea",
+    "symbol": "linea",
+    "category": ""
+  },
+  "liquity": {
+    "gecko_id": "liquity",
+    "artemis_id": "liquity",
+    "name": "Liquity",
+    "symbol": "lqty",
+    "category": ""
+  },
+  "lisk": {
+    "gecko_id": "lisk",
+    "artemis_id": "lisk",
+    "name": "Lisk",
+    "symbol": "lsk",
+    "category": ""
+  },
+  "helio-protocol-hay": {
+    "gecko_id": "helio-protocol-hay",
+    "artemis_id": "lisusd",
+    "name": "LISUSD",
+    "symbol": "lisusd",
+    "category": ""
+  },
+  "litecoin": {
+    "gecko_id": "litecoin",
+    "artemis_id": "litecoin",
+    "name": "Litecoin",
+    "symbol": "ltc",
+    "category": ""
+  },
+  "livepeer": {
+    "gecko_id": "livepeer",
+    "artemis_id": "livepeer",
+    "name": "Livepeer",
+    "symbol": "lpt",
+    "category": ""
+  },
+  "liquity-usd": {
+    "gecko_id": "liquity-usd",
+    "artemis_id": "lusd",
+    "name": "LUSD",
+    "symbol": "lusd",
+    "category": ""
+  },
+  "level-usd": {
+    "gecko_id": "level-usd",
+    "artemis_id": "lvlusd",
+    "name": "LVLUSD",
+    "symbol": "lvlusd",
+    "category": ""
+  },
+  "wrappedm-by-m0": {
+    "gecko_id": "wrappedm-by-m0",
+    "artemis_id": "m",
+    "name": null,
+    "symbol": "m",
+    "category": ""
+  },
+  "magic-eden": {
+    "gecko_id": "magic-eden",
+    "artemis_id": "magiceden",
+    "name": "Magic Eden",
+    "symbol": "me",
+    "category": ""
+  },
+  "sky": {
+    "gecko_id": "sky",
+    "artemis_id": "maker",
+    "name": "Maker",
+    "symbol": "sky",
+    "category": ""
+  },
+  "manta-network": {
+    "gecko_id": "manta-network",
+    "artemis_id": "manta",
+    "name": "Manta Network",
+    "symbol": "manta",
+    "category": ""
+  },
+  "mantle": {
+    "gecko_id": "mantle",
+    "artemis_id": "mantle",
+    "name": "Mantle",
+    "symbol": "mnt",
+    "category": ""
+  },
+  "marinade": {
+    "gecko_id": "marinade",
+    "artemis_id": "marinade",
+    "name": "Marinade",
+    "symbol": "mnde",
+    "category": ""
+  },
+  "matic-network": {
+    "gecko_id": "matic-network",
+    "artemis_id": "matic",
+    "name": null,
+    "symbol": "matic",
+    "category": ""
+  },
+  "memecore": {
+    "gecko_id": "memecore",
+    "artemis_id": "memecore",
+    "name": null,
+    "symbol": "M",
+    "category": ""
+  },
+  "merit-circle": {
+    "gecko_id": "merit-circle",
+    "artemis_id": "merit-circle",
+    "name": null,
+    "symbol": "mc",
+    "category": ""
+  },
+  "metaplex": {
+    "gecko_id": "metaplex",
+    "artemis_id": "metaplex",
+    "name": "Metaplex",
+    "symbol": "mplx",
+    "category": ""
+  },
+  "meteora": {
+    "gecko_id": "meteora",
+    "artemis_id": "meteora",
+    "name": "Meteora",
+    "symbol": "met",
+    "category": ""
+  },
+  "metis-token": {
+    "gecko_id": "metis-token",
+    "artemis_id": "metis",
+    "name": "Metis",
+    "symbol": "metis",
+    "category": ""
+  },
+  "magic-internet-money": {
+    "gecko_id": "magic-internet-money",
+    "artemis_id": "mim",
+    "name": "MIM",
+    "symbol": "mim",
+    "category": ""
+  },
+  "mines-of-dalarnia": {
+    "gecko_id": "mines-of-dalarnia",
+    "artemis_id": "mines-of-dalarnia",
+    "name": null,
+    "symbol": "dar",
+    "category": ""
+  },
+  "maker": {
+    "gecko_id": "maker",
+    "artemis_id": "mkr",
+    "name": null,
+    "symbol": "mkr",
+    "category": ""
+  },
+  "monad": {
+    "gecko_id": "monad",
+    "artemis_id": "monad",
+    "name": "Monad",
+    "symbol": "mon",
+    "category": ""
+  },
+  "monero": {
+    "gecko_id": "monero",
+    "artemis_id": "monero",
+    "name": "Monero",
+    "symbol": "xmr",
+    "category": ""
+  },
+  "mony": {
+    "gecko_id": "mony",
+    "artemis_id": "mony",
+    "name": null,
+    "symbol": "mony",
+    "category": ""
+  },
+  "moonbeam": {
+    "gecko_id": "moonbeam",
+    "artemis_id": "moonbeam",
+    "name": "Moonbeam",
+    "symbol": "glmr",
+    "category": ""
+  },
+  "moonriver": {
+    "gecko_id": "moonriver",
+    "artemis_id": "moonriver",
+    "name": "Moonriver",
+    "symbol": "movr",
+    "category": ""
+  },
+  "moonwell-artemis": {
+    "gecko_id": "moonwell-artemis",
+    "artemis_id": "moonwell",
+    "name": "Moonwell",
+    "symbol": "well",
+    "category": ""
+  },
+  "morpho": {
+    "gecko_id": "morpho",
+    "artemis_id": "morpho",
+    "name": "Morpho",
+    "symbol": "morpho",
+    "category": ""
+  },
+  "movement": {
+    "gecko_id": "movement",
+    "artemis_id": "movement",
+    "name": "Movement",
+    "symbol": "move",
+    "category": ""
+  },
+  "elrond-erd-2": {
+    "gecko_id": "elrond-erd-2",
+    "artemis_id": "multiversx",
+    "name": "Multiversx",
+    "symbol": "egld",
+    "category": ""
+  },
+  "metamask-usd": {
+    "gecko_id": "metamask-usd",
+    "artemis_id": "musd",
+    "name": "mUSD",
+    "symbol": "musd",
+    "category": ""
+  },
+  "mcdex": {
+    "gecko_id": "mcdex",
+    "artemis_id": "mux",
+    "name": "Mux Protocol",
+    "symbol": "mcb",
+    "category": ""
+  },
+  "real-mxn": {
+    "gecko_id": "real-mxn",
+    "artemis_id": "mxne",
+    "name": "MXNe",
+    "symbol": "mxne",
+    "category": ""
+  },
+  "mythos": {
+    "gecko_id": "mythos",
+    "artemis_id": "mythos",
+    "name": "Mythos",
+    "symbol": "myth",
+    "category": ""
+  },
+  "myx-finance": {
+    "gecko_id": "myx-finance",
+    "artemis_id": "myx",
+    "name": null,
+    "symbol": "myx",
+    "category": ""
+  },
+  "navi": {
+    "gecko_id": "navi",
+    "artemis_id": "navi",
+    "name": null,
+    "symbol": "navx",
+    "category": ""
+  },
+  "near": {
+    "gecko_id": "near",
+    "artemis_id": "near",
+    "name": "Near",
+    "symbol": "near",
+    "category": ""
+  },
+  "neo": {
+    "gecko_id": "neo",
+    "artemis_id": "neo",
+    "name": "Neo",
+    "symbol": "neo",
+    "category": ""
+  },
+  "neon": {
+    "gecko_id": "neon",
+    "artemis_id": "neon",
+    "name": "Neon",
+    "symbol": "neon",
+    "category": ""
+  },
+  "neurowebai": {
+    "gecko_id": "neurowebai",
+    "artemis_id": "neuroweb",
+    "name": "Neuroweb",
+    "symbol": "neuro",
+    "category": ""
+  },
+  "nexo": {
+    "gecko_id": "nexo",
+    "artemis_id": "nexo",
+    "name": "Nexo",
+    "symbol": "nexo",
+    "category": ""
+  },
+  "oasis-network": {
+    "gecko_id": "oasis-network",
+    "artemis_id": "oasis",
+    "name": "Oasis",
+    "symbol": "rose",
+    "category": ""
+  },
+  "okb": {
+    "gecko_id": "okb",
+    "artemis_id": "xlayer",
+    "name": "X Layer",
+    "symbol": "xlayer",
+    "category": ""
+  },
+  "ondo-finance": {
+    "gecko_id": "ondo-finance",
+    "artemis_id": "ondo",
+    "name": "Ondo Finance",
+    "symbol": "ondo",
+    "category": ""
+  },
+  "chain-2": {
+    "gecko_id": "chain-2",
+    "artemis_id": "onyxcoin",
+    "name": "Onyx",
+    "symbol": "xcn",
+    "category": ""
+  },
+  "optimism": {
+    "gecko_id": "optimism",
+    "artemis_id": "optimism",
+    "name": "OP Mainnet",
+    "symbol": "op",
+    "category": ""
+  },
+  "orca": {
+    "gecko_id": "orca",
+    "artemis_id": "orca",
+    "name": "Orca",
+    "symbol": "orca",
+    "category": ""
+  },
+  "ore": {
+    "gecko_id": "ore",
+    "artemis_id": "ore",
+    "name": "Ore Protocol",
+    "symbol": "ore",
+    "category": ""
+  },
+  "osmosis": {
+    "gecko_id": "osmosis",
+    "artemis_id": "osmosis",
+    "name": "Osmosis",
+    "symbol": "osmo",
+    "category": ""
+  },
+  "ousg": {
+    "gecko_id": "ousg",
+    "artemis_id": "ousg",
+    "name": "Ondo Short-Term US Treasuries Fund",
+    "symbol": "ousg",
+    "category": ""
+  },
+  "pancakeswap-token": {
+    "gecko_id": "pancakeswap-token",
+    "artemis_id": "pancakeswap",
+    "name": "PancakeSwap",
+    "symbol": "cake",
+    "category": ""
+  },
+  "pax-gold": {
+    "gecko_id": "pax-gold",
+    "artemis_id": "paxgold",
+    "name": "Paxos Gold",
+    "symbol": "paxg",
+    "category": ""
+  },
+  "pendle": {
+    "gecko_id": "pendle",
+    "artemis_id": "pendle",
+    "name": "Pendle",
+    "symbol": "pendle",
+    "category": ""
+  },
+  "pepe": {
+    "gecko_id": "pepe",
+    "artemis_id": "pepe",
+    "name": null,
+    "symbol": "pepe",
+    "category": ""
+  },
+  "perpetual-protocol": {
+    "gecko_id": "perpetual-protocol",
+    "artemis_id": "perpetual-protocol",
+    "name": "Perpetual Protocol",
+    "symbol": "perp",
+    "category": ""
+  },
+  "pi-network": {
+    "gecko_id": "pi-network",
+    "artemis_id": "pi_network",
+    "name": "Pi Network",
+    "symbol": "pi",
+    "category": ""
+  },
+  "plasma": {
+    "gecko_id": "plasma",
+    "artemis_id": "plasma",
+    "name": "Plasma",
+    "symbol": "xpl",
+    "category": ""
+  },
+  "plume": {
+    "gecko_id": "plume",
+    "artemis_id": "plume",
+    "name": "Plume",
+    "symbol": "plume",
+    "category": ""
+  },
+  "polkadot": {
+    "gecko_id": "polkadot",
+    "artemis_id": "polkadot",
+    "name": "Polkadot",
+    "symbol": "dot",
+    "category": ""
+  },
+  "polygon-ecosystem-token": {
+    "gecko_id": "polygon-ecosystem-token",
+    "artemis_id": "polygon",
+    "name": "Polygon PoS",
+    "symbol": "pol",
+    "category": ""
+  },
+  "hash-2": {
+    "gecko_id": "hash-2",
+    "artemis_id": "provenance",
+    "name": "Provenance",
+    "symbol": "hash",
+    "category": ""
+  },
+  "pudgy-penguins": {
+    "gecko_id": "pudgy-penguins",
+    "artemis_id": "pudgypenguins",
+    "name": "Pudgy Penguins",
+    "symbol": "pengu",
+    "category": ""
+  },
+  "pump-fun": {
+    "gecko_id": "pump-fun",
+    "artemis_id": "pumpfun",
+    "name": "Pump.fun",
+    "symbol": "pump",
+    "category": ""
+  },
+  "puso": {
+    "gecko_id": "puso",
+    "artemis_id": "puso",
+    "name": "PUSO",
+    "symbol": "puso",
+    "category": ""
+  },
+  "pyth-network": {
+    "gecko_id": "pyth-network",
+    "artemis_id": "pyth",
+    "name": "Pyth",
+    "symbol": "pyth",
+    "category": ""
+  },
+  "paypal-usd": {
+    "gecko_id": "paypal-usd",
+    "artemis_id": "pyusd",
+    "name": "PYUSD",
+    "symbol": "pyusd",
+    "category": ""
+  },
+  "quant-network": {
+    "gecko_id": "quant-network",
+    "artemis_id": "quant_network",
+    "name": null,
+    "symbol": "qnt",
+    "category": ""
+  },
+  "quickswap": {
+    "gecko_id": "quickswap",
+    "artemis_id": "quickswap",
+    "name": "Quickswap",
+    "symbol": "quick",
+    "category": ""
+  },
+  "radiant-capital": {
+    "gecko_id": "radiant-capital",
+    "artemis_id": "radiant",
+    "name": null,
+    "symbol": "rdnt",
+    "category": ""
+  },
+  "raider-aurum": {
+    "gecko_id": "raider-aurum",
+    "artemis_id": "raider-aurum",
+    "name": null,
+    "symbol": "aurum",
+    "category": ""
+  },
+  "rainbow-token-2": {
+    "gecko_id": "rainbow-token-2",
+    "artemis_id": "rainbow-token",
+    "name": null,
+    "symbol": "rbw",
+    "category": ""
+  },
+  "raydium": {
+    "gecko_id": "raydium",
+    "artemis_id": "raydium",
+    "name": "Raydium",
+    "symbol": "ray",
+    "category": ""
+  },
+  "redstone-oracles": {
+    "gecko_id": "redstone-oracles",
+    "artemis_id": "redstone",
+    "name": "Redstone",
+    "symbol": "red",
+    "category": ""
+  },
+  "ref-finance": {
+    "gecko_id": "ref-finance",
+    "artemis_id": "ref_finance",
+    "name": "REF Finance",
+    "symbol": "ref",
+    "category": ""
+  },
+  "render-token": {
+    "gecko_id": "render-token",
+    "artemis_id": "render",
+    "name": "Render",
+    "symbol": "render",
+    "category": ""
+  },
+  "renzo": {
+    "gecko_id": "renzo",
+    "artemis_id": "renzo_protocol",
+    "name": "Renzo Protocol",
+    "symbol": "rez",
+    "category": ""
+  },
+  "reserve-rights-token": {
+    "gecko_id": "reserve-rights-token",
+    "artemis_id": "reserve",
+    "name": "Reserve",
+    "symbol": "rsr",
+    "category": ""
+  },
+  "ripple": {
+    "gecko_id": "ripple",
+    "artemis_id": "ripple",
+    "name": "Ripple",
+    "symbol": "xrp",
+    "category": ""
+  },
+  "ripple-usd": {
+    "gecko_id": "ripple-usd",
+    "artemis_id": "rlusd",
+    "name": "RLUSD",
+    "symbol": "rlusd",
+    "category": ""
+  },
+  "rocket-pool": {
+    "gecko_id": "rocket-pool",
+    "artemis_id": "rocketpool",
+    "name": "Rocket Pool",
+    "symbol": "rpl",
+    "category": ""
+  },
+  "ronin": {
+    "gecko_id": "ronin",
+    "artemis_id": "ronin",
+    "name": "Ronin Network",
+    "symbol": "ron",
+    "category": ""
+  },
+  "safe": {
+    "gecko_id": "safe",
+    "artemis_id": "safe",
+    "name": "Safe",
+    "symbol": "safe",
+    "category": ""
+  },
+  "saros-finance": {
+    "gecko_id": "saros-finance",
+    "artemis_id": "saros",
+    "name": "Saros",
+    "symbol": "saros",
+    "category": ""
+  },
+  "stable-coin-2": {
+    "gecko_id": "stable-coin-2",
+    "artemis_id": "sbc",
+    "name": null,
+    "symbol": "sbc",
+    "category": ""
+  },
+  "scallop-2": {
+    "gecko_id": "scallop-2",
+    "artemis_id": "scallop",
+    "name": null,
+    "symbol": "sca",
+    "category": ""
+  },
+  "seamless-protocol": {
+    "gecko_id": "seamless-protocol",
+    "artemis_id": "seamlessprotocol",
+    "name": "Seamless Protocol",
+    "symbol": "seam",
+    "category": ""
+  },
+  "sei-network": {
+    "gecko_id": "sei-network",
+    "artemis_id": "sei",
+    "name": "Sei Network",
+    "symbol": "sei",
+    "category": ""
+  },
+  "shiba-inu": {
+    "gecko_id": "shiba-inu",
+    "artemis_id": "shiba_inu",
+    "name": "Shiba Inu",
+    "symbol": "shiba",
+    "category": ""
+  },
+  "solana": {
+    "gecko_id": "solana",
+    "artemis_id": "solana",
+    "name": "Solana",
+    "symbol": "sol",
+    "category": ""
+  },
+  "solayer": {
+    "gecko_id": "solayer",
+    "artemis_id": "solayer",
+    "name": "Solayer",
+    "symbol": "layer",
+    "category": ""
+  },
+  "sonic-3": {
+    "gecko_id": "sonic-3",
+    "artemis_id": "sonic",
+    "name": "Sonic",
+    "symbol": "s",
+    "category": ""
+  },
+  "sonne-finance": {
+    "gecko_id": "sonne-finance",
+    "artemis_id": "sonne_finance",
+    "name": "Sonne Finance",
+    "symbol": "sonne",
+    "category": ""
+  },
+  "spark-2": {
+    "gecko_id": "spark-2",
+    "artemis_id": "spark",
+    "name": "Spark",
+    "symbol": "spk",
+    "category": ""
+  },
+  "splinterlands": {
+    "gecko_id": "splinterlands",
+    "artemis_id": "splinterlands",
+    "name": null,
+    "symbol": "sps",
+    "category": ""
+  },
+  "blockstack": {
+    "gecko_id": "blockstack",
+    "artemis_id": "stacks",
+    "name": "Stacks",
+    "symbol": "stx",
+    "category": ""
+  },
+  "stader": {
+    "gecko_id": "stader",
+    "artemis_id": "stader",
+    "name": "Stader",
+    "symbol": "sd",
+    "category": ""
+  },
+  "stakewise": {
+    "gecko_id": "stakewise",
+    "artemis_id": "stakewise",
+    "name": null,
+    "symbol": "swise",
+    "category": ""
+  },
+  "star-atlas": {
+    "gecko_id": "star-atlas",
+    "artemis_id": "star-atlas",
+    "name": null,
+    "symbol": "atlas",
+    "category": ""
+  },
+  "star-atlas-dao": {
+    "gecko_id": "star-atlas-dao",
+    "artemis_id": "star-atlas-dao",
+    "name": null,
+    "symbol": "polis",
+    "category": ""
+  },
+  "stargate-finance": {
+    "gecko_id": "stargate-finance",
+    "artemis_id": "stargate",
+    "name": "Stargate",
+    "symbol": "stg",
+    "category": ""
+  },
+  "starknet": {
+    "gecko_id": "starknet",
+    "artemis_id": "starknet",
+    "name": "Starknet",
+    "symbol": "strk",
+    "category": ""
+  },
+  "stellar": {
+    "gecko_id": "stellar",
+    "artemis_id": "stellar",
+    "name": "Stellar",
+    "symbol": "xlm",
+    "category": ""
+  },
+  "story-2": {
+    "gecko_id": "story-2",
+    "artemis_id": "story",
+    "name": "Story Protocol",
+    "symbol": "ip",
+    "category": ""
+  },
+  "stride": {
+    "gecko_id": "stride",
+    "artemis_id": "stride",
+    "name": "Stride",
+    "symbol": "strd",
+    "category": ""
+  },
+  "sui": {
+    "gecko_id": "sui",
+    "artemis_id": "sui",
+    "name": "Sui",
+    "symbol": "sui",
+    "category": ""
+  },
+  "suilend": {
+    "gecko_id": "suilend",
+    "artemis_id": "suilend",
+    "name": null,
+    "symbol": "send",
+    "category": ""
+  },
+  "sun-token": {
+    "gecko_id": "sun-token",
+    "artemis_id": "sun",
+    "name": null,
+    "symbol": "sun",
+    "category": ""
+  },
+  "nusd": {
+    "gecko_id": "nusd",
+    "artemis_id": "s_usd",
+    "name": "SUSD",
+    "symbol": "s_usd",
+    "category": ""
+  },
+  "solayer-usd": {
+    "gecko_id": "solayer-usd",
+    "artemis_id": "susd",
+    "name": "sUSD",
+    "symbol": "susd",
+    "category": ""
+  },
+  "sushi": {
+    "gecko_id": "sushi",
+    "artemis_id": "sushiswap",
+    "name": "SushiSwap",
+    "symbol": "sushi",
+    "category": ""
+  },
+  "swell-network": {
+    "gecko_id": "swell-network",
+    "artemis_id": "swell",
+    "name": "Swell Network",
+    "symbol": "swell",
+    "category": ""
+  },
+  "havven": {
+    "gecko_id": "havven",
+    "artemis_id": "synthetix",
+    "name": "Synthetix",
+    "symbol": "snx",
+    "category": ""
+  },
+  "syrup": {
+    "gecko_id": "syrup",
+    "artemis_id": "syrup",
+    "name": "Maple",
+    "symbol": "syrup",
+    "category": ""
+  },
+  "syrupusdt": {
+    "gecko_id": "syrupusdt",
+    "artemis_id": "syrupusdt",
+    "name": "SyrupUSDT",
+    "symbol": "syrupusdt",
+    "category": ""
+  },
+  "telcoin": {
+    "gecko_id": "telcoin",
+    "artemis_id": "telcoin",
+    "name": "Telcoin",
+    "symbol": "tel",
+    "category": ""
+  },
+  "terra-luna": {
+    "gecko_id": "terra-luna",
+    "artemis_id": "terra",
+    "name": "Terra Luna Classic",
+    "symbol": "lunc",
+    "category": ""
+  },
+  "terra-luna-2": {
+    "gecko_id": "terra-luna-2",
+    "artemis_id": "terra2",
+    "name": "Terra Luna",
+    "symbol": "luna",
+    "category": ""
+  },
+  "tether-gold": {
+    "gecko_id": "tether-gold",
+    "artemis_id": "tethergold",
+    "name": "Tether Gold",
+    "symbol": "xaut",
+    "category": ""
+  },
+  "tezos": {
+    "gecko_id": "tezos",
+    "artemis_id": "tezos",
+    "name": "Tezos",
+    "symbol": "xtz",
+    "category": ""
+  },
+  "the-sandbox": {
+    "gecko_id": "the-sandbox",
+    "artemis_id": "the-sandbox",
+    "name": null,
+    "symbol": "sand",
+    "category": ""
+  },
+  "theta-token": {
+    "gecko_id": "theta-token",
+    "artemis_id": "theta",
+    "name": null,
+    "symbol": "theta",
+    "category": ""
+  },
+  "thorchain": {
+    "gecko_id": "thorchain",
+    "artemis_id": "thorchain",
+    "name": null,
+    "symbol": "thorchain",
+    "category": ""
+  },
+  "the-open-network": {
+    "gecko_id": "the-open-network",
+    "artemis_id": "ton",
+    "name": "TON",
+    "symbol": "ton",
+    "category": ""
+  },
+  "joe": {
+    "gecko_id": "joe",
+    "artemis_id": "trader_joe",
+    "name": "Trader Joe V1",
+    "symbol": "joe",
+    "category": ""
+  },
+  "tron": {
+    "gecko_id": "tron",
+    "artemis_id": "tron",
+    "name": "Tron",
+    "symbol": "trx",
+    "category": ""
+  },
+  "true-usd": {
+    "gecko_id": "true-usd",
+    "artemis_id": "tusd",
+    "name": "TUSD",
+    "symbol": "tusd",
+    "category": ""
+  },
+  "official-trump": {
+    "gecko_id": "official-trump",
+    "artemis_id": "trump",
+    "name": null,
+    "symbol": "trump",
+    "category": ""
+  },
+  "bilira": {
+    "gecko_id": "bilira",
+    "artemis_id": "tryb",
+    "name": "TRYB",
+    "symbol": "tryb",
+    "category": ""
+  },
+  "turbo": {
+    "gecko_id": "turbo",
+    "artemis_id": "turbo",
+    "name": "Turbo",
+    "symbol": "turbo",
+    "category": ""
+  },
+  "unicorn-milk": {
+    "gecko_id": "unicorn-milk",
+    "artemis_id": "unicorn-milk",
+    "name": null,
+    "symbol": "unim",
+    "category": ""
+  },
+  "uniswap": {
+    "gecko_id": "uniswap",
+    "artemis_id": "uniswap",
+    "name": "Uniswap",
+    "symbol": "uni",
+    "category": ""
+  },
+  "usual-usd": {
+    "gecko_id": "usual-usd",
+    "artemis_id": "usd0",
+    "name": "USD0",
+    "symbol": "usd0",
+    "category": ""
+  },
+  "usd1-wlfi": {
+    "gecko_id": "usd1-wlfi",
+    "artemis_id": "usd1",
+    "name": "USD1",
+    "symbol": "usd1",
+    "category": ""
+  },
+  "web-3-dollar": {
+    "gecko_id": "web-3-dollar",
+    "artemis_id": "usd3",
+    "name": "USD3",
+    "symbol": "usd3",
+    "category": ""
+  },
+  "usda-2": {
+    "gecko_id": "usda-2",
+    "artemis_id": "usda",
+    "name": "USDa",
+    "symbol": "usda",
+    "category": ""
+  },
+  "usdai": {
+    "gecko_id": "usdai",
+    "artemis_id": "usdai",
+    "name": "USDai",
+    "symbol": "usdai",
+    "category": ""
+  },
+  "usdb": {
+    "gecko_id": "usdb",
+    "artemis_id": "usdb",
+    "name": null,
+    "symbol": "usdb",
+    "category": ""
+  },
+  "usd-coin": {
+    "gecko_id": "usd-coin",
+    "artemis_id": "usdc",
+    "name": "USDC",
+    "symbol": "usdc",
+    "category": ""
+  },
+  "usd-coinvertible": {
+    "gecko_id": "usd-coinvertible",
+    "artemis_id": "usdcv",
+    "name": null,
+    "symbol": "usdcv",
+    "category": ""
+  },
+  "usdd": {
+    "gecko_id": "usdd",
+    "artemis_id": "usdd",
+    "name": "USDD",
+    "symbol": "usdd",
+    "category": ""
+  },
+  "ethena-usde": {
+    "gecko_id": "ethena-usde",
+    "artemis_id": "usde",
+    "name": "USDe",
+    "symbol": "usde",
+    "category": ""
+  },
+  "astherus-usdf": {
+    "gecko_id": "astherus-usdf",
+    "artemis_id": "usdf",
+    "name": "USDF",
+    "symbol": "usdf",
+    "category": ""
+  },
+  "falcon-finance": {
+    "gecko_id": "falcon-finance",
+    "artemis_id": "usdfalcon",
+    "name": "USDf",
+    "symbol": "usdfalcon",
+    "category": ""
+  },
+  "global-dollar": {
+    "gecko_id": "global-dollar",
+    "artemis_id": "usdg",
+    "name": "USDG",
+    "symbol": "usdg",
+    "category": ""
+  },
+  "glo-dollar": {
+    "gecko_id": "glo-dollar",
+    "artemis_id": "usdglo",
+    "name": "USDGLO",
+    "symbol": "usdglo",
+    "category": ""
+  },
+  "native-markets": {
+    "gecko_id": "native-markets",
+    "artemis_id": "usdh",
+    "name": "USDH",
+    "symbol": "usdh",
+    "category": ""
+  },
+  "hyper-usd": {
+    "gecko_id": "hyper-usd",
+    "artemis_id": "usdhl",
+    "name": "USDhl",
+    "symbol": "usdhl",
+    "category": ""
+  },
+  "placeholder-usdon": {
+    "gecko_id": "placeholder-usdon",
+    "artemis_id": "usdon",
+    "name": null,
+    "symbol": "usdon",
+    "category": ""
+  },
+  "paxos-standard": {
+    "gecko_id": "paxos-standard",
+    "artemis_id": "usdp",
+    "name": "USDP",
+    "symbol": "usdp",
+    "category": ""
+  },
+  "quantoz-usdq": {
+    "gecko_id": "quantoz-usdq",
+    "artemis_id": "usdq",
+    "name": null,
+    "symbol": "usdq",
+    "category": ""
+  },
+  "usds": {
+    "gecko_id": "usds",
+    "artemis_id": "usds",
+    "name": "USDS",
+    "symbol": "usds",
+    "category": ""
+  },
+  "perena-usd": {
+    "gecko_id": "perena-usd",
+    "artemis_id": "usd_star",
+    "name": "USD*",
+    "symbol": "usd*",
+    "category": ""
+  },
+  "tether": {
+    "gecko_id": "tether",
+    "artemis_id": "usdt",
+    "name": "USDT",
+    "symbol": "usdt",
+    "category": ""
+  },
+  "usdt0": {
+    "gecko_id": "usdt0",
+    "artemis_id": "usdt0",
+    "name": "USDT0",
+    "symbol": "usdt0",
+    "category": ""
+  },
+  "usdtb": {
+    "gecko_id": "usdtb",
+    "artemis_id": "usdtb",
+    "name": "USDtb",
+    "symbol": "usdtb",
+    "category": ""
+  },
+  "usdx-money-usdx": {
+    "gecko_id": "usdx-money-usdx",
+    "artemis_id": "usdx",
+    "name": "USDX",
+    "symbol": "usdx",
+    "category": ""
+  },
+  "last-usd": {
+    "gecko_id": "last-usd",
+    "artemis_id": "usdxl",
+    "name": "USDxl",
+    "symbol": "usdxl",
+    "category": ""
+  },
+  "ondo-us-dollar-yield": {
+    "gecko_id": "ondo-us-dollar-yield",
+    "artemis_id": "usdy",
+    "name": "USDY",
+    "symbol": "usdy",
+    "category": ""
+  },
+  "anzen-usdz": {
+    "gecko_id": "anzen-usdz",
+    "artemis_id": "usdz",
+    "name": "USDz",
+    "symbol": "usdz",
+    "category": ""
+  },
+  "noon-usn": {
+    "gecko_id": "noon-usn",
+    "artemis_id": "usn",
+    "name": "USN",
+    "symbol": "usn",
+    "category": ""
+  },
+  "resolv-usr": {
+    "gecko_id": "resolv-usr",
+    "artemis_id": "usr",
+    "name": "USR",
+    "symbol": "usr",
+    "category": ""
+  },
+  "usual": {
+    "gecko_id": "usual",
+    "artemis_id": "usual",
+    "name": "Usual",
+    "symbol": "usual",
+    "category": ""
+  },
+  "usx": {
+    "gecko_id": "usx",
+    "artemis_id": "usx",
+    "name": "USX",
+    "symbol": "usx",
+    "category": ""
+  },
+  "hashnote-usyc": {
+    "gecko_id": "hashnote-usyc",
+    "artemis_id": "usyc",
+    "name": "USYC",
+    "symbol": "usyc",
+    "category": ""
+  },
+  "uwu-lend": {
+    "gecko_id": "uwu-lend",
+    "artemis_id": "uwulend",
+    "name": null,
+    "symbol": "uwu",
+    "category": ""
+  },
+  "vaneck-treasury-fund": {
+    "gecko_id": "vaneck-treasury-fund",
+    "artemis_id": "vbill",
+    "name": null,
+    "symbol": "vbill",
+    "category": ""
+  },
+  "vnx-swiss-franc": {
+    "gecko_id": "vnx-swiss-franc",
+    "artemis_id": "vchf",
+    "name": "VCHF",
+    "symbol": "vchf",
+    "category": ""
+  },
+  "vechain": {
+    "gecko_id": "vechain",
+    "artemis_id": "vechain",
+    "name": "VeChain",
+    "symbol": "vet",
+    "category": ""
+  },
+  "velodrome-finance": {
+    "gecko_id": "velodrome-finance",
+    "artemis_id": "velodrome",
+    "name": "Velodrome",
+    "symbol": "velo",
+    "category": ""
+  },
+  "venus": {
+    "gecko_id": "venus",
+    "artemis_id": "venus",
+    "name": "Venus",
+    "symbol": "xvs",
+    "category": ""
+  },
+  "vertex-protocol": {
+    "gecko_id": "vertex-protocol",
+    "artemis_id": "vertex",
+    "name": "Vertex Protocol",
+    "symbol": "vrtx",
+    "category": ""
+  },
+  "vnx-british-pound": {
+    "gecko_id": "vnx-british-pound",
+    "artemis_id": "vgbp",
+    "name": "VGBP",
+    "symbol": "vgbp",
+    "category": ""
+  },
+  "virtual-protocol": {
+    "gecko_id": "virtual-protocol",
+    "artemis_id": "virtuals",
+    "name": "Virtuals Protocol",
+    "symbol": "virtual",
+    "category": ""
+  },
+  "walrus-2": {
+    "gecko_id": "walrus-2",
+    "artemis_id": "walrus",
+    "name": "Walrus",
+    "symbol": "wal",
+    "category": ""
+  },
+  "dogwifcoin": {
+    "gecko_id": "dogwifcoin",
+    "artemis_id": "wif",
+    "name": null,
+    "symbol": "wif",
+    "category": ""
+  },
+  "worldcoin-wld": {
+    "gecko_id": "worldcoin-wld",
+    "artemis_id": "worldchain",
+    "name": "WorldChain",
+    "symbol": "wld",
+    "category": ""
+  },
+  "world-liberty-financial": {
+    "gecko_id": "world-liberty-financial",
+    "artemis_id": "world_liberty_financial",
+    "name": "World Liberty Financial",
+    "symbol": "wlfi",
+    "category": ""
+  },
+  "wormhole": {
+    "gecko_id": "wormhole",
+    "artemis_id": "wormhole",
+    "name": "Wormhole",
+    "symbol": "w",
+    "category": ""
+  },
+  "xdce-crowd-sale": {
+    "gecko_id": "xdce-crowd-sale",
+    "artemis_id": "xdc_network",
+    "name": "XDC Network",
+    "symbol": "xdc",
+    "category": ""
+  },
+  "xsgd": {
+    "gecko_id": "xsgd",
+    "artemis_id": "xsgd",
+    "name": "XSGD",
+    "symbol": "xsgd",
+    "category": ""
+  },
+  "straitsx-xusd": {
+    "gecko_id": "straitsx-xusd",
+    "artemis_id": "xusd",
+    "name": "XUSD",
+    "symbol": "xusd",
+    "category": ""
+  },
+  "yield-guild-games": {
+    "gecko_id": "yield-guild-games",
+    "artemis_id": "yield-guild-games",
+    "name": null,
+    "symbol": "ygg",
+    "category": ""
+  },
+  "zarp-stablecoin": {
+    "gecko_id": "zarp-stablecoin",
+    "artemis_id": "zarp",
+    "name": "ZARP",
+    "symbol": "zarp",
+    "category": ""
+  },
+  "zcash": {
+    "gecko_id": "zcash",
+    "artemis_id": "zcash",
+    "name": "ZCash",
+    "symbol": "zec",
+    "category": ""
+  },
+  "zircuit": {
+    "gecko_id": "zircuit",
+    "artemis_id": "zircuit",
+    "name": "Zircuit",
+    "symbol": "zrc",
+    "category": ""
+  },
+  "zksync": {
+    "gecko_id": "zksync",
+    "artemis_id": "zksync",
+    "name": "zkSync Era",
+    "symbol": "zk",
+    "category": ""
+  },
+  "zora": {
+    "gecko_id": "zora",
+    "artemis_id": "zora",
+    "name": "Zora",
+    "symbol": "zora",
+    "category": ""
+  }
+}
