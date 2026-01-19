@@ -15,19 +15,19 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Data Pipeline"
+args = "Data Pipeline Scheduler"
 
 [[workflows.workflow]]
-name = "Data Pipeline"
+name = "Data Pipeline Scheduler"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python main.py"
+args = "python scheduler.py"
 
 [workflows.workflow.metadata]
 outputType = "console"
 
 [deployment]
-deploymentTarget = "scheduled"
-run = ["python", "main.py", "pull", "artemis"]
+deploymentTarget = "vm"
+run = ["python", "scheduler.py"]

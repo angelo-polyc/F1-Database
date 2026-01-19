@@ -7,6 +7,7 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
 ```
 .
 ├── main.py                  # CLI entry point
+├── scheduler.py             # Automated pull scheduler (1h DefiLlama, 24h Artemis)
 ├── query_data.py           # Query helper functions with CSV export
 ├── artemis_config.csv      # Configuration for Artemis API pulls (matrix format)
 ├── defillama_config.csv    # Configuration for DefiLlama API pulls
@@ -80,5 +81,11 @@ Artemis and DefiLlama use different ID systems:
 
 Cross-source queries require joining on the `source` column or using entity mapping.
 
-## Scheduled Deployment
-Configured to run `python main.py pull artemis` daily at 9am CET.
+## Automated Scheduling
+The `scheduler.py` runs continuously and executes pulls at different intervals:
+- **DefiLlama:** Every 1 hour
+- **Artemis:** Every 24 hours
+
+Both pulls run immediately on startup, then follow their respective intervals.
+
+Run manually: `python scheduler.py`
