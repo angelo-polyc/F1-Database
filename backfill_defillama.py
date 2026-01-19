@@ -3,10 +3,13 @@ import csv
 import time
 import requests
 import psycopg2
-from datetime import datetime
+from datetime import datetime, timedelta
 
 REQUEST_DELAY = 0.5
 BATCH_SIZE = 1000
+
+API_KEY = os.environ.get('DEFILLAMA_API_KEY')
+PRO_BASE_URL = "https://pro-api.llama.fi"
 
 ENDPOINTS = {
     'fees': {
@@ -52,6 +55,85 @@ def fetch_json(url):
         return None
     except Exception as e:
         return None
+
+def fetch_pro_json(endpoint):
+    if not API_KEY:
+        return None
+    url = f"{PRO_BASE_URL}/{API_KEY}{endpoint}"
+    try:
+        resp = requests.get(url, timeout=60)
+        if resp.status_code == 200:
+            return resp.json()
+        return None
+    except Exception as e:
+        return None
+
+def fetch_historical_inflows(slug, gecko_id, days=30):
+    records = []
+    if not API_KEY:
+        return records
+    
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=days)
+    current = start_date
+    
+    while current < end_date:
+        ts = int(current.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        data = fetch_pro_json(f"/api/inflows/{slug}/{ts}")
+        
+        if data:
+            inflows = data.get('inflows')
+            outflows = data.get('outflows')
+            dt = current.replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            if inflows is not None and inflows != 0:
+                records.append({
+                    'asset': gecko_id,
+                    'metric_name': 'INFLOW',
+                    'value': float(inflows),
+                    'pulled_at': dt
+                })
+            if outflows is not None and outflows != 0:
+                records.append({
+                    'asset': gecko_id,
+                    'metric_name': 'OUTFLOW',
+                    'value': float(outflows),
+                    'pulled_at': dt
+                })
+        
+        current += timedelta(days=1)
+        time.sleep(0.1)
+    
+    return records
+
+def fetch_historical_prices(gecko_id):
+    records = []
+    if not API_KEY:
+        return records
+    
+    coin_id = f"coingecko:{gecko_id}"
+    data = fetch_pro_json(f"/coins/chart/{coin_id}?period=365d&span=24")
+    
+    if data and 'coins' in data:
+        coin_data = data.get('coins', {}).get(coin_id, {})
+        prices = coin_data.get('prices', [])
+        
+        for entry in prices:
+            try:
+                ts = entry.get('timestamp')
+                price = entry.get('price')
+                if ts and price is not None and price != 0:
+                    dt = datetime.utcfromtimestamp(ts)
+                    records.append({
+                        'asset': gecko_id,
+                        'metric_name': 'PRICE',
+                        'value': float(price),
+                        'pulled_at': dt
+                    })
+            except (ValueError, TypeError):
+                continue
+    
+    return records
 
 def extract_historical_data(data, chart_key, metric_name, asset_id):
     records = []
@@ -157,6 +239,18 @@ def backfill_entity(entity, conn):
                 metrics_found.append(f"{config['metric']}({len(records)})")
         
         time.sleep(REQUEST_DELAY)
+    
+    if API_KEY:
+        price_records = fetch_historical_prices(gecko_id)
+        if price_records:
+            all_records.extend(price_records)
+            metrics_found.append(f"PRICE({len(price_records)})")
+        time.sleep(REQUEST_DELAY)
+        
+        inflow_records = fetch_historical_inflows(slug, gecko_id, days=30)
+        if inflow_records:
+            all_records.extend(inflow_records)
+            metrics_found.append(f"INFLOW({len(inflow_records)})")
     
     inserted = 0
     if all_records:

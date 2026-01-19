@@ -60,13 +60,15 @@ python main.py sources
 
 ### Artemis
 - **Assets:** 287 crypto assets and equities
-- **Metrics:** 25 (PRICE, MC, FEES, REVENUE, DAU, TXNS, etc.)
+- **Metrics:** PRICE, MC, FEES, REVENUE, DAU, TXNS, 24H_VOLUME, AVG_TXN_FEE, PERP_FEES, PERP_TXNS, LENDING_DEPOSITS, LENDING_BORROWS, SPOT_VOLUME, etc.
+- **Excluded Metrics:** VOLATILITY_90D_ANN, STABLECOIN_AVG_DAU, TOKENIZED_SHARES_TRADING_VOLUME, FDMV_NAV_RATIO
 - **ID Format:** Short IDs (e.g., `sol`, `eth`, `aave`)
 - **Requires:** ARTEMIS_API_KEY secret
 
 ### DefiLlama
 - **Assets:** 323 protocols and chains
-- **Metrics:** 42 (TVL, CHAIN_TVL, DEX_VOLUME_24H, FEES_24H, etc.)
+- **Metrics:** TVL, CHAIN_TVL, DEX_VOLUME_24H, FEES_24H, INFLOW, OUTFLOW, PRICE, etc.
+- **Pro API Metrics:** INFLOW, OUTFLOW, PRICE (require DEFILLAMA_API_KEY)
 - **ID Format:** CoinGecko IDs (e.g., `solana`, `ethereum`, `aave`)
 - **Requires:** DEFILLAMA_API_KEY secret (Pro API)
 
@@ -103,6 +105,7 @@ Fresh start (clears all data first): `python scheduler.py --fresh`
 ### DefiLlama Backfill
 The `backfill_defillama.py` script fetches historical time series data from DefiLlama summary endpoints:
 - **Endpoints:** fees, revenue, dexs, derivatives, aggregators, tvl (protocol)
+- **Pro API:** prices (1 year), inflows/outflows (30 days)
 - **Data:** Daily time series going back to 2011 for some assets
 - **Idempotent:** Uses ON CONFLICT DO NOTHING to prevent duplicates
 

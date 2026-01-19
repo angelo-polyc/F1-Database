@@ -8,6 +8,17 @@ from datetime import datetime, timedelta
 REQUEST_DELAY = 0.35
 BATCH_SIZE = 50
 
+EXCLUDED_METRICS = {
+    "VOLATILITY_90D_ANN",
+    "90-Day ANN Volatility",
+    "STABLECOIN_AVG_DAU",
+    "Stablecoins Average DAUs",
+    "TOKENIZED_SHARES_TRADING_VOLUME",
+    "Stock Trading Volume",
+    "FDMV_NAV_RATIO",
+    "FDMV / NAV",
+}
+
 FRIENDLY_TO_API_ID = {
     "Fees": "FEES",
     "Open Interest": "OPEN_INTEREST",
@@ -31,15 +42,16 @@ FRIENDLY_TO_API_ID = {
     "Enterprise Value": "EQ_EV",
     "Latest Cash": "EQ_CASH_AND_CASH_EQUIVALENTS",
     "Debt": "EQ_TOTAL_DEBT",
-    "Stock Trading Volume": "TOKENIZED_SHARES_TRADING_VOLUME",
     "Stablecoin Supply (USD)": "STABLECOIN_MC",
     "Filtered Stablecoin Transactions": "STABLECOIN_DAILY_TXNS",
-    "90-Day ANN Volatility": "VOLATILITY_90D_ANN",
-    "Daily Token Trading Volume": "TOKEN_TRADING_VOLUME",
+    "Daily Token Trading Volume": "24H_VOLUME",
     "Net Asset Value": "NAV",
-    "FDMV / NAV": "FDMV_NAV_RATIO",
-    "Stablecoins Average DAUs": "STABLECOIN_AVG_DAU",
     "Stablecoin Average Transaction Value": "AVERAGE_TRANSACTION_VALUE",
+    "Average Transaction Fee": "AVG_TXN_FEE",
+    "Perpetual Fees": "PERP_FEES",
+    "Perpetual Transactions": "PERP_TXNS",
+    "Lending Deposits": "LENDING_DEPOSITS",
+    "Lending Borrows": "LENDING_BORROWS",
 }
 
 def load_config():
@@ -57,8 +69,12 @@ def load_config():
                 asset_id = row['asset']
                 
                 for metric in metric_cols:
+                    if metric in EXCLUDED_METRICS:
+                        continue
                     if row.get(metric) in ['1', '1.0', 1, 1.0]:
                         api_id = FRIENDLY_TO_API_ID.get(metric, metric)
+                        if api_id in EXCLUDED_METRICS:
+                            continue
                         if api_id not in pull_config:
                             pull_config[api_id] = []
                         if asset_id not in pull_config[api_id]:

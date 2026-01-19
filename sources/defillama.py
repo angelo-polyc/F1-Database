@@ -1,7 +1,9 @@
+import os
 import csv
 import time
 import requests
 from typing import Optional
+from datetime import datetime
 from sources.base import BaseSource
 
 METRIC_MAP = {
@@ -56,6 +58,9 @@ METRIC_MAP = {
     'stablecoins_circulatingPrevDay_peggedUSD': 'STABLECOIN_SUPPLY_PREV_DAY',
     'stablecoins_circulatingPrevWeek_peggedUSD': 'STABLECOIN_SUPPLY_PREV_WEEK',
     'stablecoins_price': 'STABLECOIN_PRICE',
+    'inflows': 'INFLOW',
+    'outflows': 'OUTFLOW',
+    'price': 'PRICE',
 }
 
 REQUEST_DELAY = 1.0
@@ -68,6 +73,8 @@ class DefiLlamaSource(BaseSource):
     
     def __init__(self):
         self.config_path = "defillama_config.csv"
+        self.api_key = os.environ.get("DEFILLAMA_API_KEY")
+        self.base_url = "https://pro-api.llama.fi" if self.api_key else "https://api.llama.fi"
     
     def fetch_json(self, url: str) -> Optional[dict]:
         try:
@@ -77,6 +84,39 @@ class DefiLlamaSource(BaseSource):
         except Exception as e:
             print(f"  Error fetching {url}: {e}")
             return None
+    
+    def fetch_pro_json(self, endpoint: str) -> Optional[dict]:
+        if not self.api_key:
+            return None
+        url = f"{self.base_url}/{self.api_key}{endpoint}"
+        try:
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            return None
+    
+    def fetch_inflows(self, protocol_slug: str) -> dict:
+        if not self.api_key:
+            return {}
+        today_ts = int(datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        data = self.fetch_pro_json(f"/api/inflows/{protocol_slug}/{today_ts}")
+        if data:
+            return {
+                'inflows': data.get('inflows'),
+                'outflows': data.get('outflows')
+            }
+        return {}
+    
+    def fetch_price(self, gecko_id: str) -> Optional[float]:
+        if not self.api_key:
+            return None
+        data = self.fetch_pro_json(f"/coins/prices/current/coingecko:{gecko_id}")
+        if data and 'coins' in data:
+            coin_key = f"coingecko:{gecko_id}"
+            coin_data = data.get('coins', {}).get(coin_key, {})
+            return coin_data.get('price')
+        return None
     
     def build_lookup(self, data: list, key_fields: list) -> dict:
         lookup = {}
@@ -268,6 +308,18 @@ class DefiLlamaSource(BaseSource):
                 circ_week = st.get('circulatingPrevWeek', {})
                 raw_metrics['stablecoins_circulatingPrevWeek_peggedUSD'] = circ_week.get('peggedUSD') if isinstance(circ_week, dict) else None
                 raw_metrics['stablecoins_price'] = st.get('price')
+            
+            if self.api_key and p:
+                protocol_slug = p.get('slug', '')
+                if protocol_slug:
+                    inflow_data = self.fetch_inflows(protocol_slug)
+                    raw_metrics['inflows'] = inflow_data.get('inflows')
+                    raw_metrics['outflows'] = inflow_data.get('outflows')
+            
+            if self.api_key:
+                price = self.fetch_price(gecko_id)
+                if price is not None:
+                    raw_metrics['price'] = price
             
             entity_records = 0
             for raw_field, value in raw_metrics.items():
