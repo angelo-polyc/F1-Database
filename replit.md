@@ -96,6 +96,7 @@ The `scheduler.py` runs continuously and executes pulls at different intervals:
 Both pulls run immediately on startup, then follow their respective intervals.
 
 Run manually: `python scheduler.py`
+Fresh start (clears all data first): `python scheduler.py --fresh`
 
 ## Historical Backfill
 

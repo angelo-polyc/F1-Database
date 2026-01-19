@@ -22,12 +22,12 @@ args = "Data Pipeline Scheduler"
 name = "Data Pipeline Scheduler"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python scheduler.py"
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scheduler.py --fresh"
 
 [deployment]
 deploymentTarget = "gce"
