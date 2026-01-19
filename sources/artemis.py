@@ -66,10 +66,10 @@ class ArtemisSource(BaseSource):
         
         with open(self.config_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
-            headers = reader.fieldnames
+            headers = reader.fieldnames or []
             
-            pull_idx = headers.index('Pull')
-            metric_cols = headers[pull_idx + 1:]
+            pull_idx = headers.index('Pull') if 'Pull' in headers else -1
+            metric_cols = headers[pull_idx + 1:] if pull_idx >= 0 else []
             
             for row in reader:
                 if row['Pull'] in ['1', '1.0', 1, 1.0]:
