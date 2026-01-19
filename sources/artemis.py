@@ -58,7 +58,7 @@ class ArtemisSource(BaseSource):
         self.api_key = os.environ.get("ARTEMIS_API_KEY")
         if not self.api_key:
             raise ValueError("ARTEMIS_API_KEY environment variable not set")
-        self.config_path = "artemis_pull_config.csv"
+        self.config_path = "artemis_config.csv"
         self.base_url = "https://api.artemisxyz.com/data"
     
     def load_config_from_csv(self) -> dict:

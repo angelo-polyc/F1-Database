@@ -8,7 +8,7 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
 .
 ├── main.py                  # CLI entry point
 ├── query_data.py           # Query helper functions with CSV export
-├── artemis_pull_config.csv # Configuration for Artemis API pulls (matrix format)
+├── artemis_config.csv      # Configuration for Artemis API pulls (matrix format)
 ├── defillama_config.csv    # Configuration for DefiLlama API pulls
 ├── db/
 │   ├── __init__.py
