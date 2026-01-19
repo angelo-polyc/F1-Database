@@ -113,7 +113,7 @@ def insert_records_batch(conn, records):
         cur.executemany("""
             INSERT INTO metrics (pulled_at, source, asset, metric_name, value)
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT DO NOTHING
+            ON CONFLICT (source, asset, metric_name, (pulled_at::date)) DO NOTHING
         """, values)
         inserted += len(batch)
     

@@ -37,6 +37,11 @@ def setup_database():
         ON metrics (source, asset, metric_name, pulled_at);
     """)
     
+    cur.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_metrics_unique_date 
+        ON metrics (source, asset, metric_name, (pulled_at::date));
+    """)
+    
     conn.commit()
     cur.close()
     conn.close()
