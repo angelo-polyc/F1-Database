@@ -68,7 +68,7 @@ python main.py sources
 - **Assets:** 323 protocols and chains
 - **Metrics:** 42 (TVL, CHAIN_TVL, DEX_VOLUME_24H, FEES_24H, etc.)
 - **ID Format:** CoinGecko IDs (e.g., `solana`, `ethereum`, `aave`)
-- **Requires:** No API key (free API)
+- **Requires:** DEFILLAMA_API_KEY secret (Pro API)
 
 ## Adding New Sources
 1. Create a new file in `sources/` (e.g., `sources/newsource.py`)
