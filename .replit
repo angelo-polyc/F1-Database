@@ -30,5 +30,6 @@ args = "python scheduler.py"
 outputType = "console"
 
 [deployment]
-deploymentTarget = "vm"
+deploymentTarget = "gce"
 run = ["python", "scheduler.py"]
+ignorePorts = true
