@@ -37,16 +37,14 @@ class BaseSource(ABC):
         conn = get_connection()
         cur = conn.cursor()
         
-        insert_query = """
-            INSERT INTO metrics (pulled_at, source, asset, metric_name, value)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (source, asset, metric_name, (pulled_at::date)) DO NOTHING
-        """
-        
         pulled_at = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         rows = [(pulled_at, self.source_name, r["asset"], r["metric_name"], r["value"]) for r in records]
         
-        cur.executemany(insert_query, rows)
+        cur.executemany("""
+            INSERT INTO metrics (pulled_at, source, asset, metric_name, value)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (source, asset, metric_name, pulled_at) DO UPDATE SET value = EXCLUDED.value
+        """, rows)
         conn.commit()
         cur.close()
         conn.close()
