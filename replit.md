@@ -130,8 +130,8 @@ Each source uses different ID formats, mapped via entity_source_ids:
 - Artemis: `sol`, `eth`, `btc` (short tickers) - **364 assets mapped**
 - DefiLlama: `solana`, `ethereum`, `bitcoin` (CoinGecko IDs / slugs) - **343 entities mapped**
 - Velo: `SOL`, `ETH`, `BTC` (uppercase symbols) - **482 coins mapped**
-- **53 entities** have all 3 sources mapped for full cross-source analysis
-- **973 total entities** after deduplication (merged ALT/AltLayer, Arkham/ARKM, Polygon/POL, etc.)
+- **54 entities** have all 3 sources mapped for full cross-source analysis
+- **971 total entities** after deduplication (merged ALT/AltLayer, Arkham/ARKM, Polygon/POL, ACX/Across, XPL/Plasma, etc.)
 
 ### Cross-Source Query Example
 ```sql
