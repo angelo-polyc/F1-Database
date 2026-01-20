@@ -5,7 +5,7 @@ import requests
 import psycopg2
 from datetime import datetime, timedelta
 
-REQUEST_DELAY = 0.5
+REQUEST_DELAY = 0.15
 BATCH_SIZE = 1000
 
 API_KEY = os.environ.get('DEFILLAMA_API_KEY')
@@ -102,7 +102,7 @@ def fetch_historical_inflows(slug, gecko_id, days=30):
                 })
         
         current += timedelta(days=1)
-        time.sleep(0.1)
+        time.sleep(0.08)
     
     return records
 

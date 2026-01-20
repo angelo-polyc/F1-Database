@@ -5,7 +5,7 @@ import requests
 import psycopg2
 from datetime import datetime, timedelta
 
-REQUEST_DELAY = 0.35
+REQUEST_DELAY = 0.2
 BATCH_SIZE = 50
 
 EXCLUDED_METRICS = {
