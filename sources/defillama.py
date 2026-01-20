@@ -596,7 +596,11 @@ class DefiLlamaSource(BaseSource):
                 chain_fees_data = ed.get('chain_fees')
                 if chain_fees_data:
                     raw_metrics['chain_fees_24h'] = chain_fees_data.get('total24h')
-                    raw_metrics['chain_app_fees_24h'] = chain_fees_data.get('totalDataChartBreakdown', [{}])[-1].get('Fees') if chain_fees_data.get('totalDataChartBreakdown') else None
+                    breakdown = chain_fees_data.get('totalDataChartBreakdown')
+                    if breakdown and isinstance(breakdown, list) and len(breakdown) > 0:
+                        last_entry = breakdown[-1]
+                        if isinstance(last_entry, dict):
+                            raw_metrics['chain_app_fees_24h'] = last_entry.get('Fees')
                 
                 chain_rev_data = ed.get('chain_revenue')
                 if chain_rev_data:

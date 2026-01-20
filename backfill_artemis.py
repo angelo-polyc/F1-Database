@@ -6,7 +6,7 @@ import psycopg2
 from datetime import datetime, timedelta
 
 REQUEST_DELAY = 0.12  # ~8 req/sec
-BATCH_SIZE = 50
+BATCH_SIZE = 250
 
 EXCLUDED_METRICS = {
     "VOLATILITY_90D_ANN",
