@@ -71,7 +71,8 @@ python main.py sources
 - **Protocol Metrics:** TVL, FEES_24H, REVENUE_24H, DEX_VOLUME_24H, EARNINGS, INCENTIVES, INFLOW, OUTFLOW
 - **Pro API Metrics:** INFLOW, OUTFLOW (require DEFILLAMA_API_KEY)
 - **Removed:** PRICE, MCAP, FDV (use CoinGecko integration instead)
-- **Chain vs Protocol:** Auto-detected using DefiLlama /chains API for accurate categorization
+- **Chain vs Protocol:** Auto-detected using DefiLlama /chains API (599 chains) for accurate categorization
+- **Slug Resolution:** Chain fetchers use slug > name > gecko_id fallback order to handle entities with blank names
 - **ID Format:** CoinGecko IDs (e.g., `solana`, `ethereum`, `aave`)
 - **Requires:** DEFILLAMA_API_KEY secret (Pro API)
 
