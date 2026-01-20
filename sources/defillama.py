@@ -425,72 +425,6 @@ class DefiLlamaSource(BaseSource):
         print(f"    Found {len(official_chains)} official chains")
         
         print(f"\nProcessing {len(config_entities)} entities...")
-        start_entity = time.time()
-        
-        entity_url_requests = []
-        entity_metadata = []
-        
-        for entity in config_entities:
-            gecko_id = entity.get('gecko_id', '').lower()
-            slug = entity.get('slug', '').lower()
-            name = entity.get('name', '').lower()
-            
-            if not gecko_id:
-                continue
-            
-            is_chain = (name in official_chains or gecko_id in official_chains or 
-                       slug in official_chains or name in EXTRA_CHAINS or gecko_id in EXTRA_CHAINS)
-            
-            p = protocols_lookup.get(gecko_id) or protocols_lookup.get(slug) or protocols_lookup.get(name)
-            protocol_slug = p.get('slug', '') if p else ''
-            
-            chain_slug = self._get_chain_slug(entity.get('name', ''), gecko_id, slug)
-            
-            urls_for_entity = {}
-            
-            if is_chain and chain_slug:
-                urls_for_entity['chain_fees'] = f'https://api.llama.fi/overview/fees/{chain_slug}'
-                urls_for_entity['chain_revenue'] = f'https://api.llama.fi/overview/fees/{chain_slug}?dataType=dailyRevenue'
-                urls_for_entity['chain_dex'] = f'https://api.llama.fi/overview/dexs/{chain_slug}'
-                urls_for_entity['chain_perps'] = f'https://api.llama.fi/overview/derivatives/{chain_slug}'
-                urls_for_entity['chain_options'] = f'https://api.llama.fi/overview/options/{chain_slug}'
-            elif protocol_slug:
-                urls_for_entity['protocol_fees'] = f'https://api.llama.fi/summary/fees/{protocol_slug}'
-                urls_for_entity['protocol_revenue'] = f'https://api.llama.fi/summary/fees/{protocol_slug}?dataType=dailyRevenue'
-            
-            if gecko_id in STABLECOIN_IDS:
-                stablecoin_api_id = STABLECOIN_IDS[gecko_id]
-                urls_for_entity['stablecoin'] = f'https://stablecoins.llama.fi/stablecoin/{stablecoin_api_id}'
-            
-            if gecko_id in BRIDGE_GECKO_IDS:
-                br_data = bridges_lookup.get(name)
-                if br_data and br_data.get('id'):
-                    urls_for_entity['bridge'] = f'https://bridges.llama.fi/bridge/{br_data["id"]}'
-            
-            for url_key, url in urls_for_entity.items():
-                entity_url_requests.append(url)
-                entity_metadata.append({
-                    'gecko_id': gecko_id,
-                    'slug': slug,
-                    'name': name,
-                    'is_chain': is_chain,
-                    'url_key': url_key,
-                    'protocol': p,
-                    'entity': entity
-                })
-        
-        print(f"  Fetching {len(entity_url_requests)} per-entity URLs in parallel...")
-        entity_results = self.fetch_urls_parallel(entity_url_requests)
-        print(f"  Entity fetch completed in {time.time() - start_entity:.1f}s")
-        
-        entity_data = {}
-        for i, url in enumerate(entity_url_requests):
-            meta = entity_metadata[i]
-            gecko_id = meta['gecko_id']
-            url_key = meta['url_key']
-            if gecko_id not in entity_data:
-                entity_data[gecko_id] = {'meta': meta, 'responses': {}}
-            entity_data[gecko_id]['responses'][url_key] = entity_results.get(url)
         
         all_records = []
         entities_with_data = 0
@@ -589,60 +523,6 @@ class DefiLlamaSource(BaseSource):
                 circ_week = st.get('circulatingPrevWeek', {})
                 raw_metrics['stablecoins_circulatingPrevWeek_peggedUSD'] = circ_week.get('peggedUSD') if isinstance(circ_week, dict) else None
                 raw_metrics['stablecoins_price'] = st.get('price')
-            
-            ed = entity_data.get(gecko_id, {}).get('responses', {})
-            
-            if is_chain:
-                chain_fees_data = ed.get('chain_fees')
-                if chain_fees_data:
-                    raw_metrics['chain_fees_24h'] = chain_fees_data.get('total24h')
-                    breakdown = chain_fees_data.get('totalDataChartBreakdown')
-                    if breakdown and isinstance(breakdown, list) and len(breakdown) > 0:
-                        last_entry = breakdown[-1]
-                        if isinstance(last_entry, dict):
-                            raw_metrics['chain_app_fees_24h'] = last_entry.get('Fees')
-                
-                chain_rev_data = ed.get('chain_revenue')
-                if chain_rev_data:
-                    raw_metrics['chain_revenue_24h'] = chain_rev_data.get('total24h')
-                
-                chain_dex_data = ed.get('chain_dex')
-                if chain_dex_data:
-                    raw_metrics['chain_dex_volume_24h'] = chain_dex_data.get('total24h')
-                
-                chain_perps_data = ed.get('chain_perps')
-                if chain_perps_data:
-                    raw_metrics['chain_perps_volume_24h'] = chain_perps_data.get('total24h')
-                
-                chain_opts_data = ed.get('chain_options')
-                if chain_opts_data:
-                    raw_metrics['chain_options_volume_24h'] = chain_opts_data.get('total24h')
-            else:
-                proto_fees_data = ed.get('protocol_fees')
-                if proto_fees_data:
-                    total_fees = proto_fees_data.get('total24h', 0) or 0
-                    if total_fees > 0:
-                        raw_metrics['fees_total24h'] = total_fees
-                
-                proto_rev_data = ed.get('protocol_revenue')
-                if proto_rev_data:
-                    daily_revenue = proto_rev_data.get('total24h', 0) or 0
-                    if daily_revenue > 0:
-                        raw_metrics['protocol_earnings'] = daily_revenue
-            
-            stable_data = ed.get('stablecoin')
-            if stable_data:
-                circulating = stable_data.get('currentChainBalances', {})
-                if isinstance(circulating, dict):
-                    total_circ = sum(v for v in circulating.values() if isinstance(v, (int, float)))
-                    if total_circ > 0:
-                        raw_metrics['stablecoins_circulating_peggedUSD'] = total_circ
-            
-            bridge_data = ed.get('bridge')
-            if bridge_data:
-                raw_metrics['bridges_lastDailyVolume'] = bridge_data.get('lastDailyVolume')
-                raw_metrics['bridges_weeklyVolume'] = bridge_data.get('weeklyVolume')
-                raw_metrics['bridges_monthlyVolume'] = bridge_data.get('monthlyVolume')
             
             entity_records = 0
             for raw_field, value in raw_metrics.items():
