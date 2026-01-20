@@ -110,6 +110,7 @@ def main():
     print("=" * 60)
     run_backfill("defillama")
     run_backfill("artemis")
+    run_backfill("velo")
     
     print("\nRunning initial pulls...")
     now_utc = datetime.now(timezone.utc)

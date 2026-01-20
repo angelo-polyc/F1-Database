@@ -37,6 +37,20 @@ def setup_database():
         ON metrics (source, asset, metric_name, pulled_at);
     """)
     
+    # Add unique constraint for ON CONFLICT to work (if not exists)
+    cur.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint 
+                WHERE conname = 'metrics_source_asset_metric_pulled_unique'
+            ) THEN
+                ALTER TABLE metrics ADD CONSTRAINT metrics_source_asset_metric_pulled_unique
+                UNIQUE (source, asset, metric_name, pulled_at);
+            END IF;
+        END $$;
+    """)
+    
     conn.commit()
     cur.close()
     conn.close()
