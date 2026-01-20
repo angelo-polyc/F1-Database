@@ -5,44 +5,40 @@ import requests
 import psycopg2
 from datetime import datetime, timedelta
 
-REQUEST_DELAY = 0.075
+REQUEST_DELAY = 0.15
 BATCH_SIZE = 1000
 
 API_KEY = os.environ.get('DEFILLAMA_API_KEY')
 PRO_BASE_URL = "https://pro-api.llama.fi"
-FREE_BASE_URL = "https://api.llama.fi"
-
-def get_base_url():
-    return f"{PRO_BASE_URL}/{API_KEY}" if API_KEY else FREE_BASE_URL
 
 ENDPOINTS = {
     'fees': {
-        'url_template': '/api/summary/fees/{slug}',
+        'url': 'https://api.llama.fi/summary/fees/{slug}',
         'chart_key': 'totalDataChart',
         'metric': 'FEES'
     },
     'revenue': {
-        'url_template': '/api/summary/fees/{slug}?dataType=dailyRevenue',
+        'url': 'https://api.llama.fi/summary/fees/{slug}?dataType=dailyRevenue',
         'chart_key': 'totalDataChart',
         'metric': 'REVENUE'
     },
     'dexs': {
-        'url_template': '/api/summary/dexs/{slug}',
+        'url': 'https://api.llama.fi/summary/dexs/{slug}',
         'chart_key': 'totalDataChart',
         'metric': 'DEX_VOLUME'
     },
     'derivatives': {
-        'url_template': '/api/summary/derivatives/{slug}',
+        'url': 'https://api.llama.fi/summary/derivatives/{slug}',
         'chart_key': 'totalDataChart',
         'metric': 'DERIVATIVES_VOLUME'
     },
     'aggregators': {
-        'url_template': '/api/summary/aggregators/{slug}',
+        'url': 'https://api.llama.fi/summary/aggregators/{slug}',
         'chart_key': 'totalDataChart',
         'metric': 'AGGREGATOR_VOLUME'
     },
     'tvl': {
-        'url_template': '/api/protocol/{slug}',
+        'url': 'https://api.llama.fi/protocol/{slug}',
         'chart_key': 'tvl',
         'metric': 'TVL'
     }
@@ -51,9 +47,7 @@ ENDPOINTS = {
 def get_db_connection():
     return psycopg2.connect(os.environ['DATABASE_URL'])
 
-def fetch_json(endpoint):
-    base = get_base_url()
-    url = f"{base}{endpoint}"
+def fetch_json(url):
     try:
         resp = requests.get(url, timeout=60)
         if resp.status_code == 200:
@@ -108,7 +102,7 @@ def fetch_historical_inflows(slug, gecko_id, days=30):
                 })
         
         current += timedelta(days=1)
-        time.sleep(0.075)
+        time.sleep(0.08)
     
     return records
 
@@ -230,8 +224,8 @@ def backfill_entity(entity, conn):
     metrics_found = []
     
     for endpoint_name, config in ENDPOINTS.items():
-        endpoint = config['url_template'].format(slug=slug)
-        data = fetch_json(endpoint)
+        url = config['url'].format(slug=slug)
+        data = fetch_json(url)
         
         if data:
             records = extract_historical_data(

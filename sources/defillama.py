@@ -63,7 +63,7 @@ METRIC_MAP = {
     'price': 'PRICE',
 }
 
-REQUEST_DELAY = 0.075
+REQUEST_DELAY = 1.0
 
 class DefiLlamaSource(BaseSource):
     

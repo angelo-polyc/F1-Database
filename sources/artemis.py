@@ -11,8 +11,8 @@ GARBAGE_VALUES = {
     "Latest data not available for this asset.",
 }
 
-BATCH_SIZE = 200
-REQUEST_DELAY = 0.1
+BATCH_SIZE = 250
+REQUEST_DELAY = 0.3
 
 EXCLUDED_METRICS = {
     "VOLATILITY_90D_ANN",
