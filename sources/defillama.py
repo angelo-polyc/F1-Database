@@ -9,8 +9,8 @@ from sources.base import BaseSource
 METRIC_MAP = {
     'protocols_tvl': 'TVL',
     'chains_tvl': 'CHAIN_TVL',
-    'protocols_mcap': 'MC',
-    'protocols_fdv': 'FDMC',
+    'protocols_mcap': 'MCAP',
+    'protocols_fdv': 'FDV',
     'protocols_staking': 'STAKING',
     'protocols_borrowed': 'BORROWED',
     'protocols_pool2': 'POOL2',

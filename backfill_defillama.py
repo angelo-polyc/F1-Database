@@ -107,31 +107,154 @@ def fetch_historical_inflows(slug, gecko_id, days=30):
     return records
 
 def fetch_historical_prices(gecko_id):
+    return []
+
+
+def fetch_batch_historical_prices(gecko_ids, days=365):
     records = []
-    if not API_KEY:
-        return records
     
-    coin_id = f"coingecko:{gecko_id}"
-    data = fetch_pro_json(f"/coins/chart/{coin_id}?period=365d&span=24")
+    coin_ids_str = ','.join([f"coingecko:{gid}" for gid in gecko_ids])
+    end_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     
-    if data and 'coins' in data:
-        coin_data = data.get('coins', {}).get(coin_id, {})
-        prices = coin_data.get('prices', [])
+    for day_offset in range(days):
+        dt = end_date - timedelta(days=day_offset)
+        ts = int(dt.timestamp())
+        url = f"https://coins.llama.fi/prices/historical/{ts}/{coin_ids_str}?searchWidth=4h"
+        data = fetch_json(url)
         
-        for entry in prices:
+        if data and 'coins' in data:
+            for coin_id, coin_data in data['coins'].items():
+                try:
+                    price = coin_data.get('price')
+                    gecko_id = coin_id.replace('coingecko:', '')
+                    if price is not None and price != 0:
+                        records.append({
+                            'asset': gecko_id,
+                            'metric_name': 'PRICE',
+                            'value': float(price),
+                            'pulled_at': dt
+                        })
+                except (ValueError, TypeError):
+                    continue
+        
+        time.sleep(REQUEST_DELAY)
+        
+        if (day_offset + 1) % 30 == 0:
+            print(f"    Price backfill: {day_offset + 1}/{days} days processed, {len(records)} records")
+    
+    return records
+
+def fetch_chain_historical_tvl(chain_name, gecko_id):
+    records = []
+    chain_slug = chain_name.lower().replace(' ', '-')
+    url = f"https://api.llama.fi/v2/historicalChainTvl/{chain_slug}"
+    data = fetch_json(url)
+    
+    if data and isinstance(data, list):
+        for entry in data:
             try:
-                ts = entry.get('timestamp')
-                price = entry.get('price')
-                if ts and price is not None and price != 0:
+                ts = entry.get('date')
+                tvl = entry.get('tvl')
+                if ts and tvl is not None and tvl != 0:
                     dt = datetime.utcfromtimestamp(ts)
                     records.append({
                         'asset': gecko_id,
-                        'metric_name': 'PRICE',
-                        'value': float(price),
+                        'metric_name': 'CHAIN_TVL',
+                        'value': float(tvl),
                         'pulled_at': dt
                     })
             except (ValueError, TypeError):
                 continue
+    
+    return records
+
+def fetch_chain_fees(chain_name, gecko_id):
+    records = []
+    chain_slug = chain_name.lower().replace(' ', '-')
+    url = f"https://api.llama.fi/overview/fees/{chain_slug}"
+    data = fetch_json(url)
+    
+    if data:
+        chart = data.get('totalDataChart', [])
+        for entry in chart:
+            try:
+                if isinstance(entry, list) and len(entry) >= 2:
+                    ts, value = entry[0], entry[1]
+                elif isinstance(entry, dict):
+                    ts = entry.get('date') or entry.get('timestamp')
+                    value = entry.get('value') or entry.get('fees')
+                else:
+                    continue
+                
+                if ts and value is not None and value != 0:
+                    dt = datetime.utcfromtimestamp(ts)
+                    records.append({
+                        'asset': gecko_id,
+                        'metric_name': 'CHAIN_FEES',
+                        'value': float(value),
+                        'pulled_at': dt
+                    })
+            except (ValueError, TypeError):
+                continue
+    
+    return records
+
+def fetch_chain_dex_volume(chain_name, gecko_id):
+    records = []
+    chain_slug = chain_name.lower().replace(' ', '-')
+    url = f"https://api.llama.fi/overview/dexs/{chain_slug}"
+    data = fetch_json(url)
+    
+    if data:
+        chart = data.get('totalDataChart', [])
+        for entry in chart:
+            try:
+                if isinstance(entry, list) and len(entry) >= 2:
+                    ts, value = entry[0], entry[1]
+                elif isinstance(entry, dict):
+                    ts = entry.get('date') or entry.get('timestamp')
+                    value = entry.get('value') or entry.get('volume')
+                else:
+                    continue
+                
+                if ts and value is not None and value != 0:
+                    dt = datetime.utcfromtimestamp(ts)
+                    records.append({
+                        'asset': gecko_id,
+                        'metric_name': 'CHAIN_DEX_VOLUME',
+                        'value': float(value),
+                        'pulled_at': dt
+                    })
+            except (ValueError, TypeError):
+                continue
+    
+    return records
+
+def fetch_mcap_fdv(slug, gecko_id):
+    records = []
+    url = f"https://api.llama.fi/protocol/{slug}"
+    data = fetch_json(url)
+    
+    if data:
+        now = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        mcap = data.get('mcap')
+        if mcap is not None and mcap != 0:
+            records.append({
+                'asset': gecko_id,
+                'metric_name': 'MCAP',
+                'value': float(mcap),
+                'pulled_at': now
+            })
+        
+        fdv = data.get('fdv')
+        if fdv is not None and fdv != 0:
+            records.append({
+                'asset': gecko_id,
+                'metric_name': 'FDV',
+                'value': float(fdv),
+                'pulled_at': now
+            })
     
     return records
 
@@ -209,44 +332,71 @@ def load_config():
         reader = csv.DictReader(f)
         for row in reader:
             if row.get('gecko_id'):
+                category = row.get('category', '').strip()
                 entities.append({
                     'gecko_id': row.get('gecko_id', '').lower(),
                     'slug': row.get('slug', '').lower(),
-                    'name': row.get('name', '')
+                    'name': row.get('name', ''),
+                    'category': category,
+                    'is_chain': category == 'Chain'
                 })
     return entities
 
 def backfill_entity(entity, conn):
     gecko_id = entity['gecko_id']
     slug = entity['slug'] or gecko_id
+    name = entity.get('name', slug)
+    is_chain = entity.get('is_chain', False)
     
     all_records = []
     metrics_found = []
     
-    for endpoint_name, config in ENDPOINTS.items():
-        url = config['url'].format(slug=slug)
-        data = fetch_json(url)
+    if is_chain:
+        chain_tvl = fetch_chain_historical_tvl(name, gecko_id)
+        if chain_tvl:
+            all_records.extend(chain_tvl)
+            metrics_found.append(f"CHAIN_TVL({len(chain_tvl)})")
+        time.sleep(REQUEST_DELAY)
         
-        if data:
-            records = extract_historical_data(
-                data, 
-                config['chart_key'], 
-                config['metric'],
-                gecko_id
-            )
-            if records:
-                all_records.extend(records)
-                metrics_found.append(f"{config['metric']}({len(records)})")
+        chain_fees = fetch_chain_fees(name, gecko_id)
+        if chain_fees:
+            all_records.extend(chain_fees)
+            metrics_found.append(f"CHAIN_FEES({len(chain_fees)})")
+        time.sleep(REQUEST_DELAY)
         
+        chain_dex = fetch_chain_dex_volume(name, gecko_id)
+        if chain_dex:
+            all_records.extend(chain_dex)
+            metrics_found.append(f"CHAIN_DEX({len(chain_dex)})")
+        time.sleep(REQUEST_DELAY)
+    else:
+        for endpoint_name, config in ENDPOINTS.items():
+            url = config['url'].format(slug=slug)
+            data = fetch_json(url)
+            
+            if data:
+                records = extract_historical_data(
+                    data, 
+                    config['chart_key'], 
+                    config['metric'],
+                    gecko_id
+                )
+                if records:
+                    all_records.extend(records)
+                    metrics_found.append(f"{config['metric']}({len(records)})")
+            
+            time.sleep(REQUEST_DELAY)
+        
+        mcap_fdv = fetch_mcap_fdv(slug, gecko_id)
+        if mcap_fdv:
+            all_records.extend(mcap_fdv)
+            for r in mcap_fdv:
+                metrics_found.append(r['metric_name'])
         time.sleep(REQUEST_DELAY)
     
+    time.sleep(REQUEST_DELAY)
+    
     if API_KEY:
-        price_records = fetch_historical_prices(gecko_id)
-        if price_records:
-            all_records.extend(price_records)
-            metrics_found.append(f"PRICE({len(price_records)})")
-        time.sleep(REQUEST_DELAY)
-        
         inflow_records = fetch_historical_inflows(slug, gecko_id, days=30)
         if inflow_records:
             all_records.extend(inflow_records)
@@ -290,6 +440,25 @@ def main():
             elapsed = time.time() - start_time
             rate = total_records / elapsed if elapsed > 0 else 0
             print(f"    --- Progress: {total_records:,} records, {rate:.0f} rec/sec ---")
+    
+    print("\n" + "-" * 70)
+    print("BATCH PRICE BACKFILL (365 days)")
+    print("-" * 70)
+    
+    all_gecko_ids = [e['gecko_id'] for e in entities]
+    batch_size = 30
+    
+    for batch_start in range(0, len(all_gecko_ids), batch_size):
+        batch_ids = all_gecko_ids[batch_start:batch_start + batch_size]
+        batch_num = batch_start // batch_size + 1
+        total_batches = (len(all_gecko_ids) + batch_size - 1) // batch_size
+        print(f"  Batch {batch_num}/{total_batches}: {len(batch_ids)} assets...")
+        
+        price_records = fetch_batch_historical_prices(batch_ids, days=365)
+        if price_records:
+            inserted = insert_records_batch(conn, price_records)
+            total_records += inserted
+            print(f"    +{inserted:,} price records")
     
     conn.close()
     

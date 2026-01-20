@@ -67,8 +67,11 @@ python main.py sources
 
 ### DefiLlama
 - **Assets:** 323 protocols and chains
-- **Metrics:** TVL, CHAIN_TVL, DEX_VOLUME_24H, FEES_24H, INFLOW, OUTFLOW, PRICE, etc.
-- **Pro API Metrics:** INFLOW, OUTFLOW, PRICE (require DEFILLAMA_API_KEY)
+- **Metrics:** TVL, CHAIN_TVL, CHAIN_FEES, CHAIN_DEX_VOLUME, MCAP, FDV, DEX_VOLUME_24H, FEES_24H, INFLOW, OUTFLOW, PRICE, etc.
+- **Pro API Metrics:** INFLOW, OUTFLOW (require DEFILLAMA_API_KEY)
+- **Enterprise-only Metrics:** Hourly PRICE data (span=1) requires Enterprise tier ($3000/year)
+- **Price Backfill:** Uses daily data over 365 days (works with Pro tier)
+- **Chain vs Protocol:** Config `category=Chain` triggers chain-level endpoints for TVL, fees, DEX volume
 - **ID Format:** CoinGecko IDs (e.g., `solana`, `ethereum`, `aave`)
 - **Requires:** DEFILLAMA_API_KEY secret (Pro API)
 
