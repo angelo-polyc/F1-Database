@@ -20,6 +20,7 @@ import requests
 import psycopg2
 from psycopg2.extras import execute_values
 from datetime import datetime, timezone, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests.auth import HTTPBasicAuth
 from collections import defaultdict
 
@@ -29,8 +30,9 @@ API_KEY = os.environ.get("VELO_API_KEY")
 BASE_URL = "https://api.velo.xyz/api/v1"
 CONFIG_PATH = "velo_config.csv"
 
-# Rate limiting: 120 req/30s = 4/sec, use 0.3s delay
-REQUEST_DELAY = 0.3
+# Rate limiting: 120 req/30s = 4/sec
+REQUEST_DELAY = 0.25
+MAX_WORKERS = 4  # Parallel workers for fetching
 
 # Velo returns max 22,500 values per request
 # With 30 columns, 750 rows = ~31 days at hourly
@@ -322,39 +324,50 @@ def main():
     total_records = 0
     total_inserted = 0
     
+    # Build all fetch tasks: (exchange, coins, begin_ts, end_ts)
+    fetch_tasks = []
     for exchange, coins in by_exchange.items():
-        print(f"\n[{exchange}] {len(coins)} coins")
-        print("-" * 50)
-        
         for i in range(0, len(coins), BACKFILL_BATCH_SIZE):
             batch_coins = coins[i:i+BACKFILL_BATCH_SIZE]
-            batch_label = ','.join(batch_coins[:3]) + ('...' if len(batch_coins) > 3 else '')
             
             window_start = start_dt
-            batch_records = 0
-            batch_inserted = 0
-            
             while window_start < end_dt:
                 window_end = min(window_start + timedelta(days=DAYS_PER_REQUEST), end_dt)
-                
                 begin_ts = int(window_start.timestamp() * 1000)
                 end_ts = int(window_end.timestamp() * 1000)
-                
-                records = fetch_historical(exchange, batch_coins, begin_ts, end_ts, auth, entity_cache)
-                batch_records += len(records)
+                fetch_tasks.append((exchange, batch_coins, begin_ts, end_ts))
+                window_start = window_end
+    
+    print(f"Total fetch tasks: {len(fetch_tasks)}")
+    print(f"Using {MAX_WORKERS} parallel workers")
+    print()
+    
+    # Process in parallel with rate limiting
+    completed = 0
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {}
+        for task in fetch_tasks:
+            exchange, batch_coins, begin_ts, end_ts = task
+            future = executor.submit(fetch_historical, exchange, batch_coins, begin_ts, end_ts, auth, entity_cache)
+            futures[future] = task
+            time.sleep(REQUEST_DELAY)  # Rate limit submissions
+        
+        for future in as_completed(futures):
+            completed += 1
+            try:
+                records = future.result()
+                total_records += len(records)
                 
                 if records:
                     inserted = insert_batch(records)
-                    batch_inserted += inserted
+                    total_inserted += inserted
                 
-                window_start = window_end
-                time.sleep(REQUEST_DELAY)
-            
-            print(f"  [{i+1:4d}-{min(i+BACKFILL_BATCH_SIZE, len(coins)):4d}] {batch_label:30s} "
-                  f"fetched: {batch_records:7d}  inserted: {batch_inserted:7d}")
-            
-            total_records += batch_records
-            total_inserted += batch_inserted
+                if completed % 10 == 0:
+                    print(f"  Progress: {completed}/{len(fetch_tasks)} tasks, "
+                          f"fetched: {total_records:,}, inserted: {total_inserted:,}")
+            except Exception as e:
+                task = futures[future]
+                print(f"  Error on {task[0]}: {e}")
     
     print()
     print("=" * 70)

@@ -4,9 +4,11 @@ import time
 import requests
 import psycopg2
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 REQUEST_DELAY = 0.12  # ~8 req/sec
 BATCH_SIZE = 250
+MAX_WORKERS = 4  # Parallel workers for fetching
 
 EXCLUDED_METRICS = {
     "VOLATILITY_90D_ANN",
@@ -160,30 +162,44 @@ def main():
     api_calls = 0
     start_time = time.time()
     
-    for idx, metric in enumerate(all_metrics):
+    # Build all fetch tasks: (metric, batch_assets)
+    fetch_tasks = []
+    for metric in all_metrics:
         assets_for_metric = pull_config[metric]
-        print(f"\n[{idx+1:2d}/{len(all_metrics)}] {metric} ({len(assets_for_metric)} assets)")
-        
-        metric_records = 0
-        
         for batch_start in range(0, len(assets_for_metric), BATCH_SIZE):
             batch = assets_for_metric[batch_start:batch_start + BATCH_SIZE]
-            batch_num = batch_start // BATCH_SIZE + 1
-            total_batches = (len(assets_for_metric) + BATCH_SIZE - 1) // BATCH_SIZE
-            
-            print(f"    Batch {batch_num}/{total_batches} ({len(batch)} assets)...", end=" ", flush=True)
-            
-            data = fetch_historical(
-                api_key, 
-                metric, 
-                batch, 
-                start_date.strftime('%Y-%m-%d'), 
-                end_date.strftime('%Y-%m-%d')
-            )
+            fetch_tasks.append((metric, batch))
+    
+    print(f"Total fetch tasks: {len(fetch_tasks)}")
+    print(f"Using {MAX_WORKERS} parallel workers")
+    print("=" * 60)
+    
+    # Helper to fetch and extract records
+    def fetch_task(task):
+        metric, batch = task
+        data = fetch_historical(
+            api_key, metric, batch,
+            start_date.strftime('%Y-%m-%d'),
+            end_date.strftime('%Y-%m-%d')
+        )
+        if data:
+            return extract_records(data, metric)
+        return []
+    
+    # Process in parallel with rate limiting
+    completed = 0
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {}
+        for task in fetch_tasks:
+            future = executor.submit(fetch_task, task)
+            futures[future] = task
+            time.sleep(REQUEST_DELAY)
+        
+        for future in as_completed(futures):
+            completed += 1
             api_calls += 1
-            
-            if data:
-                records = extract_records(data, metric)
+            try:
+                records = future.result()
                 if records:
                     cur.executemany('''
                         INSERT INTO metrics (pulled_at, source, asset, metric_name, value)
@@ -191,19 +207,16 @@ def main():
                         ON CONFLICT (source, asset, metric_name, pulled_at) DO NOTHING
                     ''', records)
                     conn.commit()
-                    metric_records += len(records)
-                    print(f"+{len(records)} records")
-                else:
-                    print("no data")
-            else:
-                print("failed")
-            
-            time.sleep(REQUEST_DELAY)
-        
-        total_records += metric_records
-        elapsed = time.time() - start_time
-        rate = total_records / elapsed if elapsed > 0 else 0
-        print(f"    Subtotal: {metric_records:,} records | Total: {total_records:,} | {rate:.0f} rec/sec")
+                    total_records += len(records)
+                
+                if completed % 20 == 0:
+                    elapsed = time.time() - start_time
+                    rate = total_records / elapsed if elapsed > 0 else 0
+                    print(f"  Progress: {completed}/{len(fetch_tasks)} tasks, "
+                          f"{total_records:,} records, {rate:.0f} rec/sec")
+            except Exception as e:
+                task = futures[future]
+                print(f"  Error on {task[0]}: {e}")
     
     conn.close()
     
