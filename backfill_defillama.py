@@ -206,6 +206,96 @@ def fetch_chain_dex_volume(chain_name, gecko_id, slug=''):
     
     return records
 
+def fetch_chain_derivatives(chain_name, gecko_id, slug=''):
+    records = []
+    chain_slug = get_chain_slug(chain_name, slug, gecko_id)
+    if not chain_slug:
+        return records
+    url = f"https://api.llama.fi/overview/derivatives/{chain_slug}"
+    data = fetch_json(url)
+    
+    if data:
+        chart = data.get('totalDataChart', [])
+        for entry in chart:
+            try:
+                if isinstance(entry, list) and len(entry) >= 2:
+                    ts, value = entry[0], entry[1]
+                else:
+                    continue
+                
+                if ts and value is not None and value != 0:
+                    dt = datetime.utcfromtimestamp(ts)
+                    records.append({
+                        'asset': gecko_id,
+                        'metric_name': 'CHAIN_PERPS_VOLUME',
+                        'value': float(value),
+                        'pulled_at': dt
+                    })
+            except (ValueError, TypeError):
+                continue
+    
+    return records
+
+def fetch_chain_options(chain_name, gecko_id, slug=''):
+    records = []
+    chain_slug = get_chain_slug(chain_name, slug, gecko_id)
+    if not chain_slug:
+        return records
+    url = f"https://api.llama.fi/overview/options/{chain_slug}"
+    data = fetch_json(url)
+    
+    if data:
+        chart = data.get('totalDataChart', [])
+        for entry in chart:
+            try:
+                if isinstance(entry, list) and len(entry) >= 2:
+                    ts, value = entry[0], entry[1]
+                else:
+                    continue
+                
+                if ts and value is not None and value != 0:
+                    dt = datetime.utcfromtimestamp(ts)
+                    records.append({
+                        'asset': gecko_id,
+                        'metric_name': 'CHAIN_OPTIONS_VOLUME',
+                        'value': float(value),
+                        'pulled_at': dt
+                    })
+            except (ValueError, TypeError):
+                continue
+    
+    return records
+
+def fetch_chain_revenue(chain_name, gecko_id, slug=''):
+    records = []
+    chain_slug = get_chain_slug(chain_name, slug, gecko_id)
+    if not chain_slug:
+        return records
+    url = f"https://api.llama.fi/overview/fees/{chain_slug}?dataType=dailyRevenue"
+    data = fetch_json(url)
+    
+    if data:
+        chart = data.get('totalDataChart', [])
+        for entry in chart:
+            try:
+                if isinstance(entry, list) and len(entry) >= 2:
+                    ts, value = entry[0], entry[1]
+                else:
+                    continue
+                
+                if ts and value is not None and value != 0:
+                    dt = datetime.utcfromtimestamp(ts)
+                    records.append({
+                        'asset': gecko_id,
+                        'metric_name': 'CHAIN_REVENUE',
+                        'value': float(value),
+                        'pulled_at': dt
+                    })
+            except (ValueError, TypeError):
+                continue
+    
+    return records
+
 
 def extract_historical_data(data, chart_key, metric_name, asset_id):
     records = []
@@ -334,10 +424,28 @@ def backfill_entity(entity, conn):
             metrics_found.append(f"CHAIN_FEES({len(chain_fees)})")
         time.sleep(REQUEST_DELAY)
         
+        chain_revenue = fetch_chain_revenue(name, gecko_id, slug)
+        if chain_revenue:
+            all_records.extend(chain_revenue)
+            metrics_found.append(f"CHAIN_REVENUE({len(chain_revenue)})")
+        time.sleep(REQUEST_DELAY)
+        
         chain_dex = fetch_chain_dex_volume(name, gecko_id, slug)
         if chain_dex:
             all_records.extend(chain_dex)
             metrics_found.append(f"CHAIN_DEX({len(chain_dex)})")
+        time.sleep(REQUEST_DELAY)
+        
+        chain_deriv = fetch_chain_derivatives(name, gecko_id, slug)
+        if chain_deriv:
+            all_records.extend(chain_deriv)
+            metrics_found.append(f"CHAIN_PERPS({len(chain_deriv)})")
+        time.sleep(REQUEST_DELAY)
+        
+        chain_opts = fetch_chain_options(name, gecko_id, slug)
+        if chain_opts:
+            all_records.extend(chain_opts)
+            metrics_found.append(f"CHAIN_OPTIONS({len(chain_opts)})")
         time.sleep(REQUEST_DELAY)
     else:
         for endpoint_name, config in ENDPOINTS.items():

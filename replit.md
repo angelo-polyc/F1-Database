@@ -67,9 +67,9 @@ python main.py sources
 
 ### DefiLlama
 - **Assets:** 323 entities (96 chains, 227 protocols) - auto-categorized via /chains API
-- **Chain Metrics:** CHAIN_TVL, CHAIN_FEES_24H, CHAIN_REVENUE_24H, CHAIN_APP_FEES_24H, CHAIN_APP_REVENUE_24H, CHAIN_TOKEN_INCENTIVES_24H, CHAIN_DEX_VOLUME_24H, CHAIN_PERPS_VOLUME_24H
-- **Protocol Metrics:** TVL, FEES_24H, REVENUE_24H, DEX_VOLUME_24H, EARNINGS, INCENTIVES, INFLOW, OUTFLOW
-- **Pro API Metrics:** INFLOW, OUTFLOW (require DEFILLAMA_API_KEY)
+- **Chain Metrics:** CHAIN_TVL, CHAIN_FEES_24H, CHAIN_REVENUE_24H, CHAIN_DEX_VOLUME_24H, CHAIN_PERPS_VOLUME_24H, CHAIN_OPTIONS_VOLUME_24H
+- **Protocol Metrics:** TVL, FEES_24H, REVENUE_24H, DEX_VOLUME_24H, DERIVATIVES_VOLUME_24H, EARNINGS, INCENTIVES, INFLOW, OUTFLOW
+- **Pro API Metrics:** INFLOW, OUTFLOW, OPEN_INTEREST (require DEFILLAMA_API_KEY)
 - **Removed:** PRICE, MCAP, FDV (use CoinGecko integration instead)
 - **Chain vs Protocol:** Auto-detected using DefiLlama /chains API (599 chains) for accurate categorization
 - **Slug Resolution:** Chain fetchers use slug > name > gecko_id fallback order to handle entities with blank names
@@ -108,7 +108,7 @@ Fresh start (clears all data first): `python scheduler.py --fresh`
 
 ### DefiLlama Backfill
 The `backfill_defillama.py` script fetches historical time series data from DefiLlama summary endpoints:
-- **Chain Endpoints:** historicalChainTvl, overview/fees/{chain}, overview/dexs/{chain}
+- **Chain Endpoints:** historicalChainTvl, overview/fees/{chain}, overview/fees/{chain}?dataType=dailyRevenue, overview/dexs/{chain}, overview/derivatives/{chain}, overview/options/{chain}
 - **Protocol Endpoints:** fees, revenue, dexs, derivatives, aggregators, tvl
 - **Pro API:** inflows/outflows (30 days)
 - **Data:** Daily time series going back to 2011 for some assets

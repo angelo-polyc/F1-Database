@@ -466,9 +466,8 @@ class DefiLlamaSource(BaseSource):
             for key, oi_data in open_interest_data.items():
                 oi_value = oi_data.get('open_interest')
                 if oi_value is not None and oi_value > 0:
-                    market_id = f"{oi_data.get('marketplace', 'unknown')}_{oi_data.get('market', 'unknown')}"
                     all_records.append({
-                        "asset": market_id,
+                        "asset": key,
                         "metric_name": "OPEN_INTEREST",
                         "value": float(oi_value)
                     })
