@@ -36,27 +36,23 @@ MAX_WORKERS = 1  # Sequential fetching to avoid rate limits
 
 # Velo returns max 22,500 values per request
 # API returns MINUTE-level data (1440 rows/day) despite resolution=1h
-# With 30 columns, 1 coin: max 750 rows = 750 minutes = 12.5 hours
-# Use 10 hours per request with 1 coin to stay safely under limit
-HOURS_PER_REQUEST = 10
+# With 10 columns, 1 coin: max 2250 rows = 37.5 hours (~1.5 days)
+# Use 24 hours per request with 1 coin to stay safely under limit
+HOURS_PER_REQUEST = 24
 
 # Batch size: 1 coin per request (API gives minute data, need to aggregate client-side)
 BACKFILL_BATCH_SIZE = 1
 
-# All metrics to pull
+# Essential metrics only for faster backfill (10 columns = 2250 rows/request max)
 FUTURES_COLUMNS = [
-    'open_price', 'high_price', 'low_price', 'close_price',
-    'coin_volume', 'dollar_volume',
-    'buy_coin_volume', 'sell_coin_volume',
+    'close_price',
+    'dollar_volume',
+    'dollar_open_interest_close',
+    'funding_rate',
+    'liquidations_dollar_volume',
+    'buy_trades', 'sell_trades',
     'buy_dollar_volume', 'sell_dollar_volume',
-    'buy_trades', 'sell_trades', 'total_trades',
-    'coin_open_interest_high', 'coin_open_interest_low', 'coin_open_interest_close',
-    'dollar_open_interest_high', 'dollar_open_interest_low', 'dollar_open_interest_close',
-    'funding_rate', 'funding_rate_avg', 'premium',
-    'buy_liquidations', 'sell_liquidations',
-    'buy_liquidations_coin_volume', 'sell_liquidations_coin_volume',
-    'buy_liquidations_dollar_volume', 'sell_liquidations_dollar_volume',
-    'liquidations_coin_volume', 'liquidations_dollar_volume'
+    'premium'
 ]
 
 METRIC_MAP = {
