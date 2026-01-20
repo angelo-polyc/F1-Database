@@ -5,7 +5,7 @@ import requests
 import psycopg2
 from datetime import datetime, timedelta
 
-REQUEST_DELAY = 0.15
+REQUEST_DELAY = 0.08  # ~12 req/sec (Pro limit: 1000/min = 16.6/sec)
 BATCH_SIZE = 1000
 
 API_KEY = os.environ.get('DEFILLAMA_API_KEY')

@@ -71,7 +71,7 @@ METRIC_MAP = {
     'open_interest': 'OPEN_INTEREST',
 }
 
-REQUEST_DELAY = 1.0
+REQUEST_DELAY = 0.08  # ~12 req/sec (Pro limit: 1000/min = 16.6/sec)
 
 class DefiLlamaSource(BaseSource):
     
@@ -434,14 +434,12 @@ class DefiLlamaSource(BaseSource):
             if is_chain:
                 chain_metrics = self.fetch_chain_metrics(entity.get('name', ''), gecko_id, slug)
                 raw_metrics.update(chain_metrics)
-                time.sleep(0.5)
             else:
                 if p:
                     protocol_slug = p.get('slug', '')
                     if protocol_slug:
                         earnings_metrics = self.fetch_protocol_earnings(protocol_slug)
                         raw_metrics.update(earnings_metrics)
-                        time.sleep(0.3)
             
             entity_records = 0
             for raw_field, value in raw_metrics.items():
