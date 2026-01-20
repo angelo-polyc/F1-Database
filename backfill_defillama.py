@@ -11,6 +11,35 @@ BATCH_SIZE = 1000
 API_KEY = os.environ.get('DEFILLAMA_API_KEY')
 PRO_BASE_URL = "https://pro-api.llama.fi"
 
+STABLECOIN_IDS = {
+    'dai': 5,
+    'usds': 209,
+    'ethena-usde': 146,
+    'ondo-us-dollar-yield': 129,
+    'resolv-usr': 197,
+    'agora-dollar': 205,
+    'f-x-protocol-usd': 168,
+    'magic-internet-money': 10,
+    'gyroscope-gyd': 185,
+    'celo-dollar': 24,
+    'musd': 26,
+    'celo-euro': 52,
+    'celo-real-creal': 199,
+}
+
+BRIDGE_GECKO_IDS = {
+    'wormhole': 1,
+    'octus-bridge': 2,
+    'connext': 3,
+    'debridge': 4,
+    'across-protocol': 5,
+    'celer-network': 6,
+    'hop-protocol': 7,
+    'multichain': 8,
+    'layerzero': 9,
+    'synapse-2': 10,
+}
+
 ENDPOINTS = {
     'fees': {
         'url': 'https://api.llama.fi/summary/fees/{slug}',
@@ -67,6 +96,76 @@ def fetch_pro_json(endpoint):
         return None
     except Exception as e:
         return None
+
+def fetch_stablecoin_historical(stablecoin_api_id, gecko_id):
+    records = []
+    url = f"https://stablecoins.llama.fi/stablecoincharts/all?stablecoin={stablecoin_api_id}"
+    data = fetch_json(url)
+    
+    if data and isinstance(data, list):
+        for entry in data:
+            try:
+                ts = entry.get('date')
+                total = entry.get('totalCirculating', {})
+                value = total.get('peggedUSD')
+                
+                if ts and value is not None and value > 0:
+                    dt = datetime.utcfromtimestamp(ts)
+                    records.append({
+                        'asset': gecko_id,
+                        'metric_name': 'STABLECOIN_CIRCULATING',
+                        'value': float(value),
+                        'pulled_at': dt
+                    })
+            except (ValueError, TypeError, KeyError):
+                continue
+    
+    return records
+
+
+def fetch_bridge_historical(bridge_name, gecko_id):
+    records = []
+    
+    bridges_data = fetch_json('https://bridges.llama.fi/bridges')
+    if not bridges_data:
+        return records
+    
+    bridges = bridges_data.get('bridges', [])
+    bridge_id = None
+    for b in bridges:
+        if (b.get('name', '').lower() == bridge_name.lower() or 
+            b.get('displayName', '').lower() == bridge_name.lower()):
+            bridge_id = b.get('id')
+            break
+    
+    if not bridge_id:
+        return records
+    
+    url = f"https://bridges.llama.fi/bridgevolume/{bridge_id}"
+    data = fetch_json(url)
+    
+    if data and isinstance(data, list):
+        for entry in data:
+            try:
+                ts = entry.get('date')
+                
+                deposit_usd = entry.get('depositUSD', 0) or 0
+                withdraw_usd = entry.get('withdrawUSD', 0) or 0
+                total_volume = deposit_usd + withdraw_usd
+                
+                if ts and total_volume > 0:
+                    dt = datetime.utcfromtimestamp(ts)
+                    records.append({
+                        'asset': gecko_id,
+                        'metric_name': 'BRIDGE_VOLUME',
+                        'value': float(total_volume),
+                        'pulled_at': dt
+                    })
+            except (ValueError, TypeError, KeyError):
+                continue
+    
+    return records
+
 
 def fetch_historical_inflows(slug, gecko_id, days=30):
     records = []
@@ -472,6 +571,20 @@ def backfill_entity(entity, conn):
         if inflow_records:
             all_records.extend(inflow_records)
             metrics_found.append(f"INFLOW({len(inflow_records)})")
+    
+    if gecko_id in STABLECOIN_IDS:
+        stablecoin_records = fetch_stablecoin_historical(STABLECOIN_IDS[gecko_id], gecko_id)
+        if stablecoin_records:
+            all_records.extend(stablecoin_records)
+            metrics_found.append(f"STABLECOIN_CIRC({len(stablecoin_records)})")
+        time.sleep(REQUEST_DELAY)
+    
+    if gecko_id in BRIDGE_GECKO_IDS:
+        bridge_records = fetch_bridge_historical(name, gecko_id)
+        if bridge_records:
+            all_records.extend(bridge_records)
+            metrics_found.append(f"BRIDGE_VOL({len(bridge_records)})")
+        time.sleep(REQUEST_DELAY)
     
     inserted = 0
     if all_records:

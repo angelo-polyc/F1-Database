@@ -73,6 +73,30 @@ METRIC_MAP = {
 
 REQUEST_DELAY = 0.08  # ~12 req/sec (Pro limit: 1000/min = 16.6/sec)
 
+STABLECOIN_IDS = {
+    'dai': 5,
+    'usds': 209,
+    'ethena-usde': 146,
+    'ondo-us-dollar-yield': 129,
+    'resolv-usr': 197,
+    'agora-dollar': 205,
+    'f-x-protocol-usd': 168,
+    'magic-internet-money': 10,
+    'gyroscope-gyd': 185,
+    'celo-dollar': 24,
+    'musd': 26,
+    'celo-euro': 52,
+    'celo-real-creal': 199,
+}
+
+BRIDGE_GECKO_IDS = {
+    'wormhole', 'octus-bridge', 'connext', 'debridge', 'across-protocol',
+    'celer-network', 'hop-protocol', 'multichain', 'layerzero', 'synapse-2',
+    'orbit-chain', 'graviton', 'pnetwork'
+}
+
+EXTRA_CHAINS = {'ronin', 'stride', 'babylon genesis', 'babylon'}
+
 class DefiLlamaSource(BaseSource):
     
     @property
@@ -141,15 +165,35 @@ class DefiLlamaSource(BaseSource):
     
     def get_official_chains(self) -> set:
         chains_data = self.fetch_json('https://api.llama.fi/chains')
+        chain_names = set(EXTRA_CHAINS)
         if chains_data:
-            chain_names = set()
             for c in chains_data:
                 if c.get('name'):
                     chain_names.add(c['name'].lower())
                 if c.get('gecko_id'):
                     chain_names.add(c['gecko_id'].lower())
-            return chain_names
-        return set()
+        return chain_names
+    
+    def fetch_stablecoin_circulating(self, stablecoin_id: int) -> Optional[float]:
+        data = self.fetch_json(f'https://stablecoins.llama.fi/stablecoin/{stablecoin_id}')
+        if data:
+            tokens = data.get('tokens', [])
+            if tokens:
+                latest = tokens[-1]
+                circulating = latest.get('circulating', {})
+                return circulating.get('peggedUSD')
+        return None
+    
+    def fetch_bridge_volume(self, bridge_id: int) -> dict:
+        data = self.fetch_json(f'https://bridges.llama.fi/bridge/{bridge_id}')
+        if data:
+            return {
+                'bridges_lastDailyVolume': data.get('lastDailyVolume'),
+                'bridges_weeklyVolume': data.get('weeklyVolume'),
+                'bridges_monthlyVolume': data.get('monthlyVolume'),
+                'bridges_currentDayVolume': data.get('currentDayVolume'),
+            }
+        return {}
     
     def fetch_chain_metrics(self, chain_name: str, gecko_id: str = '', slug: str = '') -> dict:
         metrics = {}
@@ -183,12 +227,6 @@ class DefiLlamaSource(BaseSource):
             if total_revenue > 0:
                 metrics['chain_app_revenue_24h'] = total_revenue
         
-        incentives_data = self.fetch_json(f'https://api.llama.fi/overview/fees/{chain_slug}?dataType=dailyTokenIncentives')
-        if incentives_data:
-            token_incentives = incentives_data.get('total24h', 0) or 0
-            if token_incentives > 0:
-                metrics['chain_token_incentives_24h'] = token_incentives
-        
         dexs_data = self.fetch_json(f'https://api.llama.fi/overview/dexs/{chain_slug}')
         if dexs_data:
             metrics['chain_dex_volume_24h'] = dexs_data.get('total24h')
@@ -209,18 +247,14 @@ class DefiLlamaSource(BaseSource):
         fees_data = self.fetch_json(f'https://api.llama.fi/summary/fees/{protocol_slug}')
         if fees_data:
             total_fees = fees_data.get('total24h', 0) or 0
+            if total_fees > 0:
+                metrics['fees_total24h'] = total_fees
             
         revenue_data = self.fetch_json(f'https://api.llama.fi/summary/fees/{protocol_slug}?dataType=dailyRevenue')
         if revenue_data:
             daily_revenue = revenue_data.get('total24h', 0) or 0
             if daily_revenue > 0:
                 metrics['protocol_earnings'] = daily_revenue
-        
-        incentives_data = self.fetch_json(f'https://api.llama.fi/summary/fees/{protocol_slug}?dataType=dailyTokenIncentives')
-        if incentives_data:
-            token_incentives = incentives_data.get('total24h', 0) or 0
-            if token_incentives > 0:
-                metrics['protocol_incentives'] = token_incentives
         
         return metrics
     
@@ -423,6 +457,22 @@ class DefiLlamaSource(BaseSource):
                 circ_week = st.get('circulatingPrevWeek', {})
                 raw_metrics['stablecoins_circulatingPrevWeek_peggedUSD'] = circ_week.get('peggedUSD') if isinstance(circ_week, dict) else None
                 raw_metrics['stablecoins_price'] = st.get('price')
+            
+            if gecko_id in STABLECOIN_IDS:
+                stablecoin_api_id = STABLECOIN_IDS[gecko_id]
+                circulating = self.fetch_stablecoin_circulating(stablecoin_api_id)
+                if circulating:
+                    raw_metrics['stablecoins_circulating_peggedUSD'] = circulating
+                time.sleep(REQUEST_DELAY)
+            
+            if gecko_id in BRIDGE_GECKO_IDS:
+                br_data = bridges_lookup.get(name)
+                if br_data:
+                    bridge_id = br_data.get('id')
+                    if bridge_id:
+                        bridge_metrics = self.fetch_bridge_volume(bridge_id)
+                        raw_metrics.update(bridge_metrics)
+                        time.sleep(REQUEST_DELAY)
             
             if self.api_key and p:
                 protocol_slug = p.get('slug', '')

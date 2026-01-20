@@ -69,12 +69,14 @@ python main.py sources
 - **Requires:** ARTEMIS_API_KEY secret
 
 ### DefiLlama
-- **Assets:** 323 entities (96 chains, 227 protocols) - auto-categorized via /chains API
+- **Assets:** 323+ entities (96 chains, 227 protocols) - auto-categorized via /chains API
 - **Chain Metrics:** CHAIN_TVL, CHAIN_FEES_24H, CHAIN_REVENUE_24H, CHAIN_DEX_VOLUME_24H, CHAIN_PERPS_VOLUME_24H, CHAIN_OPTIONS_VOLUME_24H
-- **Protocol Metrics:** TVL, FEES_24H, REVENUE_24H, DEX_VOLUME_24H, DERIVATIVES_VOLUME_24H, EARNINGS, INCENTIVES, INFLOW, OUTFLOW
+- **Protocol Metrics:** TVL, FEES_24H, REVENUE_24H, DEX_VOLUME_24H, DERIVATIVES_VOLUME_24H, EARNINGS, INFLOW, OUTFLOW
+- **Stablecoin Metrics:** STABLECOIN_SUPPLY (circulating) - uses dedicated stablecoins.llama.fi endpoint for 13 stablecoins (dai, usds, ethena-usde, etc.)
+- **Bridge Metrics:** BRIDGE_VOLUME_24H, BRIDGE_VOLUME_7D, BRIDGE_VOLUME_30D - uses bridges.llama.fi for 10+ bridge protocols
 - **Pro API Metrics:** INFLOW, OUTFLOW, OPEN_INTEREST (require DEFILLAMA_API_KEY)
-- **Removed:** PRICE, MCAP, FDV (use CoinGecko integration instead)
-- **Chain vs Protocol:** Auto-detected using DefiLlama /chains API (599 chains) for accurate categorization
+- **Removed:** PRICE, MCAP, FDV (use CoinGecko integration), dailyTokenIncentives (unstable 500 errors)
+- **Chain vs Protocol:** Auto-detected using DefiLlama /chains API (599 chains) + EXTRA_CHAINS override (ronin, stride, babylon)
 - **Slug Resolution:** Chain fetchers use slug > name > gecko_id fallback order to handle entities with blank names
 - **ID Format:** CoinGecko IDs (e.g., `solana`, `ethereum`, `aave`)
 - **Requires:** DEFILLAMA_API_KEY secret (Pro API)
@@ -113,6 +115,8 @@ Fresh start (clears all data first): `python scheduler.py --fresh`
 The `backfill_defillama.py` script fetches historical time series data from DefiLlama summary endpoints:
 - **Chain Endpoints:** historicalChainTvl, overview/fees/{chain}, overview/fees/{chain}?dataType=dailyRevenue, overview/dexs/{chain}, overview/derivatives/{chain}, overview/options/{chain}
 - **Protocol Endpoints:** fees, revenue, dexs, derivatives, aggregators, tvl
+- **Stablecoin Endpoints:** stablecoins.llama.fi/stablecoincharts for 13 stablecoins (dai, usds, ethena-usde, etc.)
+- **Bridge Endpoints:** bridges.llama.fi/bridgevolume for 10+ bridge protocols
 - **Pro API:** inflows/outflows (30 days)
 - **Data:** Daily time series going back to 2011 for some assets
 - **Idempotent:** Uses ON CONFLICT DO NOTHING to prevent duplicates
