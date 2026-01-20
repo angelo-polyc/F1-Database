@@ -1,5 +1,8 @@
 # Cryptocurrency & Equity Data Pipeline
 
+## User Preferences
+- **Do NOT restart workflows automatically** - Only restart when explicitly instructed
+
 ## Overview
 A Python data pipeline system for recurring API pulls of cryptocurrency and equity data with PostgreSQL storage. The system is designed to be modular and extensible for adding multiple data sources.
 

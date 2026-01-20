@@ -27,7 +27,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python scheduler.py"
+args = "python scheduler.py --fresh"
 
 [deployment]
 deploymentTarget = "gce"
