@@ -109,6 +109,15 @@ Both pulls run immediately on startup, then follow their scheduled times.
 Run manually: `python scheduler.py`
 Fresh start (clears all data first): `python scheduler.py --fresh`
 
+## Performance Optimizations
+- **Parallel API requests:** Uses ThreadPoolExecutor with 10 workers for concurrent fetches
+- **Connection pooling:** HTTP sessions with HTTPAdapter for connection reuse
+- **Thread-safe sessions:** Each worker thread gets its own requests.Session via threading.local()
+- **Bulk fetching:** All lookup endpoints fetched in single parallel batch (~11 URLs in ~2s vs ~9s sequential)
+- **Pre-built entity URLs:** Per-entity API calls gathered upfront and fetched in single parallel batch
+- **Unified rate limiting:** All HTTP calls (fetch_json, fetch_json_threadsafe, fetch_pro_json) go through a global token bucket limiter
+- **Rate limit guarantee:** Thread-safe lock ensures max 15 req/sec (900/min), well under the 1000/min API limit
+
 ## Historical Backfill
 
 ### DefiLlama Backfill

@@ -1,10 +1,15 @@
 import os
 import csv
 import time
+import threading
 import requests
+from requests.adapters import HTTPAdapter
 from typing import Optional
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from sources.base import BaseSource
+
+_thread_local = threading.local()
 
 METRIC_MAP = {
     'protocols_tvl': 'TVL',
@@ -71,7 +76,8 @@ METRIC_MAP = {
     'open_interest': 'OPEN_INTEREST',
 }
 
-REQUEST_DELAY = 0.08  # ~12 req/sec (Pro limit: 1000/min = 16.6/sec)
+MAX_WORKERS = 10  # Concurrent requests
+RATE_LIMIT_PER_SEC = 15  # Stay under 1000/min = 16.6/sec
 
 STABLECOIN_IDS = {
     'dai': 5,
@@ -107,10 +113,14 @@ class DefiLlamaSource(BaseSource):
         self.config_path = "defillama_config.csv"
         self.api_key = os.environ.get("DEFILLAMA_API_KEY")
         self.base_url = "https://pro-api.llama.fi" if self.api_key else "https://api.llama.fi"
+        self.session = requests.Session()
+        adapter = HTTPAdapter(pool_connections=20, pool_maxsize=20)
+        self.session.mount('https://', adapter)
+        self.session.mount('http://', adapter)
     
     def fetch_json(self, url: str) -> Optional[dict]:
         try:
-            resp = requests.get(url, timeout=30)
+            resp = self.session.get(url, timeout=30)
             resp.raise_for_status()
             return resp.json()
         except Exception as e:
@@ -122,11 +132,54 @@ class DefiLlamaSource(BaseSource):
             return None
         url = f"{self.base_url}/{self.api_key}{endpoint}"
         try:
-            resp = requests.get(url, timeout=30)
+            resp = self.session.get(url, timeout=30)
             resp.raise_for_status()
             return resp.json()
         except Exception as e:
             return None
+    
+    def _get_thread_session(self):
+        if not hasattr(_thread_local, 'session'):
+            _thread_local.session = requests.Session()
+            adapter = HTTPAdapter(pool_connections=5, pool_maxsize=5)
+            _thread_local.session.mount('https://', adapter)
+            _thread_local.session.mount('http://', adapter)
+        return _thread_local.session
+    
+    def _fetch_json_threadsafe(self, url: str) -> Optional[dict]:
+        try:
+            session = self._get_thread_session()
+            resp = session.get(url, timeout=30)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception:
+            return None
+    
+    def fetch_urls_parallel(self, urls: list) -> dict:
+        results = {}
+        total = len(urls)
+        batch_size = min(MAX_WORKERS * 3, total)
+        
+        for i in range(0, total, batch_size):
+            batch = urls[i:i + batch_size]
+            batch_start = time.time()
+            
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                future_to_url = {executor.submit(self._fetch_json_threadsafe, url): url for url in batch}
+                for future in as_completed(future_to_url):
+                    url = future_to_url[future]
+                    try:
+                        results[url] = future.result()
+                    except Exception:
+                        results[url] = None
+            
+            # Rate limiting: ensure we don't exceed RATE_LIMIT_PER_SEC
+            batch_time = time.time() - batch_start
+            min_time = len(batch) / RATE_LIMIT_PER_SEC
+            if batch_time < min_time:
+                time.sleep(min_time - batch_time)
+        
+        return results
     
     def fetch_inflows(self, protocol_slug: str) -> dict:
         if not self.api_key:
@@ -267,6 +320,13 @@ class DefiLlamaSource(BaseSource):
                     lookup[key] = record
         return lookup
     
+    def _get_chain_slug(self, chain_name: str, gecko_id: str, slug: str) -> str:
+        if slug:
+            return slug.lower()
+        if chain_name:
+            return chain_name.lower().replace(' ', '-')
+        return gecko_id.lower()
+    
     def load_config(self) -> list:
         entities = []
         with open(self.config_path, 'r', encoding='utf-8') as f:
@@ -290,58 +350,58 @@ class DefiLlamaSource(BaseSource):
         print(f"Entities to process: {len(config_entities)}")
         print("=" * 60)
         
-        print("Fetching DefiLlama data...")
+        print("Fetching DefiLlama bulk data (parallel)...")
+        start_bulk = time.time()
         
-        print("  Fetching protocols...")
-        protocols = self.fetch_json('https://api.llama.fi/protocols') or []
-        time.sleep(REQUEST_DELAY)
+        bulk_urls = {
+            'protocols': 'https://api.llama.fi/protocols',
+            'chains': 'https://api.llama.fi/v2/chains',
+            'fees': 'https://api.llama.fi/overview/fees',
+            'revenue': 'https://api.llama.fi/overview/fees?dataType=dailyRevenue',
+            'dexs': 'https://api.llama.fi/overview/dexs',
+            'derivatives': 'https://api.llama.fi/overview/derivatives',
+            'options': 'https://api.llama.fi/overview/options',
+            'aggregators': 'https://api.llama.fi/overview/aggregators',
+            'bridges': 'https://bridges.llama.fi/bridges',
+            'stablecoins': 'https://stablecoins.llama.fi/stablecoins',
+            'chains_list': 'https://api.llama.fi/chains',
+        }
         
-        print("  Fetching chains...")
-        chains = self.fetch_json('https://api.llama.fi/v2/chains') or []
-        time.sleep(REQUEST_DELAY)
+        url_results = self.fetch_urls_parallel(list(bulk_urls.values()))
         
-        print("  Fetching fees...")
-        fees_resp = self.fetch_json('https://api.llama.fi/overview/fees') or {}
+        protocols = url_results.get(bulk_urls['protocols']) or []
+        chains = url_results.get(bulk_urls['chains']) or []
+        
+        fees_resp = url_results.get(bulk_urls['fees']) or {}
         fees = fees_resp.get('protocols', []) if isinstance(fees_resp, dict) else []
-        time.sleep(REQUEST_DELAY)
         
-        print("  Fetching revenue...")
-        revenue_resp = self.fetch_json('https://api.llama.fi/overview/fees?dataType=dailyRevenue') or {}
+        revenue_resp = url_results.get(bulk_urls['revenue']) or {}
         revenue = revenue_resp.get('protocols', []) if isinstance(revenue_resp, dict) else []
-        time.sleep(REQUEST_DELAY)
         
-        print("  Fetching dexs...")
-        dexs_resp = self.fetch_json('https://api.llama.fi/overview/dexs') or {}
+        dexs_resp = url_results.get(bulk_urls['dexs']) or {}
         dexs = dexs_resp.get('protocols', []) if isinstance(dexs_resp, dict) else []
-        time.sleep(REQUEST_DELAY)
         
-        print("  Fetching derivatives...")
-        deriv_resp = self.fetch_json('https://api.llama.fi/overview/derivatives') or {}
+        deriv_resp = url_results.get(bulk_urls['derivatives']) or {}
         derivatives = deriv_resp.get('protocols', []) if isinstance(deriv_resp, dict) else []
-        time.sleep(REQUEST_DELAY)
         
-        print("  Fetching options...")
-        opts_resp = self.fetch_json('https://api.llama.fi/overview/options') or {}
+        opts_resp = url_results.get(bulk_urls['options']) or {}
         options = opts_resp.get('protocols', []) if isinstance(opts_resp, dict) else []
-        time.sleep(REQUEST_DELAY)
         
-        print("  Fetching aggregators...")
-        agg_resp = self.fetch_json('https://api.llama.fi/overview/aggregators') or {}
+        agg_resp = url_results.get(bulk_urls['aggregators']) or {}
         aggregators = agg_resp.get('protocols', []) if isinstance(agg_resp, dict) else []
-        time.sleep(REQUEST_DELAY)
         
-        print("  Fetching bridges...")
-        bridges_resp = self.fetch_json('https://bridges.llama.fi/bridges') or {}
+        bridges_resp = url_results.get(bulk_urls['bridges']) or {}
         bridges = bridges_resp.get('bridges', []) if isinstance(bridges_resp, dict) else []
-        time.sleep(REQUEST_DELAY)
+        
+        stables_resp = url_results.get(bulk_urls['stablecoins']) or {}
+        stablecoins = stables_resp.get('peggedAssets', []) if isinstance(stables_resp, dict) else []
+        
+        chains_list_resp = url_results.get(bulk_urls['chains_list']) or []
+        
+        print(f"  Bulk fetch completed in {time.time() - start_bulk:.1f}s")
         
         print("  Fetching open interest (Pro API)...")
         open_interest_data = self.fetch_all_open_interest()
-        time.sleep(REQUEST_DELAY)
-        
-        print("  Fetching stablecoins...")
-        stables_resp = self.fetch_json('https://stablecoins.llama.fi/stablecoins') or {}
-        stablecoins = stables_resp.get('peggedAssets', []) if isinstance(stables_resp, dict) else []
         
         protocols_lookup = self.build_lookup(protocols, ['gecko_id', 'slug', 'name'])
         chains_lookup = self.build_lookup(chains, ['gecko_id', 'name'])
@@ -355,10 +415,82 @@ class DefiLlamaSource(BaseSource):
         stablecoins_lookup = self.build_lookup(stablecoins, ['gecko_id', 'name', 'symbol'])
         
         print("  Building official chains set...")
-        official_chains = self.get_official_chains()
+        official_chains = set()
+        for c in chains_list_resp:
+            if c.get('name'):
+                official_chains.add(c['name'].lower())
+            if c.get('gecko_id'):
+                official_chains.add(c['gecko_id'].lower())
+        official_chains.update(EXTRA_CHAINS)
         print(f"    Found {len(official_chains)} official chains")
         
         print(f"\nProcessing {len(config_entities)} entities...")
+        start_entity = time.time()
+        
+        entity_url_requests = []
+        entity_metadata = []
+        
+        for entity in config_entities:
+            gecko_id = entity.get('gecko_id', '').lower()
+            slug = entity.get('slug', '').lower()
+            name = entity.get('name', '').lower()
+            
+            if not gecko_id:
+                continue
+            
+            is_chain = (name in official_chains or gecko_id in official_chains or 
+                       slug in official_chains or name in EXTRA_CHAINS or gecko_id in EXTRA_CHAINS)
+            
+            p = protocols_lookup.get(gecko_id) or protocols_lookup.get(slug) or protocols_lookup.get(name)
+            protocol_slug = p.get('slug', '') if p else ''
+            
+            chain_slug = self._get_chain_slug(entity.get('name', ''), gecko_id, slug)
+            
+            urls_for_entity = {}
+            
+            if is_chain and chain_slug:
+                urls_for_entity['chain_fees'] = f'https://api.llama.fi/overview/fees/{chain_slug}'
+                urls_for_entity['chain_revenue'] = f'https://api.llama.fi/overview/fees/{chain_slug}?dataType=dailyRevenue'
+                urls_for_entity['chain_dex'] = f'https://api.llama.fi/overview/dexs/{chain_slug}'
+                urls_for_entity['chain_perps'] = f'https://api.llama.fi/overview/derivatives/{chain_slug}'
+                urls_for_entity['chain_options'] = f'https://api.llama.fi/overview/options/{chain_slug}'
+            elif protocol_slug:
+                urls_for_entity['protocol_fees'] = f'https://api.llama.fi/summary/fees/{protocol_slug}'
+                urls_for_entity['protocol_revenue'] = f'https://api.llama.fi/summary/fees/{protocol_slug}?dataType=dailyRevenue'
+            
+            if gecko_id in STABLECOIN_IDS:
+                stablecoin_api_id = STABLECOIN_IDS[gecko_id]
+                urls_for_entity['stablecoin'] = f'https://stablecoins.llama.fi/stablecoin/{stablecoin_api_id}'
+            
+            if gecko_id in BRIDGE_GECKO_IDS:
+                br_data = bridges_lookup.get(name)
+                if br_data and br_data.get('id'):
+                    urls_for_entity['bridge'] = f'https://bridges.llama.fi/bridge/{br_data["id"]}'
+            
+            for url_key, url in urls_for_entity.items():
+                entity_url_requests.append(url)
+                entity_metadata.append({
+                    'gecko_id': gecko_id,
+                    'slug': slug,
+                    'name': name,
+                    'is_chain': is_chain,
+                    'url_key': url_key,
+                    'protocol': p,
+                    'entity': entity
+                })
+        
+        print(f"  Fetching {len(entity_url_requests)} per-entity URLs in parallel...")
+        entity_results = self.fetch_urls_parallel(entity_url_requests)
+        print(f"  Entity fetch completed in {time.time() - start_entity:.1f}s")
+        
+        entity_data = {}
+        for i, url in enumerate(entity_url_requests):
+            meta = entity_metadata[i]
+            gecko_id = meta['gecko_id']
+            url_key = meta['url_key']
+            if gecko_id not in entity_data:
+                entity_data[gecko_id] = {'meta': meta, 'responses': {}}
+            entity_data[gecko_id]['responses'][url_key] = entity_results.get(url)
         
         all_records = []
         entities_with_data = 0
@@ -374,7 +506,7 @@ class DefiLlamaSource(BaseSource):
             raw_metrics = {}
             
             is_chain = (name in official_chains or gecko_id in official_chains or 
-                       slug in official_chains)
+                       slug in official_chains or name in EXTRA_CHAINS or gecko_id in EXTRA_CHAINS)
             
             p = protocols_lookup.get(gecko_id) or protocols_lookup.get(slug) or protocols_lookup.get(name)
             if p:
@@ -458,38 +590,54 @@ class DefiLlamaSource(BaseSource):
                 raw_metrics['stablecoins_circulatingPrevWeek_peggedUSD'] = circ_week.get('peggedUSD') if isinstance(circ_week, dict) else None
                 raw_metrics['stablecoins_price'] = st.get('price')
             
-            if gecko_id in STABLECOIN_IDS:
-                stablecoin_api_id = STABLECOIN_IDS[gecko_id]
-                circulating = self.fetch_stablecoin_circulating(stablecoin_api_id)
-                if circulating:
-                    raw_metrics['stablecoins_circulating_peggedUSD'] = circulating
-                time.sleep(REQUEST_DELAY)
-            
-            if gecko_id in BRIDGE_GECKO_IDS:
-                br_data = bridges_lookup.get(name)
-                if br_data:
-                    bridge_id = br_data.get('id')
-                    if bridge_id:
-                        bridge_metrics = self.fetch_bridge_volume(bridge_id)
-                        raw_metrics.update(bridge_metrics)
-                        time.sleep(REQUEST_DELAY)
-            
-            if self.api_key and p:
-                protocol_slug = p.get('slug', '')
-                if protocol_slug:
-                    inflow_data = self.fetch_inflows(protocol_slug)
-                    raw_metrics['inflows'] = inflow_data.get('inflows')
-                    raw_metrics['outflows'] = inflow_data.get('outflows')
+            ed = entity_data.get(gecko_id, {}).get('responses', {})
             
             if is_chain:
-                chain_metrics = self.fetch_chain_metrics(entity.get('name', ''), gecko_id, slug)
-                raw_metrics.update(chain_metrics)
+                chain_fees_data = ed.get('chain_fees')
+                if chain_fees_data:
+                    raw_metrics['chain_fees_24h'] = chain_fees_data.get('total24h')
+                    raw_metrics['chain_app_fees_24h'] = chain_fees_data.get('totalDataChartBreakdown', [{}])[-1].get('Fees') if chain_fees_data.get('totalDataChartBreakdown') else None
+                
+                chain_rev_data = ed.get('chain_revenue')
+                if chain_rev_data:
+                    raw_metrics['chain_revenue_24h'] = chain_rev_data.get('total24h')
+                
+                chain_dex_data = ed.get('chain_dex')
+                if chain_dex_data:
+                    raw_metrics['chain_dex_volume_24h'] = chain_dex_data.get('total24h')
+                
+                chain_perps_data = ed.get('chain_perps')
+                if chain_perps_data:
+                    raw_metrics['chain_perps_volume_24h'] = chain_perps_data.get('total24h')
+                
+                chain_opts_data = ed.get('chain_options')
+                if chain_opts_data:
+                    raw_metrics['chain_options_volume_24h'] = chain_opts_data.get('total24h')
             else:
-                if p:
-                    protocol_slug = p.get('slug', '')
-                    if protocol_slug:
-                        earnings_metrics = self.fetch_protocol_earnings(protocol_slug)
-                        raw_metrics.update(earnings_metrics)
+                proto_fees_data = ed.get('protocol_fees')
+                if proto_fees_data:
+                    total_fees = proto_fees_data.get('total24h', 0) or 0
+                    if total_fees > 0:
+                        raw_metrics['fees_total24h'] = total_fees
+                
+                proto_rev_data = ed.get('protocol_revenue')
+                if proto_rev_data:
+                    daily_revenue = proto_rev_data.get('total24h', 0) or 0
+                    if daily_revenue > 0:
+                        raw_metrics['protocol_earnings'] = daily_revenue
+            
+            stable_data = ed.get('stablecoin')
+            if stable_data:
+                circulating = stable_data.get('currentChainBalances', {})
+                total_circ = sum(circulating.values()) if isinstance(circulating, dict) else 0
+                if total_circ > 0:
+                    raw_metrics['stablecoins_circulating_peggedUSD'] = total_circ
+            
+            bridge_data = ed.get('bridge')
+            if bridge_data:
+                raw_metrics['bridges_lastDailyVolume'] = bridge_data.get('lastDailyVolume')
+                raw_metrics['bridges_weeklyVolume'] = bridge_data.get('weeklyVolume')
+                raw_metrics['bridges_monthlyVolume'] = bridge_data.get('monthlyVolume')
             
             entity_records = 0
             for raw_field, value in raw_metrics.items():

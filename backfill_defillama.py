@@ -1,15 +1,33 @@
 import os
 import csv
 import time
+import threading
 import requests
+from requests.adapters import HTTPAdapter
 import psycopg2
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-REQUEST_DELAY = 0.08  # ~12 req/sec (Pro limit: 1000/min = 16.6/sec)
+MAX_WORKERS = 10  # Concurrent requests (1000/min limit = 16.6/sec)
 BATCH_SIZE = 1000
 
 API_KEY = os.environ.get('DEFILLAMA_API_KEY')
 PRO_BASE_URL = "https://pro-api.llama.fi"
+
+_thread_local = threading.local()
+
+def get_thread_session():
+    if not hasattr(_thread_local, 'session'):
+        _thread_local.session = requests.Session()
+        adapter = HTTPAdapter(pool_connections=5, pool_maxsize=5)
+        _thread_local.session.mount('https://', adapter)
+        _thread_local.session.mount('http://', adapter)
+    return _thread_local.session
+
+main_session = requests.Session()
+main_adapter = HTTPAdapter(pool_connections=20, pool_maxsize=20)
+main_session.mount('https://', main_adapter)
+main_session.mount('http://', main_adapter)
 
 STABLECOIN_IDS = {
     'dai': 5,
@@ -76,9 +94,40 @@ ENDPOINTS = {
 def get_db_connection():
     return psycopg2.connect(os.environ['DATABASE_URL'])
 
+RATE_LIMIT_PER_SEC = 15  # Stay under 1000/min = 16.6/sec
+
+# Global rate limiter using a simple token bucket
+import threading
+_rate_lock = threading.Lock()
+_last_request_time = [0.0]  # Mutable to allow modification in nested function
+_min_interval = 1.0 / RATE_LIMIT_PER_SEC
+
+def _wait_for_rate_limit():
+    """Wait if needed to respect rate limit"""
+    with _rate_lock:
+        now = time.time()
+        elapsed = now - _last_request_time[0]
+        if elapsed < _min_interval:
+            time.sleep(_min_interval - elapsed)
+        _last_request_time[0] = time.time()
+
 def fetch_json(url):
+    """Rate-limited fetch - all calls go through the global limiter"""
+    _wait_for_rate_limit()
     try:
-        resp = requests.get(url, timeout=60)
+        resp = main_session.get(url, timeout=60)
+        if resp.status_code == 200:
+            return resp.json()
+        return None
+    except Exception as e:
+        return None
+
+def fetch_json_threadsafe(url):
+    """Thread-safe, rate-limited fetch for parallel workers"""
+    _wait_for_rate_limit()
+    try:
+        session = get_thread_session()
+        resp = session.get(url, timeout=60)
         if resp.status_code == 200:
             return resp.json()
         return None
@@ -86,16 +135,38 @@ def fetch_json(url):
         return None
 
 def fetch_pro_json(endpoint):
+    """Rate-limited Pro API fetch"""
+    _wait_for_rate_limit()
     if not API_KEY:
         return None
     url = f"{PRO_BASE_URL}/{API_KEY}{endpoint}"
     try:
-        resp = requests.get(url, timeout=60)
+        resp = main_session.get(url, timeout=60)
         if resp.status_code == 200:
             return resp.json()
         return None
     except Exception as e:
         return None
+
+def fetch_urls_parallel(urls):
+    results = {}
+    total = len(urls)
+    
+    # Use parallel fetch but each worker respects global rate limit
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        future_to_url = {executor.submit(fetch_json_threadsafe, url): url for url in urls}
+        done = 0
+        for future in as_completed(future_to_url):
+            url = future_to_url[future]
+            try:
+                results[url] = future.result()
+            except Exception:
+                results[url] = None
+            done += 1
+            if done % 100 == 0:
+                print(f"    Fetched {done}/{total} URLs...")
+    
+    return results
 
 def fetch_stablecoin_historical(stablecoin_api_id, gecko_id):
     records = []
@@ -201,7 +272,6 @@ def fetch_historical_inflows(slug, gecko_id, days=30):
                 })
         
         current += timedelta(days=1)
-        time.sleep(0.08)
     
     return records
 
@@ -501,7 +571,38 @@ def load_config():
                 })
     return entities
 
-def backfill_entity(entity, conn):
+
+def build_entity_urls(entity):
+    gecko_id = entity['gecko_id']
+    slug = entity['slug'] or gecko_id
+    name = entity.get('name', slug)
+    is_chain = entity.get('is_chain', False)
+    
+    urls = {}
+    chain_slug = get_chain_slug(name, slug, gecko_id)
+    
+    if is_chain:
+        urls['chain_tvl'] = f'https://api.llama.fi/v2/historicalChainTvl/{chain_slug}'
+        urls['chain_fees'] = f'https://api.llama.fi/overview/fees/{chain_slug}'
+        urls['chain_revenue'] = f'https://api.llama.fi/overview/fees/{chain_slug}?dataType=dailyRevenue'
+        urls['chain_dex'] = f'https://api.llama.fi/overview/dexs/{chain_slug}'
+        urls['chain_perps'] = f'https://api.llama.fi/overview/derivatives/{chain_slug}'
+        urls['chain_options'] = f'https://api.llama.fi/overview/options/{chain_slug}'
+    else:
+        for endpoint_name, config in ENDPOINTS.items():
+            urls[endpoint_name] = config['url'].format(slug=slug)
+    
+    if gecko_id in STABLECOIN_IDS:
+        stablecoin_api_id = STABLECOIN_IDS[gecko_id]
+        urls['stablecoin'] = f'https://stablecoins.llama.fi/stablecoincharts/all?stablecoin={stablecoin_api_id}'
+    
+    if gecko_id in BRIDGE_GECKO_IDS:
+        urls['bridges_list'] = 'https://bridges.llama.fi/bridges'
+    
+    return urls
+
+
+def process_entity_data(entity, url_results, conn):
     gecko_id = entity['gecko_id']
     slug = entity['slug'] or gecko_id
     name = entity.get('name', slug)
@@ -511,45 +612,146 @@ def backfill_entity(entity, conn):
     metrics_found = []
     
     if is_chain:
-        chain_tvl = fetch_chain_historical_tvl(name, gecko_id, slug)
-        if chain_tvl:
-            all_records.extend(chain_tvl)
-            metrics_found.append(f"CHAIN_TVL({len(chain_tvl)})")
-        time.sleep(REQUEST_DELAY)
+        chain_slug = get_chain_slug(name, slug, gecko_id)
         
-        chain_fees = fetch_chain_fees(name, gecko_id, slug)
-        if chain_fees:
-            all_records.extend(chain_fees)
-            metrics_found.append(f"CHAIN_FEES({len(chain_fees)})")
-        time.sleep(REQUEST_DELAY)
+        tvl_url = f'https://api.llama.fi/v2/historicalChainTvl/{chain_slug}'
+        tvl_data = url_results.get(tvl_url)
+        if tvl_data and isinstance(tvl_data, list):
+            for entry in tvl_data:
+                try:
+                    ts = entry.get('date')
+                    value = entry.get('tvl')
+                    if ts and value is not None and value > 0:
+                        dt = datetime.utcfromtimestamp(ts)
+                        all_records.append({
+                            'asset': gecko_id,
+                            'metric_name': 'CHAIN_TVL',
+                            'value': float(value),
+                            'pulled_at': dt
+                        })
+                except (ValueError, TypeError):
+                    continue
+            if all_records:
+                metrics_found.append(f"CHAIN_TVL({len(all_records)})")
         
-        chain_revenue = fetch_chain_revenue(name, gecko_id, slug)
-        if chain_revenue:
-            all_records.extend(chain_revenue)
-            metrics_found.append(f"CHAIN_REVENUE({len(chain_revenue)})")
-        time.sleep(REQUEST_DELAY)
+        fees_url = f'https://api.llama.fi/overview/fees/{chain_slug}'
+        fees_data = url_results.get(fees_url)
+        if fees_data:
+            chart = fees_data.get('totalDataChart', [])
+            count = 0
+            for entry in chart:
+                try:
+                    if isinstance(entry, list) and len(entry) >= 2:
+                        ts, value = entry[0], entry[1]
+                        if ts and value is not None and value != 0:
+                            dt = datetime.utcfromtimestamp(ts)
+                            all_records.append({
+                                'asset': gecko_id,
+                                'metric_name': 'CHAIN_FEES',
+                                'value': float(value),
+                                'pulled_at': dt
+                            })
+                            count += 1
+                except (ValueError, TypeError):
+                    continue
+            if count > 0:
+                metrics_found.append(f"CHAIN_FEES({count})")
         
-        chain_dex = fetch_chain_dex_volume(name, gecko_id, slug)
-        if chain_dex:
-            all_records.extend(chain_dex)
-            metrics_found.append(f"CHAIN_DEX({len(chain_dex)})")
-        time.sleep(REQUEST_DELAY)
+        rev_url = f'https://api.llama.fi/overview/fees/{chain_slug}?dataType=dailyRevenue'
+        rev_data = url_results.get(rev_url)
+        if rev_data:
+            chart = rev_data.get('totalDataChart', [])
+            count = 0
+            for entry in chart:
+                try:
+                    if isinstance(entry, list) and len(entry) >= 2:
+                        ts, value = entry[0], entry[1]
+                        if ts and value is not None and value != 0:
+                            dt = datetime.utcfromtimestamp(ts)
+                            all_records.append({
+                                'asset': gecko_id,
+                                'metric_name': 'CHAIN_REVENUE',
+                                'value': float(value),
+                                'pulled_at': dt
+                            })
+                            count += 1
+                except (ValueError, TypeError):
+                    continue
+            if count > 0:
+                metrics_found.append(f"CHAIN_REVENUE({count})")
         
-        chain_deriv = fetch_chain_derivatives(name, gecko_id, slug)
-        if chain_deriv:
-            all_records.extend(chain_deriv)
-            metrics_found.append(f"CHAIN_PERPS({len(chain_deriv)})")
-        time.sleep(REQUEST_DELAY)
+        dex_url = f'https://api.llama.fi/overview/dexs/{chain_slug}'
+        dex_data = url_results.get(dex_url)
+        if dex_data:
+            chart = dex_data.get('totalDataChart', [])
+            count = 0
+            for entry in chart:
+                try:
+                    if isinstance(entry, list) and len(entry) >= 2:
+                        ts, value = entry[0], entry[1]
+                        if ts and value is not None and value != 0:
+                            dt = datetime.utcfromtimestamp(ts)
+                            all_records.append({
+                                'asset': gecko_id,
+                                'metric_name': 'CHAIN_DEX_VOLUME',
+                                'value': float(value),
+                                'pulled_at': dt
+                            })
+                            count += 1
+                except (ValueError, TypeError):
+                    continue
+            if count > 0:
+                metrics_found.append(f"CHAIN_DEX({count})")
         
-        chain_opts = fetch_chain_options(name, gecko_id, slug)
-        if chain_opts:
-            all_records.extend(chain_opts)
-            metrics_found.append(f"CHAIN_OPTIONS({len(chain_opts)})")
-        time.sleep(REQUEST_DELAY)
+        perps_url = f'https://api.llama.fi/overview/derivatives/{chain_slug}'
+        perps_data = url_results.get(perps_url)
+        if perps_data:
+            chart = perps_data.get('totalDataChart', [])
+            count = 0
+            for entry in chart:
+                try:
+                    if isinstance(entry, list) and len(entry) >= 2:
+                        ts, value = entry[0], entry[1]
+                        if ts and value is not None and value != 0:
+                            dt = datetime.utcfromtimestamp(ts)
+                            all_records.append({
+                                'asset': gecko_id,
+                                'metric_name': 'CHAIN_PERPS_VOLUME',
+                                'value': float(value),
+                                'pulled_at': dt
+                            })
+                            count += 1
+                except (ValueError, TypeError):
+                    continue
+            if count > 0:
+                metrics_found.append(f"CHAIN_PERPS({count})")
+        
+        options_url = f'https://api.llama.fi/overview/options/{chain_slug}'
+        options_data = url_results.get(options_url)
+        if options_data:
+            chart = options_data.get('totalDataChart', [])
+            count = 0
+            for entry in chart:
+                try:
+                    if isinstance(entry, list) and len(entry) >= 2:
+                        ts, value = entry[0], entry[1]
+                        if ts and value is not None and value != 0:
+                            dt = datetime.utcfromtimestamp(ts)
+                            all_records.append({
+                                'asset': gecko_id,
+                                'metric_name': 'CHAIN_OPTIONS_VOLUME',
+                                'value': float(value),
+                                'pulled_at': dt
+                            })
+                            count += 1
+                except (ValueError, TypeError):
+                    continue
+            if count > 0:
+                metrics_found.append(f"CHAIN_OPTIONS({count})")
     else:
         for endpoint_name, config in ENDPOINTS.items():
             url = config['url'].format(slug=slug)
-            data = fetch_json(url)
+            data = url_results.get(url)
             
             if data:
                 records = extract_historical_data(
@@ -561,30 +763,79 @@ def backfill_entity(entity, conn):
                 if records:
                     all_records.extend(records)
                     metrics_found.append(f"{config['metric']}({len(records)})")
+    
+    if gecko_id in STABLECOIN_IDS:
+        stablecoin_api_id = STABLECOIN_IDS[gecko_id]
+        stable_url = f'https://stablecoins.llama.fi/stablecoincharts/all?stablecoin={stablecoin_api_id}'
+        stable_data = url_results.get(stable_url)
+        if stable_data and isinstance(stable_data, list):
+            count = 0
+            for entry in stable_data:
+                try:
+                    ts = entry.get('date')
+                    total = entry.get('totalCirculating', {})
+                    value = total.get('peggedUSD')
+                    if ts and value is not None and value > 0:
+                        dt = datetime.utcfromtimestamp(ts)
+                        all_records.append({
+                            'asset': gecko_id,
+                            'metric_name': 'STABLECOIN_CIRCULATING',
+                            'value': float(value),
+                            'pulled_at': dt
+                        })
+                        count += 1
+                except (ValueError, TypeError, KeyError):
+                    continue
+            if count > 0:
+                metrics_found.append(f"STABLECOIN_CIRC({count})")
+    
+    if gecko_id in BRIDGE_GECKO_IDS:
+        bridges_list_url = 'https://bridges.llama.fi/bridges'
+        bridges_data = url_results.get(bridges_list_url)
+        if bridges_data:
+            bridges_list = bridges_data.get('bridges', [])
+            bridge_id = None
+            for b in bridges_list:
+                if (b.get('name', '').lower() == name.lower() or 
+                    b.get('displayName', '').lower() == name.lower()):
+                    bridge_id = b.get('id')
+                    break
             
-            time.sleep(REQUEST_DELAY)
+            if bridge_id:
+                bridge_vol_url = f'https://bridges.llama.fi/bridgevolume/{bridge_id}'
+                bridge_vol_data = fetch_json(bridge_vol_url)
+                if bridge_vol_data and isinstance(bridge_vol_data, list):
+                    count = 0
+                    for entry in bridge_vol_data:
+                        try:
+                            ts = entry.get('date')
+                            deposit_usd = entry.get('depositUSD', 0) or 0
+                            withdraw_usd = entry.get('withdrawUSD', 0) or 0
+                            total_volume = deposit_usd + withdraw_usd
+                            if ts and total_volume > 0:
+                                dt = datetime.utcfromtimestamp(ts)
+                                all_records.append({
+                                    'asset': gecko_id,
+                                    'metric_name': 'BRIDGE_VOLUME',
+                                    'value': float(total_volume),
+                                    'pulled_at': dt
+                                })
+                                count += 1
+                        except (ValueError, TypeError, KeyError):
+                            continue
+                    if count > 0:
+                        metrics_found.append(f"BRIDGE_VOL({count})")
     
-    time.sleep(REQUEST_DELAY)
-    
-    if API_KEY:
+    if not is_chain:
         inflow_records = fetch_historical_inflows(slug, gecko_id, days=30)
         if inflow_records:
             all_records.extend(inflow_records)
-            metrics_found.append(f"INFLOW({len(inflow_records)})")
-    
-    if gecko_id in STABLECOIN_IDS:
-        stablecoin_records = fetch_stablecoin_historical(STABLECOIN_IDS[gecko_id], gecko_id)
-        if stablecoin_records:
-            all_records.extend(stablecoin_records)
-            metrics_found.append(f"STABLECOIN_CIRC({len(stablecoin_records)})")
-        time.sleep(REQUEST_DELAY)
-    
-    if gecko_id in BRIDGE_GECKO_IDS:
-        bridge_records = fetch_bridge_historical(name, gecko_id)
-        if bridge_records:
-            all_records.extend(bridge_records)
-            metrics_found.append(f"BRIDGE_VOL({len(bridge_records)})")
-        time.sleep(REQUEST_DELAY)
+            inflow_count = len([r for r in inflow_records if r['metric_name'] == 'INFLOW'])
+            outflow_count = len([r for r in inflow_records if r['metric_name'] == 'OUTFLOW'])
+            if inflow_count > 0:
+                metrics_found.append(f"INFLOW({inflow_count})")
+            if outflow_count > 0:
+                metrics_found.append(f"OUTFLOW({outflow_count})")
     
     inserted = 0
     if all_records:
@@ -592,9 +843,10 @@ def backfill_entity(entity, conn):
     
     return inserted, metrics_found
 
+
 def main():
     print("=" * 70)
-    print("DEFILLAMA HISTORICAL BACKFILL")
+    print("DEFILLAMA HISTORICAL BACKFILL (PARALLEL)")
     print("=" * 70)
     
     entities = load_config()
@@ -603,27 +855,47 @@ def main():
     
     conn = get_db_connection()
     
+    print("\nBuilding URL list for all entities...")
+    all_urls = []
+    entity_url_map = {}
+    
+    for entity in entities:
+        gecko_id = entity['gecko_id']
+        urls = build_entity_urls(entity)
+        entity_url_map[gecko_id] = urls
+        all_urls.extend(urls.values())
+    
+    print(f"Total URLs to fetch: {len(all_urls)}")
+    print(f"Estimated time at 16 req/sec: {len(all_urls) / 16:.0f}s")
+    print("=" * 70)
+    
+    print("\nFetching all historical data in parallel...")
+    start_time = time.time()
+    
+    url_results = fetch_urls_parallel(all_urls)
+    
+    fetch_time = time.time() - start_time
+    print(f"Fetch completed in {fetch_time:.1f}s ({len(all_urls) / fetch_time:.1f} req/sec)")
+    
+    print("\nProcessing and inserting records...")
+    
     total_records = 0
     entities_processed = 0
-    start_time = time.time()
     
     for i, entity in enumerate(entities):
         gecko_id = entity['gecko_id']
         
-        inserted, metrics = backfill_entity(entity, conn)
+        inserted, metrics = process_entity_data(entity, url_results, conn)
         total_records += inserted
         entities_processed += 1
         
         if metrics:
             metrics_str = ", ".join(metrics)
             print(f"[{i+1:3d}/{len(entities)}] {gecko_id:30s} +{inserted:6d} records ({metrics_str})")
-        else:
-            print(f"[{i+1:3d}/{len(entities)}] {gecko_id:30s} no historical data")
         
-        if (i + 1) % 50 == 0:
+        if (i + 1) % 100 == 0:
             elapsed = time.time() - start_time
-            rate = total_records / elapsed if elapsed > 0 else 0
-            print(f"    --- Progress: {total_records:,} records, {rate:.0f} rec/sec ---")
+            print(f"    --- Progress: {total_records:,} records, {entities_processed} entities ---")
     
     conn.close()
     
@@ -635,6 +907,7 @@ def main():
     print(f"  Entities processed: {entities_processed}")
     print(f"  Total records inserted: {total_records:,}")
     print(f"  Time elapsed: {elapsed:.1f} seconds")
+    print(f"  Average: {total_records / elapsed:.0f} records/sec")
     print("=" * 70)
 
 if __name__ == "__main__":
