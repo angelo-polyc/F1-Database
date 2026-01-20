@@ -1,14 +1,16 @@
 import time
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from db.setup import get_connection
 
-ARTEMIS_INTERVAL = 24 * 60 * 60  # 24 hours in seconds
-DEFILLAMA_INTERVAL = 60 * 60     # 1 hour in seconds
+ARTEMIS_HOUR = 0
+ARTEMIS_MINUTE = 5
 
-last_artemis_pull = 0
-last_defillama_pull = 0
+DEFILLAMA_MINUTE = 5
+
+last_artemis_date = None
+last_defillama_hour = None
 
 def clear_all_data():
     """Clear all metrics and pulls data for a fresh start."""
@@ -26,80 +28,103 @@ def clear_all_data():
 def run_backfill(source: str):
     """Run backfill script for a source."""
     script = f"backfill_{source}.py"
-    print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting {source} backfill...")
+    print(f"\n[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] Starting {source} backfill...")
     try:
         result = subprocess.run(
             ["python", script],
             capture_output=False,
-            timeout=14400  # 4 hour timeout for backfills
+            timeout=14400
         )
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {source} backfill completed")
+        print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} backfill completed")
     except subprocess.TimeoutExpired:
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {source} backfill timed out")
+        print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} backfill timed out")
     except Exception as e:
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {source} backfill error: {e}")
+        print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} backfill error: {e}")
 
 def run_pull(source: str):
-    print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting {source} pull...")
+    print(f"\n[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] Starting {source} pull...")
     try:
         result = subprocess.run(
             ["python", "main.py", "pull", source],
             capture_output=False,
             timeout=300
         )
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {source} pull completed")
+        print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} pull completed")
     except subprocess.TimeoutExpired:
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {source} pull timed out")
+        print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} pull timed out")
     except Exception as e:
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {source} pull error: {e}")
+        print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} pull error: {e}")
+
+def should_run_artemis(now_utc):
+    """Check if Artemis should run: daily at 00:05 UTC."""
+    global last_artemis_date
+    
+    if now_utc.hour == ARTEMIS_HOUR and now_utc.minute >= ARTEMIS_MINUTE:
+        today = now_utc.date()
+        if last_artemis_date != today:
+            return True
+    return False
+
+def should_run_defillama(now_utc):
+    """Check if DefiLlama should run: at minute 5 of every hour."""
+    global last_defillama_hour
+    
+    if now_utc.minute >= DEFILLAMA_MINUTE:
+        current_hour = (now_utc.date(), now_utc.hour)
+        if last_defillama_hour != current_hour:
+            return True
+    return False
 
 def main():
-    global last_artemis_pull, last_defillama_pull
+    global last_artemis_date, last_defillama_hour
     
     fresh_start = "--fresh" in sys.argv
     
     print("=" * 60)
     print("DATA PIPELINE SCHEDULER")
     print("=" * 60)
-    print(f"  Artemis interval: every {ARTEMIS_INTERVAL // 3600} hours")
-    print(f"  DefiLlama interval: every {DEFILLAMA_INTERVAL // 3600} hour(s)")
+    print(f"  Artemis: daily at {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC")
+    print(f"  DefiLlama: hourly at XX:{DEFILLAMA_MINUTE:02d} UTC")
     if fresh_start:
         print("  Mode: FRESH START (clearing all data)")
     print("=" * 60)
     
-    # Clear data if --fresh flag is provided
     if fresh_start:
         clear_all_data()
     
-    # Run full backfills on startup
     print("\n" + "=" * 60)
     print("RUNNING FULL BACKFILLS")
     print("=" * 60)
     run_backfill("defillama")
     run_backfill("artemis")
     
-    # Run both pulls after backfill
     print("\nRunning initial pulls...")
+    now_utc = datetime.now(timezone.utc)
+    
     run_pull("artemis")
-    last_artemis_pull = time.time()
+    last_artemis_date = now_utc.date()
     
     run_pull("defillama")
-    last_defillama_pull = time.time()
+    last_defillama_hour = (now_utc.date(), now_utc.hour)
     
-    print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Scheduler running. Waiting for next interval...")
+    print(f"\n[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Scheduler running.")
+    print(f"  Next Artemis pull: {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC tomorrow")
+    print(f"  Next DefiLlama pull: XX:{DEFILLAMA_MINUTE:02d} UTC (next hour)")
     
     while True:
-        current_time = time.time()
+        now_utc = datetime.now(timezone.utc)
         
-        if current_time - last_artemis_pull >= ARTEMIS_INTERVAL:
+        if should_run_artemis(now_utc):
             run_pull("artemis")
-            last_artemis_pull = current_time
+            last_artemis_date = now_utc.date()
+            print(f"[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Next Artemis pull: {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC tomorrow")
         
-        if current_time - last_defillama_pull >= DEFILLAMA_INTERVAL:
+        if should_run_defillama(now_utc):
             run_pull("defillama")
-            last_defillama_pull = current_time
+            last_defillama_hour = (now_utc.date(), now_utc.hour)
+            print(f"[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Next DefiLlama pull: XX:{DEFILLAMA_MINUTE:02d} UTC (next hour)")
         
-        time.sleep(60)
+        time.sleep(30)
 
 if __name__ == "__main__":
     main()

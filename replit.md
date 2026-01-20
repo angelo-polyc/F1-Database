@@ -91,11 +91,11 @@ Artemis and DefiLlama use different ID systems:
 Cross-source queries require joining on the `source` column or using entity mapping.
 
 ## Automated Scheduling
-The `scheduler.py` runs continuously and executes pulls at different intervals:
-- **DefiLlama:** Every 1 hour
-- **Artemis:** Every 24 hours
+The `scheduler.py` runs continuously and executes pulls at specific times (5 min after API updates):
+- **DefiLlama:** Hourly at XX:05 UTC (APIs update on the hour)
+- **Artemis:** Daily at 00:05 UTC (APIs update at midnight UTC)
 
-Both pulls run immediately on startup, then follow their respective intervals.
+Both pulls run immediately on startup, then follow their scheduled times.
 
 Run manually: `python scheduler.py`
 Fresh start (clears all data first): `python scheduler.py --fresh`
