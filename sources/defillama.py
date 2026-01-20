@@ -426,6 +426,48 @@ class DefiLlamaSource(BaseSource):
         
         print(f"\nProcessing {len(config_entities)} entities...")
         
+        chain_url_requests = []
+        chain_metadata = []
+        
+        for entity in config_entities:
+            gecko_id = entity.get('gecko_id', '').lower()
+            slug = entity.get('slug', '').lower()
+            name = entity.get('name', '').lower()
+            
+            if not gecko_id:
+                continue
+            
+            is_chain = (name in official_chains or gecko_id in official_chains or 
+                       slug in official_chains or name in EXTRA_CHAINS or gecko_id in EXTRA_CHAINS)
+            
+            if is_chain:
+                chain_slug = self._get_chain_slug(entity.get('name', ''), gecko_id, slug)
+                if chain_slug:
+                    for url_key, url in [
+                        ('chain_fees', f'https://api.llama.fi/overview/fees/{chain_slug}'),
+                        ('chain_revenue', f'https://api.llama.fi/overview/fees/{chain_slug}?dataType=dailyRevenue'),
+                        ('chain_dex', f'https://api.llama.fi/overview/dexs/{chain_slug}'),
+                        ('chain_perps', f'https://api.llama.fi/overview/derivatives/{chain_slug}'),
+                        ('chain_options', f'https://api.llama.fi/overview/options/{chain_slug}'),
+                    ]:
+                        chain_url_requests.append(url)
+                        chain_metadata.append({'gecko_id': gecko_id, 'url_key': url_key})
+        
+        chain_data = {}
+        if chain_url_requests:
+            print(f"  Fetching {len(chain_url_requests)} chain-specific URLs...")
+            start_chain = time.time()
+            chain_results = self.fetch_urls_parallel(chain_url_requests)
+            print(f"  Chain fetch completed in {time.time() - start_chain:.1f}s")
+            
+            for i, url in enumerate(chain_url_requests):
+                meta = chain_metadata[i]
+                gecko_id = meta['gecko_id']
+                url_key = meta['url_key']
+                if gecko_id not in chain_data:
+                    chain_data[gecko_id] = {}
+                chain_data[gecko_id][url_key] = chain_results.get(url)
+        
         all_records = []
         entities_with_data = 0
         
@@ -523,6 +565,33 @@ class DefiLlamaSource(BaseSource):
                 circ_week = st.get('circulatingPrevWeek', {})
                 raw_metrics['stablecoins_circulatingPrevWeek_peggedUSD'] = circ_week.get('peggedUSD') if isinstance(circ_week, dict) else None
                 raw_metrics['stablecoins_price'] = st.get('price')
+            
+            cd = chain_data.get(gecko_id, {})
+            if cd:
+                chain_fees_data = cd.get('chain_fees')
+                if chain_fees_data:
+                    raw_metrics['chain_fees_24h'] = chain_fees_data.get('total24h')
+                    breakdown = chain_fees_data.get('totalDataChartBreakdown')
+                    if breakdown and isinstance(breakdown, list) and len(breakdown) > 0:
+                        last_entry = breakdown[-1]
+                        if isinstance(last_entry, dict):
+                            raw_metrics['chain_app_fees_24h'] = last_entry.get('Fees')
+                
+                chain_rev_data = cd.get('chain_revenue')
+                if chain_rev_data:
+                    raw_metrics['chain_revenue_24h'] = chain_rev_data.get('total24h')
+                
+                chain_dex_data = cd.get('chain_dex')
+                if chain_dex_data:
+                    raw_metrics['chain_dex_volume_24h'] = chain_dex_data.get('total24h')
+                
+                chain_perps_data = cd.get('chain_perps')
+                if chain_perps_data:
+                    raw_metrics['chain_perps_volume_24h'] = chain_perps_data.get('total24h')
+                
+                chain_opts_data = cd.get('chain_options')
+                if chain_opts_data:
+                    raw_metrics['chain_options_volume_24h'] = chain_opts_data.get('total24h')
             
             entity_records = 0
             for raw_field, value in raw_metrics.items():
