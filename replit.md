@@ -126,7 +126,7 @@ The `backfill_defillama.py` script fetches historical time series data from Defi
 - **Protocol Endpoints:** fees, revenue, dexs, derivatives, aggregators, tvl
 - **Stablecoin Endpoints:** stablecoins.llama.fi/stablecoincharts for 13 stablecoins (dai, usds, ethena-usde, etc.)
 - **Bridge Endpoints:** bridges.llama.fi/bridgevolume for 10+ bridge protocols
-- **Pro API:** inflows/outflows (30 days)
+- **Note:** Inflows/outflows are NOT fetched during backfill (only 30 days available via Pro API) - collected by scheduled pulls instead
 - **Data:** Daily time series going back to 2011 for some assets
 - **Idempotent:** Uses ON CONFLICT DO NOTHING to prevent duplicates
 

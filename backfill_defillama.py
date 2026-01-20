@@ -826,17 +826,6 @@ def process_entity_data(entity, url_results, conn):
                     if count > 0:
                         metrics_found.append(f"BRIDGE_VOL({count})")
     
-    if not is_chain:
-        inflow_records = fetch_historical_inflows(slug, gecko_id, days=30)
-        if inflow_records:
-            all_records.extend(inflow_records)
-            inflow_count = len([r for r in inflow_records if r['metric_name'] == 'INFLOW'])
-            outflow_count = len([r for r in inflow_records if r['metric_name'] == 'OUTFLOW'])
-            if inflow_count > 0:
-                metrics_found.append(f"INFLOW({inflow_count})")
-            if outflow_count > 0:
-                metrics_found.append(f"OUTFLOW({outflow_count})")
-    
     inserted = 0
     if all_records:
         inserted = insert_records_batch(conn, all_records)
