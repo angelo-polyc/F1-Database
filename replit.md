@@ -24,7 +24,8 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
 ├── migrations/
 │   ├── 001_schema_upgrade.sql    # Entity master + enhanced metrics schema
 │   ├── 002_entity_seed_data.sql  # Entity seed with Velo coins + initial mappings
-│   └── 003_complete_entity_mappings.sql  # Complete Artemis/DefiLlama mappings
+│   ├── 003_complete_entity_mappings.sql  # Complete Artemis/DefiLlama mappings
+│   └── 004_entity_corrections.sql  # User corrections: merge duplicates, add mappings
 ├── db/
 │   ├── __init__.py
 │   └── setup.py            # Database connection and schema setup
@@ -126,10 +127,11 @@ The entity master system provides cross-source canonical IDs for unified queries
 
 ### ID Mappings
 Each source uses different ID formats, mapped via entity_source_ids:
-- Artemis: `sol`, `eth`, `btc` (short tickers) - **374 assets mapped**
-- DefiLlama: `solana`, `ethereum`, `bitcoin` (CoinGecko IDs / slugs) - **336 entities mapped**
-- Velo: `SOL`, `ETH`, `BTC` (uppercase symbols) - **480 coins mapped**
-- **42 entities** have all 3 sources mapped for full cross-source analysis
+- Artemis: `sol`, `eth`, `btc` (short tickers) - **364 assets mapped**
+- DefiLlama: `solana`, `ethereum`, `bitcoin` (CoinGecko IDs / slugs) - **343 entities mapped**
+- Velo: `SOL`, `ETH`, `BTC` (uppercase symbols) - **482 coins mapped**
+- **53 entities** have all 3 sources mapped for full cross-source analysis
+- **973 total entities** after deduplication (merged ALT/AltLayer, Arkham/ARKM, Polygon/POL, etc.)
 
 ### Cross-Source Query Example
 ```sql
