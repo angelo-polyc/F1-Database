@@ -8,9 +8,11 @@ ARTEMIS_HOUR = 0
 ARTEMIS_MINUTE = 5
 
 DEFILLAMA_MINUTE = 5
+VELO_MINUTE = 5  # Velo is real-time, pull alongside DefiLlama
 
 last_artemis_date = None
 last_defillama_hour = None
+last_velo_hour = None
 
 def clear_all_data():
     """Clear all metrics and pulls data for a fresh start."""
@@ -75,8 +77,18 @@ def should_run_defillama(now_utc):
             return True
     return False
 
+def should_run_velo(now_utc):
+    """Check if Velo should run: at minute 5 of every hour (same as DefiLlama)."""
+    global last_velo_hour
+    
+    if now_utc.minute >= VELO_MINUTE:
+        current_hour = (now_utc.date(), now_utc.hour)
+        if last_velo_hour != current_hour:
+            return True
+    return False
+
 def main():
-    global last_artemis_date, last_defillama_hour
+    global last_artemis_date, last_defillama_hour, last_velo_hour
     
     fresh_start = "--fresh" in sys.argv
     
@@ -85,6 +97,7 @@ def main():
     print("=" * 60)
     print(f"  Artemis: daily at {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC")
     print(f"  DefiLlama: hourly at XX:{DEFILLAMA_MINUTE:02d} UTC")
+    print(f"  Velo: hourly at XX:{VELO_MINUTE:02d} UTC")
     if fresh_start:
         print("  Mode: FRESH START (clearing all data)")
     print("=" * 60)
@@ -107,9 +120,13 @@ def main():
     run_pull("defillama")
     last_defillama_hour = (now_utc.date(), now_utc.hour)
     
+    run_pull("velo")
+    last_velo_hour = (now_utc.date(), now_utc.hour)
+    
     print(f"\n[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Scheduler running.")
     print(f"  Next Artemis pull: {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC tomorrow")
     print(f"  Next DefiLlama pull: XX:{DEFILLAMA_MINUTE:02d} UTC (next hour)")
+    print(f"  Next Velo pull: XX:{VELO_MINUTE:02d} UTC (next hour)")
     
     while True:
         now_utc = datetime.now(timezone.utc)
@@ -123,6 +140,11 @@ def main():
             run_pull("defillama")
             last_defillama_hour = (now_utc.date(), now_utc.hour)
             print(f"[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Next DefiLlama pull: XX:{DEFILLAMA_MINUTE:02d} UTC (next hour)")
+        
+        if should_run_velo(now_utc):
+            run_pull("velo")
+            last_velo_hour = (now_utc.date(), now_utc.hour)
+            print(f"[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Next Velo pull: XX:{VELO_MINUTE:02d} UTC (next hour)")
         
         time.sleep(30)
 

@@ -149,10 +149,11 @@ The `v_normalized_metrics` view maps different metric names to canonical names:
 
 ## Automated Scheduling
 The `scheduler.py` runs continuously and executes pulls at specific times (5 min after API updates):
-- **DefiLlama:** Hourly at XX:05 UTC (APIs update on the hour)
 - **Artemis:** Daily at 00:05 UTC (APIs update at midnight UTC)
+- **DefiLlama:** Hourly at XX:05 UTC (APIs update on the hour)
+- **Velo:** Hourly at XX:05 UTC (real-time data, pulled alongside DefiLlama)
 
-Both pulls run immediately on startup, then follow their scheduled times.
+All pulls run immediately on startup, then follow their scheduled times.
 
 Run manually: `python scheduler.py`
 Fresh start (clears all data first): `python scheduler.py --fresh`
