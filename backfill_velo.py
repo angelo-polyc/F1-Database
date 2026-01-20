@@ -175,6 +175,7 @@ def fetch_historical(exchange, coins, begin_ts, end_ts, auth, entity_cache):
                 if attempt < 2:
                     time.sleep(1)
                     continue
+                print(f"    API error {resp.status_code}: {resp.text[:100]}")
                 return []
             
             # Parse CSV response

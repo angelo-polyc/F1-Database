@@ -204,7 +204,7 @@ def main():
                     cur.executemany('''
                         INSERT INTO metrics (pulled_at, source, asset, metric_name, value)
                         VALUES (%s, %s, %s, %s, %s)
-                        ON CONFLICT (source, asset, metric_name, pulled_at) DO NOTHING
+                        ON CONFLICT (source, asset, metric_name, pulled_at, COALESCE(exchange, '')) DO NOTHING
                     ''', records)
                     conn.commit()
                     total_records += len(records)

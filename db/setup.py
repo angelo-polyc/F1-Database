@@ -32,23 +32,11 @@ def setup_database():
         );
     """)
     
+    # Unique index that includes exchange (COALESCE handles NULL for non-Velo sources)
+    # This supports both Velo (per-exchange data) and other sources (no exchange)
     cur.execute("""
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_metrics_unique 
-        ON metrics (source, asset, metric_name, pulled_at);
-    """)
-    
-    # Add unique constraint for ON CONFLICT to work (if not exists)
-    cur.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (
-                SELECT 1 FROM pg_constraint 
-                WHERE conname = 'metrics_source_asset_metric_pulled_unique'
-            ) THEN
-                ALTER TABLE metrics ADD CONSTRAINT metrics_source_asset_metric_pulled_unique
-                UNIQUE (source, asset, metric_name, pulled_at);
-            END IF;
-        END $$;
+        CREATE UNIQUE INDEX IF NOT EXISTS metrics_unique_with_exchange 
+        ON metrics (source, asset, metric_name, pulled_at, COALESCE(exchange, ''));
     """)
     
     conn.commit()
