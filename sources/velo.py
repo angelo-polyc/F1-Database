@@ -10,18 +10,19 @@ import csv
 import time
 import requests
 from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests.auth import HTTPBasicAuth
 from sources.base import BaseSource
 from db.setup import get_connection
 
 # Rate limit: 120 requests per 30 seconds = 4/sec max
-# Use conservative 0.3s delay (3.3 req/sec)
-REQUEST_DELAY = 0.3
+REQUEST_DELAY = 0.25  # 4 req/sec
 
 # Velo API returns 22,500 values max per request
-# For live pulls (2 hours of data), we can batch ~25 coins safely
-# 30 columns * 2 hours * 25 coins = 1,500 values per batch
-BATCH_SIZE = 5  # Reduced from 25 - API limit is 22500 cells per request
+# API returns ~120 hours (5 days) of data regardless of begin/end params
+# 30 columns * 120 rows = 3600 cells per coin per exchange
+# 22,500 / 3600 = 6 coins max per request
+BATCH_SIZE = 5
 
 # All futures columns to pull
 FUTURES_COLUMNS = [
@@ -132,21 +133,32 @@ class VeloSource(BaseSource):
         end_ts = int(now.timestamp() * 1000)
         begin_ts = end_ts - (2 * 60 * 60 * 1000)  # 2 hours ago
         
-        all_records = []
-        
+        # Build list of all fetch tasks (exchange, batch)
+        fetch_tasks = []
         for exchange, coins in by_exchange.items():
-            print(f"[Velo] Fetching {len(coins)} coins from {exchange}...")
-            
-            # Batch coins
             for i in range(0, len(coins), BATCH_SIZE):
                 batch = coins[i:i+BATCH_SIZE]
-                records = self._fetch_batch(exchange, batch, begin_ts, end_ts)
-                all_records.extend(records)
-                
-                if i + BATCH_SIZE < len(coins):
-                    time.sleep(REQUEST_DELAY)
+                fetch_tasks.append((exchange, batch))
+        
+        print(f"[Velo] Fetching {len(fetch_tasks)} batches across {len(by_exchange)} exchanges...")
+        
+        all_records = []
+        
+        # Parallel fetch with rate limiting (4 workers = 4 req/sec max)
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {}
+            for exchange, batch in fetch_tasks:
+                future = executor.submit(self._fetch_batch, exchange, batch, begin_ts, end_ts)
+                futures[future] = (exchange, batch)
+                time.sleep(REQUEST_DELAY)  # Rate limit submissions
             
-            time.sleep(REQUEST_DELAY)
+            for future in as_completed(futures):
+                try:
+                    records = future.result()
+                    all_records.extend(records)
+                except Exception as e:
+                    exchange, batch = futures[future]
+                    print(f"[Velo] Error fetching {exchange}: {e}")
         
         # Deduplicate records before insert (same coin/exchange/metric/timestamp)
         if all_records:
