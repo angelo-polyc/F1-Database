@@ -107,9 +107,18 @@ def fetch_historical_inflows(slug, gecko_id, days=30):
     return records
 
 
-def fetch_chain_historical_tvl(chain_name, gecko_id):
+def get_chain_slug(chain_name, slug='', gecko_id=''):
+    if slug:
+        return slug.lower()
+    if chain_name:
+        return chain_name.lower().replace(' ', '-')
+    return gecko_id.lower()
+
+def fetch_chain_historical_tvl(chain_name, gecko_id, slug=''):
     records = []
-    chain_slug = chain_name.lower().replace(' ', '-')
+    chain_slug = get_chain_slug(chain_name, slug, gecko_id)
+    if not chain_slug:
+        return records
     url = f"https://api.llama.fi/v2/historicalChainTvl/{chain_slug}"
     data = fetch_json(url)
     
@@ -131,9 +140,11 @@ def fetch_chain_historical_tvl(chain_name, gecko_id):
     
     return records
 
-def fetch_chain_fees(chain_name, gecko_id):
+def fetch_chain_fees(chain_name, gecko_id, slug=''):
     records = []
-    chain_slug = chain_name.lower().replace(' ', '-')
+    chain_slug = get_chain_slug(chain_name, slug, gecko_id)
+    if not chain_slug:
+        return records
     url = f"https://api.llama.fi/overview/fees/{chain_slug}"
     data = fetch_json(url)
     
@@ -162,9 +173,11 @@ def fetch_chain_fees(chain_name, gecko_id):
     
     return records
 
-def fetch_chain_dex_volume(chain_name, gecko_id):
+def fetch_chain_dex_volume(chain_name, gecko_id, slug=''):
     records = []
-    chain_slug = chain_name.lower().replace(' ', '-')
+    chain_slug = get_chain_slug(chain_name, slug, gecko_id)
+    if not chain_slug:
+        return records
     url = f"https://api.llama.fi/overview/dexs/{chain_slug}"
     data = fetch_json(url)
     
@@ -262,19 +275,40 @@ def insert_records_batch(conn, records):
     cur.close()
     return inserted
 
+def get_official_chains():
+    data = fetch_json('https://api.llama.fi/chains')
+    if data:
+        chain_names = set()
+        for c in data:
+            if c.get('name'):
+                chain_names.add(c['name'].lower())
+            if c.get('gecko_id'):
+                chain_names.add(c['gecko_id'].lower())
+        return chain_names
+    return set()
+
 def load_config():
+    official_chains = get_official_chains()
+    print(f"Found {len(official_chains)} official chains from DefiLlama API")
+    
     entities = []
     with open('defillama_config.csv', 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             if row.get('gecko_id'):
-                category = row.get('category', '').strip()
+                gecko_id = row.get('gecko_id', '').lower()
+                slug = row.get('slug', '').lower()
+                name = row.get('name', '').lower()
+                
+                is_chain = (name in official_chains or gecko_id in official_chains or 
+                           slug in official_chains)
+                
                 entities.append({
-                    'gecko_id': row.get('gecko_id', '').lower(),
-                    'slug': row.get('slug', '').lower(),
+                    'gecko_id': gecko_id,
+                    'slug': slug,
                     'name': row.get('name', ''),
-                    'category': category,
-                    'is_chain': category == 'Chain'
+                    'category': 'Chain' if is_chain else row.get('category', ''),
+                    'is_chain': is_chain
                 })
     return entities
 
@@ -288,19 +322,19 @@ def backfill_entity(entity, conn):
     metrics_found = []
     
     if is_chain:
-        chain_tvl = fetch_chain_historical_tvl(name, gecko_id)
+        chain_tvl = fetch_chain_historical_tvl(name, gecko_id, slug)
         if chain_tvl:
             all_records.extend(chain_tvl)
             metrics_found.append(f"CHAIN_TVL({len(chain_tvl)})")
         time.sleep(REQUEST_DELAY)
         
-        chain_fees = fetch_chain_fees(name, gecko_id)
+        chain_fees = fetch_chain_fees(name, gecko_id, slug)
         if chain_fees:
             all_records.extend(chain_fees)
             metrics_found.append(f"CHAIN_FEES({len(chain_fees)})")
         time.sleep(REQUEST_DELAY)
         
-        chain_dex = fetch_chain_dex_volume(name, gecko_id)
+        chain_dex = fetch_chain_dex_volume(name, gecko_id, slug)
         if chain_dex:
             all_records.extend(chain_dex)
             metrics_found.append(f"CHAIN_DEX({len(chain_dex)})")

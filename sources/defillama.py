@@ -65,7 +65,6 @@ METRIC_MAP = {
     'chain_app_fees_24h': 'CHAIN_APP_FEES_24H',
     'chain_app_revenue_24h': 'CHAIN_APP_REVENUE_24H',
     'chain_token_incentives_24h': 'CHAIN_TOKEN_INCENTIVES_24H',
-    'chain_active_addresses_24h': 'CHAIN_ACTIVE_ADDRESSES_24H',
     'protocol_earnings': 'EARNINGS',
     'protocol_incentives': 'INCENTIVES',
 }
@@ -115,9 +114,29 @@ class DefiLlamaSource(BaseSource):
             }
         return {}
     
-    def fetch_chain_metrics(self, chain_name: str) -> dict:
+    def get_official_chains(self) -> set:
+        chains_data = self.fetch_json('https://api.llama.fi/chains')
+        if chains_data:
+            chain_names = set()
+            for c in chains_data:
+                if c.get('name'):
+                    chain_names.add(c['name'].lower())
+                if c.get('gecko_id'):
+                    chain_names.add(c['gecko_id'].lower())
+            return chain_names
+        return set()
+    
+    def fetch_chain_metrics(self, chain_name: str, gecko_id: str = '', slug: str = '') -> dict:
         metrics = {}
-        chain_slug = chain_name.lower().replace(' ', '-')
+        if slug:
+            chain_slug = slug.lower()
+        elif chain_name:
+            chain_slug = chain_name.lower().replace(' ', '-')
+        else:
+            chain_slug = gecko_id.lower()
+        
+        if not chain_slug:
+            return metrics
         
         fees_data = self.fetch_json(f'https://api.llama.fi/overview/fees/{chain_slug}')
         if fees_data:
@@ -126,6 +145,24 @@ class DefiLlamaSource(BaseSource):
         revenue_data = self.fetch_json(f'https://api.llama.fi/overview/fees/{chain_slug}?dataType=dailyRevenue')
         if revenue_data:
             metrics['chain_revenue_24h'] = revenue_data.get('total24h')
+        
+        app_fees_data = self.fetch_json(f'https://api.llama.fi/overview/fees/{chain_slug}?excludeTotalDataChart=true')
+        if app_fees_data:
+            total_fees = app_fees_data.get('total24h', 0) or 0
+            if total_fees > 0:
+                metrics['chain_app_fees_24h'] = total_fees
+        
+        app_revenue_data = self.fetch_json(f'https://api.llama.fi/overview/fees/{chain_slug}?dataType=dailyRevenue&excludeTotalDataChart=true')
+        if app_revenue_data:
+            total_revenue = app_revenue_data.get('total24h', 0) or 0
+            if total_revenue > 0:
+                metrics['chain_app_revenue_24h'] = total_revenue
+        
+        incentives_data = self.fetch_json(f'https://api.llama.fi/overview/fees/{chain_slug}?dataType=dailyTokenIncentives')
+        if incentives_data:
+            token_incentives = incentives_data.get('total24h', 0) or 0
+            if token_incentives > 0:
+                metrics['chain_token_incentives_24h'] = token_incentives
         
         dexs_data = self.fetch_json(f'https://api.llama.fi/overview/dexs/{chain_slug}')
         if dexs_data:
@@ -139,16 +176,22 @@ class DefiLlamaSource(BaseSource):
     
     def fetch_protocol_earnings(self, protocol_slug: str) -> dict:
         metrics = {}
+        
         fees_data = self.fetch_json(f'https://api.llama.fi/summary/fees/{protocol_slug}')
         if fees_data:
-            revenue = fees_data.get('total24h', 0) or 0
-            token_incentives = fees_data.get('dailyHoldersRevenue', 0) or 0
+            total_fees = fees_data.get('total24h', 0) or 0
             
-            if fees_data.get('tokenIncentives'):
-                metrics['protocol_incentives'] = fees_data.get('tokenIncentives')
-            
-            if revenue and token_incentives:
-                metrics['protocol_earnings'] = revenue - token_incentives
+        revenue_data = self.fetch_json(f'https://api.llama.fi/summary/fees/{protocol_slug}?dataType=dailyRevenue')
+        if revenue_data:
+            daily_revenue = revenue_data.get('total24h', 0) or 0
+            if daily_revenue > 0:
+                metrics['protocol_earnings'] = daily_revenue
+        
+        incentives_data = self.fetch_json(f'https://api.llama.fi/summary/fees/{protocol_slug}?dataType=dailyTokenIncentives')
+        if incentives_data:
+            token_incentives = incentives_data.get('total24h', 0) or 0
+            if token_incentives > 0:
+                metrics['protocol_incentives'] = token_incentives
         
         return metrics
     
@@ -244,6 +287,10 @@ class DefiLlamaSource(BaseSource):
         bridges_lookup = self.build_lookup(bridges, ['name', 'displayName'])
         stablecoins_lookup = self.build_lookup(stablecoins, ['gecko_id', 'name', 'symbol'])
         
+        print("  Building official chains set...")
+        official_chains = self.get_official_chains()
+        print(f"    Found {len(official_chains)} official chains")
+        
         print(f"\nProcessing {len(config_entities)} entities...")
         
         all_records = []
@@ -259,7 +306,8 @@ class DefiLlamaSource(BaseSource):
             
             raw_metrics = {}
             
-            is_chain = entity.get('category') == 'Chain'
+            is_chain = (name in official_chains or gecko_id in official_chains or 
+                       slug in official_chains)
             
             p = protocols_lookup.get(gecko_id) or protocols_lookup.get(slug) or protocols_lookup.get(name)
             if p:
@@ -351,7 +399,7 @@ class DefiLlamaSource(BaseSource):
                     raw_metrics['outflows'] = inflow_data.get('outflows')
             
             if is_chain:
-                chain_metrics = self.fetch_chain_metrics(entity.get('name', ''))
+                chain_metrics = self.fetch_chain_metrics(entity.get('name', ''), gecko_id, slug)
                 raw_metrics.update(chain_metrics)
                 time.sleep(0.5)
             else:

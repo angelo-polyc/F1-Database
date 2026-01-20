@@ -66,12 +66,12 @@ python main.py sources
 - **Requires:** ARTEMIS_API_KEY secret
 
 ### DefiLlama
-- **Assets:** 323 protocols and chains
-- **Metrics:** TVL, CHAIN_TVL, CHAIN_FEES, CHAIN_DEX_VOLUME, MCAP, FDV, DEX_VOLUME_24H, FEES_24H, INFLOW, OUTFLOW, PRICE, etc.
+- **Assets:** 323 entities (96 chains, 227 protocols) - auto-categorized via /chains API
+- **Chain Metrics:** CHAIN_TVL, CHAIN_FEES_24H, CHAIN_REVENUE_24H, CHAIN_APP_FEES_24H, CHAIN_APP_REVENUE_24H, CHAIN_TOKEN_INCENTIVES_24H, CHAIN_DEX_VOLUME_24H, CHAIN_PERPS_VOLUME_24H
+- **Protocol Metrics:** TVL, FEES_24H, REVENUE_24H, DEX_VOLUME_24H, EARNINGS, INCENTIVES, INFLOW, OUTFLOW
 - **Pro API Metrics:** INFLOW, OUTFLOW (require DEFILLAMA_API_KEY)
-- **Enterprise-only Metrics:** Hourly PRICE data (span=1) requires Enterprise tier ($3000/year)
-- **Price Backfill:** Uses daily data over 365 days (works with Pro tier)
-- **Chain vs Protocol:** Config `category=Chain` triggers chain-level endpoints for TVL, fees, DEX volume
+- **Removed:** PRICE, MCAP, FDV (use CoinGecko integration instead)
+- **Chain vs Protocol:** Auto-detected using DefiLlama /chains API for accurate categorization
 - **ID Format:** CoinGecko IDs (e.g., `solana`, `ethereum`, `aave`)
 - **Requires:** DEFILLAMA_API_KEY secret (Pro API)
 
@@ -107,8 +107,9 @@ Fresh start (clears all data first): `python scheduler.py --fresh`
 
 ### DefiLlama Backfill
 The `backfill_defillama.py` script fetches historical time series data from DefiLlama summary endpoints:
-- **Endpoints:** fees, revenue, dexs, derivatives, aggregators, tvl (protocol)
-- **Pro API:** prices (1 year), inflows/outflows (30 days)
+- **Chain Endpoints:** historicalChainTvl, overview/fees/{chain}, overview/dexs/{chain}
+- **Protocol Endpoints:** fees, revenue, dexs, derivatives, aggregators, tvl
+- **Pro API:** inflows/outflows (30 days)
 - **Data:** Daily time series going back to 2011 for some assets
 - **Idempotent:** Uses ON CONFLICT DO NOTHING to prevent duplicates
 
