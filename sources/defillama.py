@@ -67,6 +67,8 @@ METRIC_MAP = {
     'chain_token_incentives_24h': 'CHAIN_TOKEN_INCENTIVES_24H',
     'protocol_earnings': 'EARNINGS',
     'protocol_incentives': 'INCENTIVES',
+    'chain_options_volume_24h': 'CHAIN_OPTIONS_VOLUME_24H',
+    'open_interest': 'OPEN_INTEREST',
 }
 
 REQUEST_DELAY = 1.0
@@ -113,6 +115,29 @@ class DefiLlamaSource(BaseSource):
                 'outflows': data.get('outflows')
             }
         return {}
+    
+    def fetch_all_open_interest(self) -> dict:
+        if not self.api_key:
+            return {}
+        data = self.fetch_pro_json("/yields/perps")
+        if not data or not data.get('data'):
+            return {}
+        oi_by_market = {}
+        for pool in data.get('data', []):
+            market = pool.get('market', '').lower()
+            oi = pool.get('openInterest')
+            marketplace = pool.get('marketplace', '')
+            if market and oi is not None:
+                key = f"{marketplace}_{market}"
+                oi_by_market[key] = {
+                    'open_interest': oi,
+                    'marketplace': marketplace,
+                    'market': market,
+                    'base_asset': pool.get('baseAsset', ''),
+                    'funding_rate': pool.get('fundingRate'),
+                    'index_price': pool.get('indexPrice')
+                }
+        return oi_by_market
     
     def get_official_chains(self) -> set:
         chains_data = self.fetch_json('https://api.llama.fi/chains')
@@ -171,6 +196,10 @@ class DefiLlamaSource(BaseSource):
         deriv_data = self.fetch_json(f'https://api.llama.fi/overview/derivatives/{chain_slug}')
         if deriv_data:
             metrics['chain_perps_volume_24h'] = deriv_data.get('total24h')
+        
+        options_data = self.fetch_json(f'https://api.llama.fi/overview/options/{chain_slug}')
+        if options_data:
+            metrics['chain_options_volume_24h'] = options_data.get('total24h')
         
         return metrics
     
@@ -270,6 +299,10 @@ class DefiLlamaSource(BaseSource):
         print("  Fetching bridges...")
         bridges_resp = self.fetch_json('https://bridges.llama.fi/bridges') or {}
         bridges = bridges_resp.get('bridges', []) if isinstance(bridges_resp, dict) else []
+        time.sleep(REQUEST_DELAY)
+        
+        print("  Fetching open interest (Pro API)...")
+        open_interest_data = self.fetch_all_open_interest()
         time.sleep(REQUEST_DELAY)
         
         print("  Fetching stablecoins...")
@@ -428,6 +461,18 @@ class DefiLlamaSource(BaseSource):
             if entity_records > 0:
                 entities_with_data += 1
         
+        if open_interest_data:
+            print(f"\n  Processing {len(open_interest_data)} open interest markets...")
+            for key, oi_data in open_interest_data.items():
+                oi_value = oi_data.get('open_interest')
+                if oi_value is not None and oi_value > 0:
+                    market_id = f"{oi_data.get('marketplace', 'unknown')}_{oi_data.get('market', 'unknown')}"
+                    all_records.append({
+                        "asset": market_id,
+                        "metric_name": "OPEN_INTEREST",
+                        "value": float(oi_value)
+                    })
+        
         total_records = 0
         if all_records:
             total_records = self.insert_metrics(all_records)
@@ -438,6 +483,7 @@ class DefiLlamaSource(BaseSource):
         print("\n" + "=" * 60)
         print("COMPLETE")
         print(f"  Entities with data: {entities_with_data}/{len(config_entities)}")
+        print(f"  Open interest markets: {len(open_interest_data)}")
         print(f"  Records inserted: {total_records}")
         print("=" * 60)
         
