@@ -633,9 +633,10 @@ class DefiLlamaSource(BaseSource):
             stable_data = ed.get('stablecoin')
             if stable_data:
                 circulating = stable_data.get('currentChainBalances', {})
-                total_circ = sum(circulating.values()) if isinstance(circulating, dict) else 0
-                if total_circ > 0:
-                    raw_metrics['stablecoins_circulating_peggedUSD'] = total_circ
+                if isinstance(circulating, dict):
+                    total_circ = sum(v for v in circulating.values() if isinstance(v, (int, float)))
+                    if total_circ > 0:
+                        raw_metrics['stablecoins_circulating_peggedUSD'] = total_circ
             
             bridge_data = ed.get('bridge')
             if bridge_data:
