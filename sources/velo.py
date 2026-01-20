@@ -21,7 +21,7 @@ REQUEST_DELAY = 0.3
 # Velo API returns 22,500 values max per request
 # For live pulls (2 hours of data), we can batch ~25 coins safely
 # 30 columns * 2 hours * 25 coins = 1,500 values per batch
-BATCH_SIZE = 25
+BATCH_SIZE = 5  # Reduced from 25 - API limit is 22500 cells per request
 
 # All futures columns to pull
 FUTURES_COLUMNS = [
@@ -93,11 +93,11 @@ class VeloSource(BaseSource):
     def source_name(self) -> str:
         return "velo"
     
-    def __init__(self):
+    def __init__(self, config_path: str = "velo_config.csv"):
         self.api_key = os.environ.get("VELO_API_KEY")
         if not self.api_key:
             raise ValueError("VELO_API_KEY environment variable not set")
-        self.config_path = "velo_config.csv"
+        self.config_path = config_path
         self.base_url = "https://api.velo.xyz/api/v1"
         self.auth = HTTPBasicAuth("api", self.api_key)
         self._entity_cache = None  # Cache for entity_id lookups
@@ -148,9 +148,18 @@ class VeloSource(BaseSource):
             
             time.sleep(REQUEST_DELAY)
         
-        # Insert records
+        # Deduplicate records before insert (same coin/exchange/metric/timestamp)
         if all_records:
-            total = self._insert_metrics(all_records)
+            seen = set()
+            unique_records = []
+            for r in all_records:
+                key = (r['pulled_at'], r['asset'], r['metric_name'], r.get('exchange', ''))
+                if key not in seen:
+                    seen.add(key)
+                    unique_records.append(r)
+            
+            print(f"[Velo] Deduplicated {len(all_records)} -> {len(unique_records)} records")
+            total = self._insert_metrics(unique_records)
             print(f"[Velo] Inserted {total} records")
             self.log_pull("success", total)
             return total

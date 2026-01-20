@@ -38,12 +38,14 @@ class BaseSource(ABC):
         cur = conn.cursor()
         
         pulled_at = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        rows = [(pulled_at, self.source_name, r["asset"], r["metric_name"], r["value"]) for r in records]
+        # Include exchange (NULL for non-Velo sources) to match unique index
+        rows = [(pulled_at, self.source_name, r["asset"], r["metric_name"], r["value"], r.get("exchange")) for r in records]
         
         cur.executemany("""
-            INSERT INTO metrics (pulled_at, source, asset, metric_name, value)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (source, asset, metric_name, pulled_at) DO UPDATE SET value = EXCLUDED.value
+            INSERT INTO metrics (pulled_at, source, asset, metric_name, value, exchange)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (source, asset, metric_name, pulled_at, COALESCE(exchange, '')) 
+            DO UPDATE SET value = EXCLUDED.value
         """, rows)
         conn.commit()
         cur.close()
