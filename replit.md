@@ -10,12 +10,20 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
 ```
 .
 ├── main.py                  # CLI entry point
-├── scheduler.py             # Automated pull scheduler (1h DefiLlama, 24h Artemis)
+├── scheduler.py             # Automated pull scheduler (1h DefiLlama/Velo, 24h Artemis)
 ├── backfill_defillama.py   # DefiLlama historical data backfill
 ├── backfill_artemis.py     # Artemis historical data backfill
+├── backfill_velo.py        # Velo historical data backfill
 ├── query_data.py           # Query helper functions with CSV export
 ├── artemis_config.csv      # Configuration for Artemis API pulls (matrix format)
 ├── defillama_config.csv    # Configuration for DefiLlama API pulls
+├── velo_config.csv         # Velo config - full (1069 pairs)
+├── velo_config_top20.csv   # Velo config - top 20 coins (~71 pairs)
+├── velo_config_top50.csv   # Velo config - top 50 coins (~164 pairs)
+├── velo_config_top100.csv  # Velo config - top 100 coins (~258 pairs)
+├── migrations/
+│   ├── 001_schema_upgrade.sql    # Entity master + enhanced metrics schema
+│   └── 002_entity_seed_data.sql  # Entity seed with cross-source mappings
 ├── db/
 │   ├── __init__.py
 │   └── setup.py            # Database connection and schema setup
@@ -23,7 +31,8 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
     ├── __init__.py         # Source registry
     ├── base.py             # BaseSource abstract class
     ├── artemis.py          # Artemis API source implementation
-    └── defillama.py        # DefiLlama API source implementation
+    ├── defillama.py        # DefiLlama API source implementation
+    └── velo.py             # Velo.xyz API source implementation
 ```
 
 ## Database Schema
@@ -81,6 +90,19 @@ python main.py sources
 - **ID Format:** CoinGecko IDs (e.g., `solana`, `ethereum`, `aave`)
 - **Requires:** DEFILLAMA_API_KEY secret (Pro API)
 
+### Velo.xyz
+- **Assets:** 481 coins with derivatives data across 4 exchanges
+- **Exchanges:** Binance Futures, Bybit, OKX Swap, Hyperliquid
+- **Metrics:** OHLC prices, funding rates, open interest, liquidations, volumes (30 metrics total)
+- **Granularity:** Hourly (vs daily for Artemis/DefiLlama)
+- **Config Options:**
+  - `velo_config.csv` - Full 1,069 pairs (23M rows/month)
+  - `velo_config_top100.csv` - Top 100 coins (~258 pairs, 6.5M rows/month)
+  - `velo_config_top50.csv` - Top 50 coins (~164 pairs, 3.2M rows/month)
+  - `velo_config_top20.csv` - Top 20 coins (~71 pairs, 1.4M rows/month)
+- **ID Format:** Uppercase symbols (e.g., `BTC`, `ETH`, `SOL`)
+- **Requires:** VELO_API_KEY secret
+
 ## Adding New Sources
 1. Create a new file in `sources/` (e.g., `sources/newsource.py`)
 2. Extend `BaseSource` class and implement:
@@ -91,13 +113,35 @@ python main.py sources
 ## Environment Variables
 - `DATABASE_URL`: PostgreSQL connection string (auto-configured)
 - `ARTEMIS_API_KEY`: API key for Artemis data (required for artemis pulls)
+- `DEFILLAMA_API_KEY`: API key for DefiLlama Pro API
+- `VELO_API_KEY`: API key for Velo.xyz API (required for velo pulls)
 
-## Entity ID Mapping
-Artemis and DefiLlama use different ID systems:
-- Artemis: `sol` → DefiLlama: `solana`
-- Artemis: `eth` → DefiLlama: `ethereum`
+## Entity Master System
+The entity master system provides cross-source canonical IDs for unified queries:
 
-Cross-source queries require joining on the `source` column or using entity mapping.
+### Tables
+- **entities**: Canonical entity master (entity_id, canonical_id, name, symbol, entity_type, sector)
+- **entity_source_ids**: Maps source-specific IDs to canonical entities (Rosetta Stone)
+
+### ID Mappings
+Each source uses different ID formats, mapped via entity_source_ids:
+- Artemis: `sol`, `eth`, `btc` (short tickers)
+- DefiLlama: `solana`, `ethereum`, `bitcoin` (CoinGecko IDs / slugs)
+- Velo: `SOL`, `ETH`, `BTC` (uppercase symbols)
+
+### Cross-Source Query Example
+```sql
+SELECT e.canonical_id, m.source, m.metric_name, m.value
+FROM v_entity_comparison
+WHERE canonical_id = 'bitcoin'
+  AND ts = '2025-01-20';
+```
+
+### Metric Normalization View
+The `v_normalized_metrics` view maps different metric names to canonical names:
+- Velo `CLOSE_PRICE` → `PRICE` (matches Artemis)
+- Velo `DOLLAR_OI_CLOSE` → `OPEN_INTEREST`
+- Velo `DOLLAR_VOLUME` → `TRADING_VOLUME_24H`
 
 ## Automated Scheduling
 The `scheduler.py` runs continuously and executes pulls at specific times (5 min after API updates):
@@ -139,6 +183,15 @@ The `backfill_artemis.py` script fetches 5 years of historical data from Artemis
 - **Idempotent:** Uses ON CONFLICT DO NOTHING to prevent duplicates
 
 Run: `python backfill_artemis.py`
+
+### Velo Backfill
+The `backfill_velo.py` script fetches hourly historical data from Velo API:
+- **Method:** Uses time-windowed requests with coin batching
+- **Data:** Hourly time series (configurable days, default 30)
+- **Idempotent:** Uses ON CONFLICT DO NOTHING to prevent duplicates
+
+Run: `python backfill_velo.py --days 30`
+Options: `--coin BTC` (filter to one coin), `--exchange bybit` (filter to one exchange)
 
 ### Historical Data Coverage (as of Jan 2026)
 
