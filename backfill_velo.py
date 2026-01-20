@@ -30,9 +30,9 @@ API_KEY = os.environ.get("VELO_API_KEY")
 BASE_URL = "https://api.velo.xyz/api/v1"
 CONFIG_PATH = "velo_config.csv"
 
-# Rate limiting: 120 req/30s = 4/sec
-REQUEST_DELAY = 0.25
-MAX_WORKERS = 4  # Parallel workers for fetching
+# Rate limiting: 120 req/30s = 4/sec, but use 2/sec to be safe
+REQUEST_DELAY = 0.5
+MAX_WORKERS = 1  # Sequential fetching to avoid rate limits
 
 # Velo returns max 22,500 values per request
 # API returns MINUTE-level data (1440 rows/day) despite resolution=1h

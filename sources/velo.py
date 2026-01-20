@@ -16,7 +16,8 @@ from sources.base import BaseSource
 from db.setup import get_connection
 
 # Rate limit: 120 requests per 30 seconds = 4/sec max
-REQUEST_DELAY = 0.25  # 4 req/sec
+# Use 2/sec to stay safely under limit
+REQUEST_DELAY = 0.5  # 2 req/sec to avoid rate limits
 
 # Velo API returns 22,500 values max per request
 # API returns ~120 hours (5 days) of data regardless of begin/end params
@@ -144,8 +145,8 @@ class VeloSource(BaseSource):
         
         all_records = []
         
-        # Parallel fetch with rate limiting (4 workers = 4 req/sec max)
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        # Sequential fetch to avoid rate limiting (1 worker)
+        with ThreadPoolExecutor(max_workers=1) as executor:
             futures = {}
             for exchange, batch in fetch_tasks:
                 future = executor.submit(self._fetch_batch, exchange, batch, begin_ts, end_ts)
