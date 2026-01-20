@@ -106,43 +106,6 @@ def fetch_historical_inflows(slug, gecko_id, days=30):
     
     return records
 
-def fetch_historical_prices(gecko_id):
-    return []
-
-
-def fetch_batch_historical_prices(gecko_ids, days=365):
-    records = []
-    
-    coin_ids_str = ','.join([f"coingecko:{gid}" for gid in gecko_ids])
-    end_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    
-    for day_offset in range(days):
-        dt = end_date - timedelta(days=day_offset)
-        ts = int(dt.timestamp())
-        url = f"https://coins.llama.fi/prices/historical/{ts}/{coin_ids_str}?searchWidth=4h"
-        data = fetch_json(url)
-        
-        if data and 'coins' in data:
-            for coin_id, coin_data in data['coins'].items():
-                try:
-                    price = coin_data.get('price')
-                    gecko_id = coin_id.replace('coingecko:', '')
-                    if price is not None and price != 0:
-                        records.append({
-                            'asset': gecko_id,
-                            'metric_name': 'PRICE',
-                            'value': float(price),
-                            'pulled_at': dt
-                        })
-                except (ValueError, TypeError):
-                    continue
-        
-        time.sleep(REQUEST_DELAY)
-        
-        if (day_offset + 1) % 30 == 0:
-            print(f"    Price backfill: {day_offset + 1}/{days} days processed, {len(records)} records")
-    
-    return records
 
 def fetch_chain_historical_tvl(chain_name, gecko_id):
     records = []
@@ -230,33 +193,6 @@ def fetch_chain_dex_volume(chain_name, gecko_id):
     
     return records
 
-def fetch_mcap_fdv(slug, gecko_id):
-    records = []
-    url = f"https://api.llama.fi/protocol/{slug}"
-    data = fetch_json(url)
-    
-    if data:
-        now = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        mcap = data.get('mcap')
-        if mcap is not None and mcap != 0:
-            records.append({
-                'asset': gecko_id,
-                'metric_name': 'MCAP',
-                'value': float(mcap),
-                'pulled_at': now
-            })
-        
-        fdv = data.get('fdv')
-        if fdv is not None and fdv != 0:
-            records.append({
-                'asset': gecko_id,
-                'metric_name': 'FDV',
-                'value': float(fdv),
-                'pulled_at': now
-            })
-    
-    return records
 
 def extract_historical_data(data, chart_key, metric_name, asset_id):
     records = []
@@ -386,13 +322,6 @@ def backfill_entity(entity, conn):
                     metrics_found.append(f"{config['metric']}({len(records)})")
             
             time.sleep(REQUEST_DELAY)
-        
-        mcap_fdv = fetch_mcap_fdv(slug, gecko_id)
-        if mcap_fdv:
-            all_records.extend(mcap_fdv)
-            for r in mcap_fdv:
-                metrics_found.append(r['metric_name'])
-        time.sleep(REQUEST_DELAY)
     
     time.sleep(REQUEST_DELAY)
     
@@ -440,25 +369,6 @@ def main():
             elapsed = time.time() - start_time
             rate = total_records / elapsed if elapsed > 0 else 0
             print(f"    --- Progress: {total_records:,} records, {rate:.0f} rec/sec ---")
-    
-    print("\n" + "-" * 70)
-    print("BATCH PRICE BACKFILL (365 days)")
-    print("-" * 70)
-    
-    all_gecko_ids = [e['gecko_id'] for e in entities]
-    batch_size = 30
-    
-    for batch_start in range(0, len(all_gecko_ids), batch_size):
-        batch_ids = all_gecko_ids[batch_start:batch_start + batch_size]
-        batch_num = batch_start // batch_size + 1
-        total_batches = (len(all_gecko_ids) + batch_size - 1) // batch_size
-        print(f"  Batch {batch_num}/{total_batches}: {len(batch_ids)} assets...")
-        
-        price_records = fetch_batch_historical_prices(batch_ids, days=365)
-        if price_records:
-            inserted = insert_records_batch(conn, price_records)
-            total_records += inserted
-            print(f"    +{inserted:,} price records")
     
     conn.close()
     

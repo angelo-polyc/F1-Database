@@ -9,8 +9,6 @@ from sources.base import BaseSource
 METRIC_MAP = {
     'protocols_tvl': 'TVL',
     'chains_tvl': 'CHAIN_TVL',
-    'protocols_mcap': 'MCAP',
-    'protocols_fdv': 'FDV',
     'protocols_staking': 'STAKING',
     'protocols_borrowed': 'BORROWED',
     'protocols_pool2': 'POOL2',
@@ -60,7 +58,16 @@ METRIC_MAP = {
     'stablecoins_price': 'STABLECOIN_PRICE',
     'inflows': 'INFLOW',
     'outflows': 'OUTFLOW',
-    'price': 'PRICE',
+    'chain_fees_24h': 'CHAIN_FEES_24H',
+    'chain_revenue_24h': 'CHAIN_REVENUE_24H',
+    'chain_dex_volume_24h': 'CHAIN_DEX_VOLUME_24H',
+    'chain_perps_volume_24h': 'CHAIN_PERPS_VOLUME_24H',
+    'chain_app_fees_24h': 'CHAIN_APP_FEES_24H',
+    'chain_app_revenue_24h': 'CHAIN_APP_REVENUE_24H',
+    'chain_token_incentives_24h': 'CHAIN_TOKEN_INCENTIVES_24H',
+    'chain_active_addresses_24h': 'CHAIN_ACTIVE_ADDRESSES_24H',
+    'protocol_earnings': 'EARNINGS',
+    'protocol_incentives': 'INCENTIVES',
 }
 
 REQUEST_DELAY = 1.0
@@ -108,15 +115,42 @@ class DefiLlamaSource(BaseSource):
             }
         return {}
     
-    def fetch_price(self, gecko_id: str) -> Optional[float]:
-        if not self.api_key:
-            return None
-        data = self.fetch_pro_json(f"/coins/prices/current/coingecko:{gecko_id}")
-        if data and 'coins' in data:
-            coin_key = f"coingecko:{gecko_id}"
-            coin_data = data.get('coins', {}).get(coin_key, {})
-            return coin_data.get('price')
-        return None
+    def fetch_chain_metrics(self, chain_name: str) -> dict:
+        metrics = {}
+        chain_slug = chain_name.lower().replace(' ', '-')
+        
+        fees_data = self.fetch_json(f'https://api.llama.fi/overview/fees/{chain_slug}')
+        if fees_data:
+            metrics['chain_fees_24h'] = fees_data.get('total24h')
+            
+        revenue_data = self.fetch_json(f'https://api.llama.fi/overview/fees/{chain_slug}?dataType=dailyRevenue')
+        if revenue_data:
+            metrics['chain_revenue_24h'] = revenue_data.get('total24h')
+        
+        dexs_data = self.fetch_json(f'https://api.llama.fi/overview/dexs/{chain_slug}')
+        if dexs_data:
+            metrics['chain_dex_volume_24h'] = dexs_data.get('total24h')
+        
+        deriv_data = self.fetch_json(f'https://api.llama.fi/overview/derivatives/{chain_slug}')
+        if deriv_data:
+            metrics['chain_perps_volume_24h'] = deriv_data.get('total24h')
+        
+        return metrics
+    
+    def fetch_protocol_earnings(self, protocol_slug: str) -> dict:
+        metrics = {}
+        fees_data = self.fetch_json(f'https://api.llama.fi/summary/fees/{protocol_slug}')
+        if fees_data:
+            revenue = fees_data.get('total24h', 0) or 0
+            token_incentives = fees_data.get('dailyHoldersRevenue', 0) or 0
+            
+            if fees_data.get('tokenIncentives'):
+                metrics['protocol_incentives'] = fees_data.get('tokenIncentives')
+            
+            if revenue and token_incentives:
+                metrics['protocol_earnings'] = revenue - token_incentives
+        
+        return metrics
     
     def build_lookup(self, data: list, key_fields: list) -> dict:
         lookup = {}
@@ -225,11 +259,11 @@ class DefiLlamaSource(BaseSource):
             
             raw_metrics = {}
             
+            is_chain = entity.get('category') == 'Chain'
+            
             p = protocols_lookup.get(gecko_id) or protocols_lookup.get(slug) or protocols_lookup.get(name)
             if p:
                 raw_metrics['protocols_tvl'] = p.get('tvl')
-                raw_metrics['protocols_mcap'] = p.get('mcap')
-                raw_metrics['protocols_fdv'] = p.get('fdv')
                 raw_metrics['protocols_staking'] = p.get('staking')
                 raw_metrics['protocols_borrowed'] = p.get('borrowed')
                 raw_metrics['protocols_pool2'] = p.get('pool2')
@@ -316,10 +350,17 @@ class DefiLlamaSource(BaseSource):
                     raw_metrics['inflows'] = inflow_data.get('inflows')
                     raw_metrics['outflows'] = inflow_data.get('outflows')
             
-            if self.api_key:
-                price = self.fetch_price(gecko_id)
-                if price is not None:
-                    raw_metrics['price'] = price
+            if is_chain:
+                chain_metrics = self.fetch_chain_metrics(entity.get('name', ''))
+                raw_metrics.update(chain_metrics)
+                time.sleep(0.5)
+            else:
+                if p:
+                    protocol_slug = p.get('slug', '')
+                    if protocol_slug:
+                        earnings_metrics = self.fetch_protocol_earnings(protocol_slug)
+                        raw_metrics.update(earnings_metrics)
+                        time.sleep(0.3)
             
             entity_records = 0
             for raw_field, value in raw_metrics.items():
