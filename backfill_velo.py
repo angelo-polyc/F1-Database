@@ -35,12 +35,13 @@ REQUEST_DELAY = 0.25
 MAX_WORKERS = 4  # Parallel workers for fetching
 
 # Velo returns max 22,500 values per request
-# With 30 columns, 750 rows = ~31 days at hourly
-# Use 20 days per request to be safe
-DAYS_PER_REQUEST = 20
+# API returns MINUTE-level data (1440 rows/day) despite resolution=1h
+# With 30 columns, 1 coin: max 750 rows = 750 minutes = 12.5 hours
+# Use 10 hours per request with 1 coin to stay safely under limit
+HOURS_PER_REQUEST = 10
 
-# Batch size for coins per request
-BACKFILL_BATCH_SIZE = 5
+# Batch size: 1 coin per request (API gives minute data, need to aggregate client-side)
+BACKFILL_BATCH_SIZE = 1
 
 # All metrics to pull
 FUTURES_COLUMNS = [
@@ -333,7 +334,7 @@ def main():
             
             window_start = start_dt
             while window_start < end_dt:
-                window_end = min(window_start + timedelta(days=DAYS_PER_REQUEST), end_dt)
+                window_end = min(window_start + timedelta(hours=HOURS_PER_REQUEST), end_dt)
                 begin_ts = int(window_start.timestamp() * 1000)
                 end_ts = int(window_end.timestamp() * 1000)
                 fetch_tasks.append((exchange, batch_coins, begin_ts, end_ts))

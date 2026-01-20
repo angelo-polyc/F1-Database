@@ -206,10 +206,18 @@ Options: `--coin BTC` (filter to one coin), `--exchange bybit` (filter to one ex
 - REVENUE: 88k records from 2020
 - DEX_VOLUME: 30k records from 2020
 
-**Artemis:** ~1.87M records across 287 assets
-- PRICE: 255k records from 2021
-- CIRCULATING_SUPPLY: 192k records from 2021
-- FEES: 154k records from 2021
-- MC: 153k records from 2021
-- REVENUE: 145k records from 2021
-- DAU: 144k records from 2021
+**Artemis:** ~860K records across 222 assets, 24 metrics
+- MC: 147k records (133 assets)
+- FDMC: 125k records (97 assets)
+- CIRCULATING_SUPPLY_NATIVE: 107k records (82 assets)
+- FDMC_FEES_RATIO: 54k records (50 assets)
+- TOTAL_SUPPLY_NATIVE: 51k records (39 assets)
+- FDMC_REVENUE_RATIO: 45k records (41 assets)
+- PRICE: 43k records (40 assets)
+- DAU: 37k records (34 assets)
+- NEW_USERS: 25k records (18 assets)
+- TXNS: 20k records (20 assets)
+- 24H_VOLUME: 17k records (15 assets)
+- SPOT_VOLUME: 9k records (6 assets)
+- PERP_VOLUME: 6k records (5 assets)
+- OPEN_INTEREST: 6k records (5 assets)
