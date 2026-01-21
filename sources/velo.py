@@ -106,10 +106,11 @@ class VeloSource(BaseSource):
     
     def pull(self) -> int:
         """
-        Pull current hour's data for all configured coin-exchange pairs.
+        Pull data for all configured coin-exchange pairs using timestamp-based fetching.
+        Only fetches data newer than the last recorded timestamp per pair.
         Returns number of records inserted.
         """
-        print(f"[Velo] Starting hourly pull...")
+        print(f"[Velo] Starting timestamp-based pull...")
         
         # Load entity mappings
         self._load_entity_cache()
@@ -121,47 +122,61 @@ class VeloSource(BaseSource):
             self.log_pull("no_data", 0)
             return 0
         
-        # Group by exchange for efficient batching
-        by_exchange = {}
-        for item in config:
-            ex = item['exchange']
-            if ex not in by_exchange:
-                by_exchange[ex] = []
-            by_exchange[ex].append(item['coin'])
+        # Get last timestamps per coin-exchange pair from database
+        last_timestamps = self._get_last_timestamps()
+        print(f"[Velo] Found last timestamps for {len(last_timestamps)} coin-exchange pairs")
         
-        # Time range: last 2 hours to ensure we get complete hour
+        # Current time as end
         now = datetime.now(timezone.utc)
         end_ts = int(now.timestamp() * 1000)
-        begin_ts = end_ts - (2 * 60 * 60 * 1000)  # 2 hours ago
         
-        # Build list of all fetch tasks (exchange, batch)
+        # Default begin: 2 hours ago for pairs with no history
+        default_begin = end_ts - (2 * 60 * 60 * 1000)
+        
+        # Build fetch tasks with per-pair begin timestamps
+        # Group pairs by exchange and begin timestamp for efficient batching
         fetch_tasks = []
-        for exchange, coins in by_exchange.items():
-            for i in range(0, len(coins), BATCH_SIZE):
-                batch = coins[i:i+BATCH_SIZE]
-                fetch_tasks.append((exchange, batch))
+        for item in config:
+            coin = item['coin']
+            exchange = item['exchange']
+            pair_key = (coin, exchange)
+            
+            # Use last timestamp + 1 hour if exists, else default
+            if pair_key in last_timestamps:
+                last_ts = last_timestamps[pair_key]
+                # Start from 1 hour after last recorded to avoid overlap
+                begin_ts = int((last_ts.timestamp() + 3600) * 1000)
+                # Skip if already up to date (begin would be in the future)
+                if begin_ts >= end_ts:
+                    continue
+            else:
+                begin_ts = default_begin
+            
+            fetch_tasks.append((exchange, coin, begin_ts, end_ts))
         
-        print(f"[Velo] Fetching {len(fetch_tasks)} batches across {len(by_exchange)} exchanges...")
+        if not fetch_tasks:
+            print("[Velo] All pairs are up to date, nothing to fetch")
+            self.log_pull("success", 0)
+            return 0
+        
+        print(f"[Velo] Fetching {len(fetch_tasks)} coin-exchange pairs...")
         
         all_records = []
+        completed = 0
         
-        # Sequential fetch to avoid rate limiting (1 worker)
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            futures = {}
-            for exchange, batch in fetch_tasks:
-                future = executor.submit(self._fetch_batch, exchange, batch, begin_ts, end_ts)
-                futures[future] = (exchange, batch)
-                time.sleep(REQUEST_DELAY)  # Rate limit submissions
-            
-            for future in as_completed(futures):
-                try:
-                    records = future.result()
-                    all_records.extend(records)
-                except Exception as e:
-                    exchange, batch = futures[future]
-                    print(f"[Velo] Error fetching {exchange}: {e}")
+        # Sequential fetch with per-pair API calls
+        for exchange, coin, begin_ts, end_ts_pair in fetch_tasks:
+            try:
+                records = self._fetch_single(exchange, coin, begin_ts, end_ts_pair)
+                all_records.extend(records)
+                completed += 1
+                if completed % 100 == 0:
+                    print(f"[Velo] Progress: {completed}/{len(fetch_tasks)} pairs fetched...")
+                time.sleep(REQUEST_DELAY)
+            except Exception as e:
+                print(f"[Velo] Error fetching {coin}/{exchange}: {e}")
         
-        # Deduplicate records before insert (same coin/exchange/metric/timestamp)
+        # Deduplicate records before insert
         if all_records:
             seen = set()
             unique_records = []
@@ -173,13 +188,113 @@ class VeloSource(BaseSource):
             
             print(f"[Velo] Deduplicated {len(all_records)} -> {len(unique_records)} records")
             total = self._insert_metrics(unique_records)
-            print(f"[Velo] Inserted {total} records")
+            print(f"[Velo] Inserted {total} new records")
             self.log_pull("success", total)
             return total
         else:
-            print("[Velo] No data received")
+            print("[Velo] No new data received")
             self.log_pull("no_data", 0)
             return 0
+    
+    def _get_last_timestamps(self) -> dict:
+        """Get the last recorded timestamp for each coin-exchange pair."""
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT asset, exchange, MAX(pulled_at) as last_ts
+            FROM metrics
+            WHERE source = 'velo' AND exchange IS NOT NULL
+            GROUP BY asset, exchange
+        """)
+        
+        result = {}
+        for row in cur.fetchall():
+            result[(row[0], row[1])] = row[2]
+        
+        cur.close()
+        conn.close()
+        return result
+    
+    def _fetch_single(self, exchange: str, coin: str, begin_ts: int, end_ts: int) -> list:
+        """Fetch data for a single coin from a single exchange."""
+        records = []
+        
+        columns_str = ','.join(FUTURES_COLUMNS)
+        
+        url = (
+            f"{self.base_url}/rows?"
+            f"type=futures&"
+            f"exchanges={exchange}&"
+            f"coins={coin}&"
+            f"columns={columns_str}&"
+            f"begin={begin_ts}&"
+            f"end={end_ts}&"
+            f"resolution=1h"
+        )
+        
+        try:
+            resp = requests.get(url, auth=self.auth, timeout=60)
+            
+            if resp.status_code == 429:
+                print(f"[Velo] Rate limited, waiting 5s...")
+                time.sleep(5)
+                resp = requests.get(url, auth=self.auth, timeout=60)
+            
+            if resp.status_code != 200:
+                return []
+            
+            # Parse CSV response
+            lines = resp.text.strip().split('\n')
+            if len(lines) < 2:
+                return []
+            
+            headers = lines[0].split(',')
+            
+            for line in lines[1:]:
+                values = line.split(',')
+                if len(values) != len(headers):
+                    continue
+                
+                row = dict(zip(headers, values))
+                
+                # Parse timestamp
+                try:
+                    ts_ms = int(row['time'])
+                    ts = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+                    # Truncate to hour
+                    ts_hour = ts.replace(minute=0, second=0, microsecond=0)
+                except (ValueError, KeyError):
+                    continue
+                
+                coin_val = row['coin']
+                exch = row['exchange']
+                
+                # Look up entity_id
+                entity_id = self._entity_cache.get(coin_val) if self._entity_cache else None
+                
+                # Extract all metrics
+                for velo_col, db_metric in METRIC_MAP.items():
+                    if velo_col in row and row[velo_col]:
+                        try:
+                            value = float(row[velo_col])
+                            records.append({
+                                'pulled_at': ts_hour,
+                                'asset': coin_val,
+                                'entity_id': entity_id,
+                                'metric_name': db_metric,
+                                'value': value,
+                                'domain': 'derivative',
+                                'exchange': exch,
+                                'granularity': 'hourly'
+                            })
+                        except ValueError:
+                            pass
+        
+        except requests.RequestException as e:
+            print(f"[Velo] Request error for {coin}/{exchange}: {e}")
+        
+        return records
     
     def load_config(self) -> list:
         """Load coin-exchange pairs from CSV config."""
