@@ -2,7 +2,7 @@ import time
 import subprocess
 import sys
 from datetime import datetime, timezone
-from db.setup import get_connection
+from db.setup import get_connection, setup_database
 
 ARTEMIS_HOUR = 0
 ARTEMIS_MINUTE = 5
@@ -96,7 +96,11 @@ def main():
     print("=" * 60)
     print("DATA PIPELINE SCHEDULER")
     print("=" * 60)
-    print(f"  Artemis: daily at {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC")
+    
+    print("Setting up database (tables, entities, views)...")
+    setup_database()
+    
+    print(f"\n  Artemis: daily at {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC")
     print(f"  DefiLlama: hourly at XX:{DEFILLAMA_MINUTE:02d} UTC")
     print(f"  Velo: hourly at XX:{VELO_MINUTE:02d} UTC")
     if fresh_start:
