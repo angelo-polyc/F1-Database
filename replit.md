@@ -198,26 +198,32 @@ The `backfill_velo.py` script fetches hourly historical data from Velo API:
 Run: `python backfill_velo.py --days 30`
 Options: `--coin BTC` (filter to one coin), `--exchange bybit` (filter to one exchange)
 
-### Historical Data Coverage (as of Jan 2026)
+### Historical Data Coverage (as of Jan 21, 2026)
 
-**DefiLlama:** ~500K records across 323 assets
-- TVL: 228k records from 2019
-- FEES: 139k records from 2011
-- REVENUE: 88k records from 2020
-- DEX_VOLUME: 30k records from 2020
+**Artemis:** ~1.4M records across 178 assets, 23 metrics
+- PRICE: 214k records (178 assets)
+- MC: 152k records (137 assets)
+- CIRCULATING_SUPPLY_NATIVE: 152k records (122 assets)
+- FEES: 115k records (105 assets)
+- DAU: 111k records (96 assets)
+- REVENUE: 103k records (97 assets)
+- TXNS: 93k records (81 assets)
+- FDMC_FEES_RATIO: 85k records (80 assets)
+- FDMC_REVENUE_RATIO: 71k records (65 assets)
+- TOTAL_SUPPLY_NATIVE: 62k records (49 assets)
+- 24H_VOLUME: 61k records (55 assets)
+- NEW_USERS: 26k records (19 assets)
+- SPOT_VOLUME: 24k records (19 assets)
+- Note: BATCH_SIZE reduced to 50 (from 250) to avoid HTTP 500 errors on on-chain metrics
 
-**Artemis:** ~860K records across 222 assets, 24 metrics
-- MC: 147k records (133 assets)
-- FDMC: 125k records (97 assets)
-- CIRCULATING_SUPPLY_NATIVE: 107k records (82 assets)
-- FDMC_FEES_RATIO: 54k records (50 assets)
-- TOTAL_SUPPLY_NATIVE: 51k records (39 assets)
-- FDMC_REVENUE_RATIO: 45k records (41 assets)
-- PRICE: 43k records (40 assets)
-- DAU: 37k records (34 assets)
-- NEW_USERS: 25k records (18 assets)
-- TXNS: 20k records (20 assets)
-- 24H_VOLUME: 17k records (15 assets)
-- SPOT_VOLUME: 9k records (6 assets)
-- PERP_VOLUME: 6k records (5 assets)
-- OPEN_INTEREST: 6k records (5 assets)
+**DefiLlama:** ~210K records across 1,177 assets, 61 metrics
+- TVL: 63k records (228 assets)
+- CHAIN_TVL: 32k records (99 chains)
+- CHAIN_DEX_VOLUME: 27k records (29 chains)
+- CHAIN_FEES: 22k records (30 chains)
+- CHAIN_REVENUE: 19k records (26 chains)
+- FEES/REVENUE: 30k+ records (protocol-level)
+
+**Velo:** ~130K records across 485 assets, 30 metrics
+- Hourly derivatives data (funding rates, open interest, liquidations)
+- 4 exchanges: Binance Futures, Bybit, OKX Swap, Hyperliquid
