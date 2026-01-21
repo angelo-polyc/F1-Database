@@ -159,22 +159,36 @@ class VeloSource(BaseSource):
             self.log_pull("success", 0)
             return 0
         
-        print(f"[Velo] Fetching {len(fetch_tasks)} coin-exchange pairs...")
+        # Group by (exchange, begin_ts) for efficient batching
+        # In normal hourly operation, all pairs share the same begin_ts
+        from collections import defaultdict
+        groups = defaultdict(list)
+        for exchange, coin, begin_ts, end_ts_pair in fetch_tasks:
+            groups[(exchange, begin_ts, end_ts_pair)].append(coin)
+        
+        # Build batched fetch tasks (5 coins per batch)
+        batched_tasks = []
+        for (exchange, begin_ts, end_ts_pair), coins in groups.items():
+            for i in range(0, len(coins), BATCH_SIZE):
+                batch = coins[i:i+BATCH_SIZE]
+                batched_tasks.append((exchange, batch, begin_ts, end_ts_pair))
+        
+        print(f"[Velo] Fetching {len(fetch_tasks)} pairs in {len(batched_tasks)} batches...")
         
         all_records = []
         completed = 0
         
-        # Sequential fetch with per-pair API calls
-        for exchange, coin, begin_ts, end_ts_pair in fetch_tasks:
+        # Sequential fetch with batched API calls
+        for exchange, coins_batch, begin_ts, end_ts_pair in batched_tasks:
             try:
-                records = self._fetch_single(exchange, coin, begin_ts, end_ts_pair)
+                records = self._fetch_batch(exchange, coins_batch, begin_ts, end_ts_pair)
                 all_records.extend(records)
                 completed += 1
-                if completed % 100 == 0:
-                    print(f"[Velo] Progress: {completed}/{len(fetch_tasks)} pairs fetched...")
+                if completed % 50 == 0:
+                    print(f"[Velo] Progress: {completed}/{len(batched_tasks)} batches fetched...")
                 time.sleep(REQUEST_DELAY)
             except Exception as e:
-                print(f"[Velo] Error fetching {coin}/{exchange}: {e}")
+                print(f"[Velo] Error fetching {exchange}: {e}")
         
         # Deduplicate records before insert
         if all_records:
@@ -216,17 +230,18 @@ class VeloSource(BaseSource):
         conn.close()
         return result
     
-    def _fetch_single(self, exchange: str, coin: str, begin_ts: int, end_ts: int) -> list:
-        """Fetch data for a single coin from a single exchange."""
+    def _fetch_batch(self, exchange: str, coins: list, begin_ts: int, end_ts: int) -> list:
+        """Fetch data for a batch of coins from a single exchange."""
         records = []
         
+        coins_str = ','.join(coins)
         columns_str = ','.join(FUTURES_COLUMNS)
         
         url = (
             f"{self.base_url}/rows?"
             f"type=futures&"
             f"exchanges={exchange}&"
-            f"coins={coin}&"
+            f"coins={coins_str}&"
             f"columns={columns_str}&"
             f"begin={begin_ts}&"
             f"end={end_ts}&"
@@ -292,7 +307,7 @@ class VeloSource(BaseSource):
                             pass
         
         except requests.RequestException as e:
-            print(f"[Velo] Request error for {coin}/{exchange}: {e}")
+            print(f"[Velo] Request error for {exchange}: {e}")
         
         return records
     
@@ -338,88 +353,6 @@ class VeloSource(BaseSource):
         except Exception as e:
             print(f"[Velo] Warning: Could not load entity cache: {e}")
             self._entity_cache = {}
-    
-    def _fetch_batch(self, exchange: str, coins: list, begin_ts: int, end_ts: int) -> list:
-        """Fetch data for a batch of coins from a single exchange."""
-        records = []
-        
-        coins_str = ','.join(coins)
-        columns_str = ','.join(FUTURES_COLUMNS)
-        
-        url = (
-            f"{self.base_url}/rows?"
-            f"type=futures&"
-            f"exchanges={exchange}&"
-            f"coins={coins_str}&"
-            f"columns={columns_str}&"
-            f"begin={begin_ts}&"
-            f"end={end_ts}&"
-            f"resolution=1h"
-        )
-        
-        try:
-            resp = requests.get(url, auth=self.auth, timeout=60)
-            
-            if resp.status_code == 429:
-                print(f"[Velo] Rate limited, waiting 5s...")
-                time.sleep(5)
-                resp = requests.get(url, auth=self.auth, timeout=60)
-            
-            if resp.status_code != 200:
-                print(f"[Velo] Error {resp.status_code}: {resp.text[:200]}")
-                return []
-            
-            # Parse CSV response
-            lines = resp.text.strip().split('\n')
-            if len(lines) < 2:
-                return []
-            
-            headers = lines[0].split(',')
-            
-            for line in lines[1:]:
-                values = line.split(',')
-                if len(values) != len(headers):
-                    continue
-                
-                row = dict(zip(headers, values))
-                
-                # Parse timestamp
-                try:
-                    ts_ms = int(row['time'])
-                    ts = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
-                    # Truncate to hour
-                    ts_hour = ts.replace(minute=0, second=0, microsecond=0)
-                except (ValueError, KeyError):
-                    continue
-                
-                coin = row['coin']
-                exch = row['exchange']
-                
-                # Look up entity_id
-                entity_id = self._entity_cache.get(coin) if self._entity_cache else None
-                
-                # Extract all metrics
-                for velo_col, db_metric in METRIC_MAP.items():
-                    if velo_col in row and row[velo_col]:
-                        try:
-                            value = float(row[velo_col])
-                            records.append({
-                                'pulled_at': ts_hour,
-                                'asset': coin,
-                                'entity_id': entity_id,
-                                'metric_name': db_metric,
-                                'value': value,
-                                'domain': 'derivative',
-                                'exchange': exch,
-                                'granularity': 'hourly'  # Critical: distinguishes from daily data
-                            })
-                        except ValueError:
-                            pass
-        
-        except requests.RequestException as e:
-            print(f"[Velo] Request error for {exchange}: {e}")
-        
-        return records
     
     def _insert_metrics(self, records: list) -> int:
         """
