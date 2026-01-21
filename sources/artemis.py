@@ -11,7 +11,7 @@ GARBAGE_VALUES = {
     "Latest data not available for this asset.",
 }
 
-BATCH_SIZE = 250
+BATCH_SIZE = 50  # Artemis API has ~50-75 asset limit for on-chain metrics (FEES, DAU, etc.)
 REQUEST_DELAY = 0.12  # ~8 req/sec
 
 EXCLUDED_METRICS = {

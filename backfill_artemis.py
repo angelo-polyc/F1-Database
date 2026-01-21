@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 REQUEST_DELAY = 0.12  # ~8 req/sec
-BATCH_SIZE = 250
+BATCH_SIZE = 50  # Artemis API has ~50-75 asset limit for on-chain metrics (FEES, DAU, etc.)
 MAX_WORKERS = 4  # Parallel workers for fetching
 
 EXCLUDED_METRICS = {
