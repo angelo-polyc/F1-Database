@@ -112,6 +112,10 @@ def setup_database():
     else:
         print(f"Entities already populated ({entity_count} records)")
     
+    # Always create/update views
+    print("Creating views...")
+    create_views(conn)
+    
     cur.close()
     conn.close()
     print("Database setup complete.")
@@ -136,6 +140,30 @@ def seed_entities(conn):
         print("  Entity seed data loaded successfully")
     except Exception as e:
         print(f"  Error loading seed data: {e}")
+        conn.rollback()
+    finally:
+        cur.close()
+
+def create_views(conn):
+    """Create or replace database views."""
+    import os
+    
+    views_file = os.path.join(os.path.dirname(__file__), 'create_views.sql')
+    
+    if not os.path.exists(views_file):
+        print("Views file not found, skipping")
+        return
+    
+    cur = conn.cursor()
+    
+    try:
+        with open(views_file, 'r') as f:
+            sql = f.read()
+        cur.execute(sql)
+        conn.commit()
+        print("Views created successfully")
+    except Exception as e:
+        print(f"Error creating views: {e}")
         conn.rollback()
     finally:
         cur.close()
