@@ -100,9 +100,45 @@ def setup_database():
     """)
     
     conn.commit()
+    
+    # Check if entities need seeding
+    cur.execute("SELECT COUNT(*) FROM entities")
+    result = cur.fetchone()
+    entity_count = result[0] if result else 0
+    
+    if entity_count == 0:
+        print("Seeding entity data...")
+        seed_entities(conn)
+    else:
+        print(f"Entities already populated ({entity_count} records)")
+    
     cur.close()
     conn.close()
     print("Database setup complete.")
+
+def seed_entities(conn):
+    """Load entity seed data from SQL file."""
+    import os
+    
+    seed_file = os.path.join(os.path.dirname(__file__), 'seed_entities.sql')
+    
+    if not os.path.exists(seed_file):
+        print("  Seed file not found, skipping")
+        return
+    
+    cur = conn.cursor()
+    
+    try:
+        with open(seed_file, 'r') as f:
+            sql = f.read()
+        cur.execute(sql)
+        conn.commit()
+        print("  Entity seed data loaded successfully")
+    except Exception as e:
+        print(f"  Error loading seed data: {e}")
+        conn.rollback()
+    finally:
+        cur.close()
 
 if __name__ == "__main__":
     setup_database()
