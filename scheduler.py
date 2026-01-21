@@ -91,6 +91,7 @@ def main():
     global last_artemis_date, last_defillama_hour, last_velo_hour
     
     fresh_start = "--fresh" in sys.argv
+    skip_backfill = "--no-backfill" in sys.argv
     
     print("=" * 60)
     print("DATA PIPELINE SCHEDULER")
@@ -100,17 +101,22 @@ def main():
     print(f"  Velo: hourly at XX:{VELO_MINUTE:02d} UTC")
     if fresh_start:
         print("  Mode: FRESH START (clearing all data)")
+    if skip_backfill:
+        print("  Mode: NO BACKFILL (skipping historical data)")
     print("=" * 60)
     
     if fresh_start:
         clear_all_data()
     
-    print("\n" + "=" * 60)
-    print("RUNNING FULL BACKFILLS")
-    print("=" * 60)
-    run_backfill("defillama")
-    run_backfill("artemis")
-    run_backfill("velo")
+    if not skip_backfill:
+        print("\n" + "=" * 60)
+        print("RUNNING FULL BACKFILLS")
+        print("=" * 60)
+        run_backfill("defillama")
+        run_backfill("artemis")
+        run_backfill("velo")
+    else:
+        print("\nSkipping backfills (--no-backfill flag set)")
     
     print("\nRunning initial pulls...")
     now_utc = datetime.now(timezone.utc)

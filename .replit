@@ -30,6 +30,6 @@ task = "shell.exec"
 args = "python scheduler.py --fresh"
 
 [deployment]
-deploymentTarget = "gce"
-run = ["python", "scheduler.py"]
+deploymentTarget = "vm"
+run = ["python", "scheduler.py", "--no-backfill"]
 ignorePorts = true

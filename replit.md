@@ -157,6 +157,20 @@ All pulls run immediately on startup, then follow their scheduled times.
 
 Run manually: `python scheduler.py`
 Fresh start (clears all data first): `python scheduler.py --fresh`
+Production mode (no backfills): `python scheduler.py --no-backfill`
+
+## Production Deployment
+
+The project is configured for VM deployment with `--no-backfill` flag:
+- Starts pulling data immediately on the scheduled intervals
+- Skips historical backfills (run these manually in development first)
+- Uses the same production database (Neon-backed PostgreSQL)
+
+**To deploy:** Click the "Publish" button in Replit. The production scheduler will:
+1. Run initial pulls for all 3 sources immediately
+2. Continue on schedule: DefiLlama/Velo hourly at XX:05, Artemis daily at 00:05
+
+**To run backfills later:** After deploying, run backfills manually from the dev environment or add them to production when ready.
 
 ## Performance Optimizations
 - **Parallel API requests:** Uses ThreadPoolExecutor with 10 workers for concurrent fetches
