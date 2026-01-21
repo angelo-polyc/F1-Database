@@ -191,12 +191,16 @@ Run: `python backfill_artemis.py`
 
 ### Velo Backfill
 The `backfill_velo.py` script fetches hourly historical data from Velo API:
-- **Method:** Uses time-windowed requests with coin batching
+- **Method:** Uses 72-hour time windows with 5 essential metrics (CLOSE_PRICE, DOLLAR_VOLUME, DOLLAR_OI_CLOSE, FUNDING_RATE, PREMIUM)
+- **API Limitation:** Returns minute-level data despite resolution=1h parameter - client aggregates to hourly
+- **Time Estimate:** ~90 minutes for full 30-day backfill of all 1080 coin-exchange pairs
 - **Data:** Hourly time series (configurable days, default 30)
 - **Idempotent:** Uses ON CONFLICT DO NOTHING to prevent duplicates
 
 Run: `python backfill_velo.py --days 30`
 Options: `--coin BTC` (filter to one coin), `--exchange bybit` (filter to one exchange)
+
+**Note:** The Velo API returns minute-level data which is memory-intensive. The backfill aggregates this to hourly records before inserting. Live hourly pulls insert only 100-200 new records because most hours already exist from backfill.
 
 ### Historical Data Coverage (as of Jan 21, 2026)
 

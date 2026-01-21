@@ -36,22 +36,19 @@ MAX_WORKERS = 1  # Sequential fetching to avoid rate limits
 
 # Velo returns max 22,500 values per request
 # API returns MINUTE-level data (1440 rows/day) despite resolution=1h
-# With 10 columns, 1 coin: max 2250 rows = 37.5 hours (~1.5 days)
-# Use 24 hours per request with 1 coin to stay safely under limit
-HOURS_PER_REQUEST = 24
+# With 5 columns, 1 coin: 22500 / (1440 * 5) = 3.1 days max
+# Use 3 days per request with 1 coin to stay under limit
+HOURS_PER_REQUEST = 72  # 3 days = 72 hours
 
-# Batch size: 1 coin per request (API gives minute data, need to aggregate client-side)
+# Batch size: 1 coin per request (API gives minute data, aggregated hourly client-side)
 BACKFILL_BATCH_SIZE = 1
 
-# Essential metrics only for faster backfill (10 columns = 2250 rows/request max)
+# Essential metrics only for faster backfill (5 columns = 3.1 days/request max)
 FUTURES_COLUMNS = [
     'close_price',
     'dollar_volume',
     'dollar_open_interest_close',
     'funding_rate',
-    'liquidations_dollar_volume',
-    'buy_trades', 'sell_trades',
-    'buy_dollar_volume', 'sell_dollar_volume',
     'premium'
 ]
 
@@ -141,8 +138,11 @@ def load_config(coin_filter=None, exchange_filter=None):
 
 
 def fetch_historical(exchange, coins, begin_ts, end_ts, auth, entity_cache):
-    """Fetch historical data for a batch of coins from one exchange."""
-    records = []
+    """Fetch historical data for a batch of coins from one exchange.
+    
+    Aggregates minute-level API data to hourly records.
+    """
+    hourly_data = {}  # Key: (ts_hour, coin, exchange, metric) -> record
     
     coins_str = ','.join(coins)
     columns_str = ','.join(FUTURES_COLUMNS)
@@ -204,19 +204,23 @@ def fetch_historical(exchange, coins, begin_ts, end_ts, auth, entity_cache):
                     if velo_col in row and row[velo_col]:
                         try:
                             value = float(row[velo_col])
-                            records.append({
+                            # Key for hourly aggregation
+                            key = (ts_hour, coin, exch, db_metric)
+                            hourly_data[key] = {
                                 'pulled_at': ts_hour,
                                 'asset': coin,
                                 'entity_id': entity_id,
                                 'metric_name': db_metric,
-                                'value': value,
+                                'value': value,  # Use last value for the hour
                                 'domain': 'derivative',
                                 'exchange': exch,
-                                'granularity': 'hourly'  # Critical: distinguishes from daily data
-                            })
+                                'granularity': 'hourly'
+                            }
                         except ValueError:
                             pass
             
+            # Convert aggregated data to records list
+            records = list(hourly_data.values())
             break
         
         except requests.RequestException as e:
@@ -225,7 +229,8 @@ def fetch_historical(exchange, coins, begin_ts, end_ts, auth, entity_cache):
                 continue
             print(f"    Request error: {e}")
     
-    return records
+    # Return aggregated hourly records
+    return list(hourly_data.values())
 
 
 def insert_batch(records):
