@@ -180,6 +180,8 @@ The project is configured for VM deployment with `--no-backfill` flag:
 - **Pre-built entity URLs:** Per-entity API calls gathered upfront and fetched in single parallel batch
 - **Unified rate limiting:** All HTTP calls (fetch_json, fetch_json_threadsafe, fetch_pro_json) go through a global token bucket limiter
 - **Rate limit guarantee:** Thread-safe lock ensures max 15 req/sec (900/min), well under the 1000/min API limit
+- **Velo dynamic column batching:** API has 22,500 cell limit per request. For large time gaps (>6 hours), uses 5 essential columns (CLOSE_PRICE, DOLLAR_VOLUME, DOLLAR_OI_CLOSE, FUNDING_RATE, LIQ_DOLLAR_VOL). For normal hourly operation (<6 hours), uses all 30 columns. Column batch size is calculated dynamically based on time range and number of coins per batch.
+- **Source-specific timeouts:** Scheduler uses 15-minute timeout for Velo (handles large catch-ups), 10-minute timeout for other sources
 
 ## Historical Backfill
 

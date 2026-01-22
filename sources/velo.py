@@ -25,7 +25,13 @@ REQUEST_DELAY = 0.5  # 2 req/sec to avoid rate limits
 # 22,500 / 3600 = 6 coins max per request
 BATCH_SIZE = 5
 
-# All futures columns to pull
+# Essential metrics for quick pulls (used when catching up large gaps)
+ESSENTIAL_COLUMNS = [
+    'close_price', 'dollar_volume', 'dollar_open_interest_close',
+    'funding_rate', 'liquidations_dollar_volume'
+]
+
+# All futures columns to pull (used for normal hourly operation)
 FUTURES_COLUMNS = [
     'open_price', 'high_price', 'low_price', 'close_price',
     'coin_volume', 'dollar_volume',
@@ -231,83 +237,122 @@ class VeloSource(BaseSource):
         return result
     
     def _fetch_batch(self, exchange: str, coins: list, begin_ts: int, end_ts: int) -> list:
-        """Fetch data for a batch of coins from a single exchange."""
+        """Fetch data for a batch of coins from a single exchange.
+        
+        Splits column requests into chunks of 10 to stay under Velo's 22,500 cell limit.
+        """
         records = []
-        
         coins_str = ','.join(coins)
-        columns_str = ','.join(FUTURES_COLUMNS)
         
-        url = (
-            f"{self.base_url}/rows?"
-            f"type=futures&"
-            f"exchanges={exchange}&"
-            f"coins={coins_str}&"
-            f"columns={columns_str}&"
-            f"begin={begin_ts}&"
-            f"end={end_ts}&"
-            f"resolution=1h"
-        )
+        # API limit: 22,500 cells max per request
+        # Calculate time range to decide which columns to fetch
+        time_range_hours = (end_ts - begin_ts) / (1000 * 60 * 60)
+        estimated_rows = int(time_range_hours * 60)  # minute-level data
+        num_coins = len(coins)
         
-        try:
-            resp = requests.get(url, auth=self.auth, timeout=60)
+        # For large gaps (>6 hours), use essential columns only for speed
+        # For normal hourly operation (<6 hours), use all columns
+        if time_range_hours > 6:
+            columns_to_fetch = ESSENTIAL_COLUMNS
+        else:
+            columns_to_fetch = FUTURES_COLUMNS
+        
+        # Calculate optimal column batch size
+        if estimated_rows > 0 and num_coins > 0:
+            max_columns = int(20000 / (estimated_rows * num_coins))
+            COLUMN_BATCH_SIZE = max(2, min(len(columns_to_fetch), max_columns))
+        else:
+            COLUMN_BATCH_SIZE = len(columns_to_fetch)
+        
+        column_batches = [
+            columns_to_fetch[i:i+COLUMN_BATCH_SIZE] 
+            for i in range(0, len(columns_to_fetch), COLUMN_BATCH_SIZE)
+        ]
+        
+        # Collect all parsed rows, keyed by (time, coin, exchange)
+        row_data = {}  # key: (ts_hour, coin, exchange) -> {metric: value, ...}
+        
+        for col_batch in column_batches:
+            columns_str = ','.join(col_batch)
             
-            if resp.status_code == 429:
-                print(f"[Velo] Rate limited, waiting 5s...")
-                time.sleep(5)
+            url = (
+                f"{self.base_url}/rows?"
+                f"type=futures&"
+                f"exchanges={exchange}&"
+                f"coins={coins_str}&"
+                f"columns={columns_str}&"
+                f"begin={begin_ts}&"
+                f"end={end_ts}&"
+                f"resolution=1h"
+            )
+            
+            try:
                 resp = requests.get(url, auth=self.auth, timeout=60)
-            
-            if resp.status_code != 200:
-                return []
-            
-            # Parse CSV response
-            lines = resp.text.strip().split('\n')
-            if len(lines) < 2:
-                return []
-            
-            headers = lines[0].split(',')
-            
-            for line in lines[1:]:
-                values = line.split(',')
-                if len(values) != len(headers):
+                
+                if resp.status_code == 429:
+                    time.sleep(5)
+                    resp = requests.get(url, auth=self.auth, timeout=60)
+                
+                if resp.status_code != 200:
                     continue
                 
-                row = dict(zip(headers, values))
-                
-                # Parse timestamp
-                try:
-                    ts_ms = int(row['time'])
-                    ts = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
-                    # Truncate to hour
-                    ts_hour = ts.replace(minute=0, second=0, microsecond=0)
-                except (ValueError, KeyError):
+                lines = resp.text.strip().split('\n')
+                if len(lines) < 2:
                     continue
                 
-                coin_val = row['coin']
-                exch = row['exchange']
+                headers = lines[0].split(',')
                 
-                # Look up entity_id
-                entity_id = self._entity_cache.get(coin_val) if self._entity_cache else None
+                for line in lines[1:]:
+                    values = line.split(',')
+                    if len(values) != len(headers):
+                        continue
+                    
+                    row = dict(zip(headers, values))
+                    
+                    try:
+                        ts_ms = int(row['time'])
+                        ts = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+                        ts_hour = ts.replace(minute=0, second=0, microsecond=0)
+                    except (ValueError, KeyError):
+                        continue
+                    
+                    coin_val = row['coin']
+                    exch = row['exchange']
+                    key = (ts_hour, coin_val, exch)
+                    
+                    if key not in row_data:
+                        row_data[key] = {}
+                    
+                    # Store metric values for this row
+                    for velo_col in col_batch:
+                        if velo_col in row and row[velo_col]:
+                            try:
+                                row_data[key][velo_col] = float(row[velo_col])
+                            except ValueError:
+                                pass
                 
-                # Extract all metrics
-                for velo_col, db_metric in METRIC_MAP.items():
-                    if velo_col in row and row[velo_col]:
-                        try:
-                            value = float(row[velo_col])
-                            records.append({
-                                'pulled_at': ts_hour,
-                                'asset': coin_val,
-                                'entity_id': entity_id,
-                                'metric_name': db_metric,
-                                'value': value,
-                                'domain': 'derivative',
-                                'exchange': exch,
-                                'granularity': 'hourly'
-                            })
-                        except ValueError:
-                            pass
+                time.sleep(REQUEST_DELAY)
+                
+            except requests.RequestException as e:
+                print(f"[Velo] Request error for {exchange}: {e}")
         
-        except requests.RequestException as e:
-            print(f"[Velo] Request error for {exchange}: {e}")
+        # Convert collected data to records
+        for (ts_hour, coin_val, exch), metrics in row_data.items():
+            entity_id = self._entity_cache.get(coin_val) if self._entity_cache else None
+            
+            for velo_col, value in metrics.items():
+                db_metric = METRIC_MAP.get(velo_col)
+                if db_metric:
+                    records.append({
+                        'pulled_at': ts_hour,
+                        'asset': coin_val,
+                        'entity_id': entity_id,
+                        'metric_name': db_metric,
+                        'value': value,
+                        'domain': 'derivative',
+                        'exchange': exch,
+                        'granularity': 'hourly'
+                    })
         
         return records
     

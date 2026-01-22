@@ -44,19 +44,23 @@ def run_backfill(source: str):
         print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} backfill error: {e}")
 
 def run_pull(source: str):
+    # Velo with large gaps needs more time, normal operation is ~2 min
+    timeout_seconds = 900 if source == 'velo' else 600
+    timeout_min = timeout_seconds // 60
+    
     print(f"\n[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] Starting {source} pull...")
     try:
         result = subprocess.run(
             ["python", "main.py", "pull", source],
             capture_output=False,
-            timeout=600  # 10 minutes (increased from 5)
+            timeout=timeout_seconds
         )
         if result.returncode != 0:
             print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} pull failed with exit code {result.returncode}")
         else:
             print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} pull completed")
     except subprocess.TimeoutExpired:
-        print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} pull TIMED OUT after 10 minutes")
+        print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} pull TIMED OUT after {timeout_min} minutes")
     except Exception as e:
         print(f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] {source} pull error: {e}")
 
