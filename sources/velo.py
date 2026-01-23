@@ -212,8 +212,11 @@ class VeloSource(BaseSource):
             self.log_pull("success", total)
             return total
         else:
-            print("[Velo] No new data received")
-            self.log_pull("no_data", 0)
+            # No records could mean: API returned empty, or pairs don't exist in API
+            # This is normal for the occasional pair that's in config but not in Velo
+            # Log as success with 0 records rather than no_data
+            print("[Velo] No new data from API (pairs may not exist or are up to date)")
+            self.log_pull("success", 0)
             return 0
     
     def _get_last_timestamps(self) -> dict:
