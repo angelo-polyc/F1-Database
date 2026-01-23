@@ -16,22 +16,11 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Data Pipeline Scheduler"
+args = "Dashboard"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Dashboard"
-
-[[workflows.workflow]]
-name = "Data Pipeline Scheduler"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python scheduler.py --no-backfill"
+args = "Data Pipeline Scheduler"
 
 [[workflows.workflow]]
 name = "Dashboard"
@@ -44,6 +33,17 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow]]
+name = "Data Pipeline Scheduler"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python scheduler.py --no-backfill"
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [deployment]
 deploymentTarget = "vm"

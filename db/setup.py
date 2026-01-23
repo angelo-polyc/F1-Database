@@ -59,40 +59,50 @@ def setup_database():
         );
     """)
     
+    # Check if metrics indexes already exist (skip creation if they do - avoids timeout on large tables)
     cur.execute("""
-        CREATE UNIQUE INDEX IF NOT EXISTS metrics_unique_with_exchange 
-        ON metrics (source, asset, metric_name, pulled_at, COALESCE(exchange, ''));
+        SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'metrics_unique_with_exchange'
     """)
+    metrics_indexes_exist = cur.fetchone()[0] > 0
     
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_metrics_lookup 
-        ON metrics (source, asset, metric_name, pulled_at);
-    """)
-    
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_metrics_ts 
-        ON metrics (pulled_at);
-    """)
-    
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_metrics_domain 
-        ON metrics (domain, pulled_at);
-    """)
-    
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_metrics_entity 
-        ON metrics (entity_id, metric_name, pulled_at);
-    """)
-    
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_metrics_exchange 
-        ON metrics (exchange, pulled_at) WHERE exchange IS NOT NULL;
-    """)
-    
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_metrics_granularity 
-        ON metrics (granularity, pulled_at);
-    """)
+    if not metrics_indexes_exist:
+        print("Creating metrics indexes...")
+        cur.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS metrics_unique_with_exchange 
+            ON metrics (source, asset, metric_name, pulled_at, COALESCE(exchange, ''));
+        """)
+        
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_metrics_lookup 
+            ON metrics (source, asset, metric_name, pulled_at);
+        """)
+        
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_metrics_ts 
+            ON metrics (pulled_at);
+        """)
+        
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_metrics_domain 
+            ON metrics (domain, pulled_at);
+        """)
+        
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_metrics_entity 
+            ON metrics (entity_id, metric_name, pulled_at);
+        """)
+        
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_metrics_exchange 
+            ON metrics (exchange, pulled_at) WHERE exchange IS NOT NULL;
+        """)
+        
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_metrics_granularity 
+            ON metrics (granularity, pulled_at);
+        """)
+    else:
+        print("Metrics indexes already exist, skipping...")
     
     cur.execute("""
         CREATE INDEX IF NOT EXISTS idx_entity_source 
@@ -112,9 +122,10 @@ def setup_database():
     else:
         print(f"Entities already populated ({entity_count} records)")
     
-    # Always create/update views
-    print("Creating views...")
-    create_views(conn)
+    # Skip view creation for now (large metrics table causes timeouts)
+    # Views will be created manually after data is cleared
+    # print("Creating views...")
+    # create_views(conn)
     
     cur.close()
     conn.close()
