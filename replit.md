@@ -95,7 +95,7 @@ python main.py sources
 ### Velo.xyz
 - **Assets:** 481 coins with derivatives data across 4 exchanges
 - **Exchanges:** Binance Futures, Bybit, OKX Swap, Hyperliquid
-- **Metrics:** OHLC prices, funding rates, open interest, liquidations, volumes (30 metrics total)
+- **Metrics:** CLOSE_PRICE, DOLLAR_VOLUME, DOLLAR_OI_CLOSE, FUNDING_RATE_AVG, LIQ_DOLLAR_VOL (5 essential metrics)
 - **Granularity:** Hourly (vs daily for Artemis/DefiLlama)
 - **Config Options:**
   - `velo_config.csv` - Full 1,069 pairs (23M rows/month)

@@ -25,27 +25,17 @@ REQUEST_DELAY = 0.5  # 2 req/sec to avoid rate limits
 # 22,500 / 3600 = 6 coins max per request
 BATCH_SIZE = 5
 
-# Essential metrics for quick pulls (used when catching up large gaps)
-ESSENTIAL_COLUMNS = [
-    'close_price', 'dollar_volume', 'dollar_open_interest_close',
-    'funding_rate', 'liquidations_dollar_volume'
+# Velo columns to pull (5 essential derivatives metrics)
+FUTURES_COLUMNS = [
+    'close_price',                   # CLOSE_PRICE
+    'dollar_volume',                 # DOLLAR_VOLUME
+    'dollar_open_interest_close',    # DOLLAR_OI_CLOSE
+    'funding_rate_avg',              # FUNDING_RATE_AVG
+    'liquidations_dollar_volume'     # LIQ_DOLLAR_VOL
 ]
 
-# All futures columns to pull (used for normal hourly operation)
-FUTURES_COLUMNS = [
-    'open_price', 'high_price', 'low_price', 'close_price',
-    'coin_volume', 'dollar_volume',
-    'buy_coin_volume', 'sell_coin_volume',
-    'buy_dollar_volume', 'sell_dollar_volume',
-    'buy_trades', 'sell_trades', 'total_trades',
-    'coin_open_interest_high', 'coin_open_interest_low', 'coin_open_interest_close',
-    'dollar_open_interest_high', 'dollar_open_interest_low', 'dollar_open_interest_close',
-    'funding_rate', 'funding_rate_avg', 'premium',
-    'buy_liquidations', 'sell_liquidations',
-    'buy_liquidations_coin_volume', 'sell_liquidations_coin_volume',
-    'buy_liquidations_dollar_volume', 'sell_liquidations_dollar_volume',
-    'liquidations_coin_volume', 'liquidations_dollar_volume'
-]
+# For backwards compatibility (both use same 5 columns now)
+ESSENTIAL_COLUMNS = FUTURES_COLUMNS
 
 # Map Velo column names to standardized DB metric names
 METRIC_MAP = {
