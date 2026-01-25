@@ -10,9 +10,13 @@ ARTEMIS_MINUTE = 5
 DEFILLAMA_MINUTE = 5
 VELO_MINUTE = 5  # Velo is real-time, pull alongside DefiLlama
 
+ALPHAVANTAGE_HOUR = 21  # 4:05 PM ET = 21:05 UTC (after market close)
+ALPHAVANTAGE_MINUTE = 5
+
 last_artemis_date = None
 last_defillama_hour = None
 last_velo_hour = None
+last_alphavantage_date = None
 
 def clear_all_data():
     """Clear all metrics and pulls data for a fresh start."""
@@ -94,8 +98,18 @@ def should_run_velo(now_utc):
             return True
     return False
 
+def should_run_alphavantage(now_utc):
+    """Check if Alpha Vantage should run: daily at 21:05 UTC (4:05 PM ET after market close)."""
+    global last_alphavantage_date
+    
+    if now_utc.hour == ALPHAVANTAGE_HOUR and now_utc.minute >= ALPHAVANTAGE_MINUTE:
+        today = now_utc.date()
+        if last_alphavantage_date != today:
+            return True
+    return False
+
 def main():
-    global last_artemis_date, last_defillama_hour, last_velo_hour
+    global last_artemis_date, last_defillama_hour, last_velo_hour, last_alphavantage_date
     
     fresh_start = "--fresh" in sys.argv
     skip_backfill = "--no-backfill" in sys.argv
@@ -110,6 +124,7 @@ def main():
     print(f"\n  Artemis: daily at {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC")
     print(f"  DefiLlama: hourly at XX:{DEFILLAMA_MINUTE:02d} UTC")
     print(f"  Velo: hourly at XX:{VELO_MINUTE:02d} UTC")
+    print(f"  AlphaVantage: daily at {ALPHAVANTAGE_HOUR:02d}:{ALPHAVANTAGE_MINUTE:02d} UTC (weekdays, after market close)")
     if fresh_start:
         print("  Mode: FRESH START (clearing all data)")
     if skip_backfill:
@@ -141,10 +156,14 @@ def main():
     run_pull("velo")
     last_velo_hour = (now_utc.date(), now_utc.hour)
     
+    run_pull("alphavantage")
+    last_alphavantage_date = now_utc.date()
+    
     print(f"\n[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Scheduler running.")
     print(f"  Next Artemis pull: {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC tomorrow")
     print(f"  Next DefiLlama pull: XX:{DEFILLAMA_MINUTE:02d} UTC (next hour)")
     print(f"  Next Velo pull: XX:{VELO_MINUTE:02d} UTC (next hour)")
+    print(f"  Next AlphaVantage pull: {ALPHAVANTAGE_HOUR:02d}:{ALPHAVANTAGE_MINUTE:02d} UTC")
     
     while True:
         now_utc = datetime.now(timezone.utc)
@@ -163,6 +182,11 @@ def main():
             run_pull("velo")
             last_velo_hour = (now_utc.date(), now_utc.hour)
             print(f"[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Next Velo pull: XX:{VELO_MINUTE:02d} UTC (next hour)")
+        
+        if should_run_alphavantage(now_utc):
+            run_pull("alphavantage")
+            last_alphavantage_date = now_utc.date()
+            print(f"[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Next AlphaVantage pull: {ALPHAVANTAGE_HOUR:02d}:{ALPHAVANTAGE_MINUTE:02d} UTC tomorrow")
         
         time.sleep(30)
 
