@@ -1,8 +1,12 @@
 import time
 import subprocess
 import sys
+import os
+import fcntl
 from datetime import datetime, timezone
 from db.setup import get_connection, setup_database
+
+LOCK_FILE = "/tmp/scheduler.lock"
 
 ARTEMIS_HOUR = 0
 ARTEMIS_MINUTE = 5
@@ -108,8 +112,25 @@ def should_run_alphavantage(now_utc):
             return True
     return False
 
+def acquire_lock():
+    """Acquire exclusive lock to prevent multiple scheduler instances."""
+    try:
+        lock_fd = open(LOCK_FILE, 'w')
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        lock_fd.write(str(os.getpid()))
+        lock_fd.flush()
+        return lock_fd
+    except (IOError, OSError):
+        return None
+
 def main():
     global last_artemis_date, last_defillama_hour, last_velo_hour, last_alphavantage_date
+    
+    lock_fd = acquire_lock()
+    if lock_fd is None:
+        print("ERROR: Another scheduler instance is already running!")
+        print("Kill the other instance or remove /tmp/scheduler.lock")
+        sys.exit(1)
     
     fresh_start = "--fresh" in sys.argv
     skip_backfill = "--no-backfill" in sys.argv
