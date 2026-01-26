@@ -1,6 +1,7 @@
 import os
 import csv
 import time
+import argparse
 import threading
 import requests
 from requests.adapters import HTTPAdapter
@@ -10,6 +11,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 MAX_WORKERS = 10  # Concurrent requests (1000/min limit = 16.6/sec)
 BATCH_SIZE = 1000
+MAX_RETRIES = 3
+RETRY_DELAY = 2
 
 API_KEY = os.environ.get('DEFILLAMA_API_KEY')
 PRO_BASE_URL = "https://pro-api.llama.fi"
@@ -112,27 +115,49 @@ def _wait_for_rate_limit():
         _last_request_time[0] = time.time()
 
 def fetch_json(url):
-    """Rate-limited fetch - all calls go through the global limiter"""
-    _wait_for_rate_limit()
-    try:
-        resp = main_session.get(url, timeout=60)
-        if resp.status_code == 200:
-            return resp.json()
-        return None
-    except Exception as e:
-        return None
+    """Rate-limited fetch with retries"""
+    for attempt in range(MAX_RETRIES):
+        _wait_for_rate_limit()
+        try:
+            resp = main_session.get(url, timeout=60)
+            if resp.status_code == 200:
+                return resp.json()
+            elif resp.status_code == 429:
+                time.sleep(RETRY_DELAY * (attempt + 1))
+                continue
+            elif resp.status_code == 404:
+                return None
+            else:
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(RETRY_DELAY)
+                continue
+        except Exception:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+    return None
 
 def fetch_json_threadsafe(url):
-    """Thread-safe, rate-limited fetch for parallel workers"""
-    _wait_for_rate_limit()
-    try:
-        session = get_thread_session()
-        resp = session.get(url, timeout=60)
-        if resp.status_code == 200:
-            return resp.json()
-        return None
-    except Exception as e:
-        return None
+    """Thread-safe, rate-limited fetch with retries"""
+    for attempt in range(MAX_RETRIES):
+        _wait_for_rate_limit()
+        try:
+            session = get_thread_session()
+            resp = session.get(url, timeout=60)
+            if resp.status_code == 200:
+                return resp.json()
+            elif resp.status_code == 429:
+                time.sleep(RETRY_DELAY * (attempt + 1))
+                continue
+            elif resp.status_code == 404:
+                return None
+            else:
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(RETRY_DELAY)
+                continue
+        except Exception:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+    return None
 
 def fetch_pro_json(endpoint):
     """Rate-limited Pro API fetch"""
@@ -466,7 +491,7 @@ def fetch_chain_revenue(chain_name, gecko_id, slug=''):
     return records
 
 
-def extract_historical_data(data, chart_key, metric_name, asset_id):
+def extract_historical_data(data, chart_key, metric_name, asset_id, start_ts=None, end_ts=None):
     records = []
     
     if not data:
@@ -489,6 +514,12 @@ def extract_historical_data(data, chart_key, metric_name, asset_id):
                 continue
             
             if value is None or value == 0:
+                continue
+            
+            # Apply date filter
+            if start_ts is not None and timestamp < start_ts:
+                continue
+            if end_ts is not None and timestamp > end_ts:
                 continue
             
             dt = datetime.utcfromtimestamp(timestamp)
@@ -602,7 +633,7 @@ def build_entity_urls(entity):
     return urls
 
 
-def process_entity_data(entity, url_results, conn):
+def process_entity_data(entity, url_results, conn, start_ts=None, end_ts=None):
     gecko_id = entity['gecko_id']
     slug = entity['slug'] or gecko_id
     name = entity.get('name', slug)
@@ -610,6 +641,16 @@ def process_entity_data(entity, url_results, conn):
     
     all_records = []
     metrics_found = []
+    
+    def is_in_range(ts):
+        """Check if timestamp is within date range."""
+        if start_ts is None and end_ts is None:
+            return True
+        if start_ts is not None and ts < start_ts:
+            return False
+        if end_ts is not None and ts > end_ts:
+            return False
+        return True
     
     if is_chain:
         chain_slug = get_chain_slug(name, slug, gecko_id)
@@ -621,7 +662,7 @@ def process_entity_data(entity, url_results, conn):
                 try:
                     ts = entry.get('date')
                     value = entry.get('tvl')
-                    if ts and value is not None and value > 0:
+                    if ts and value is not None and value > 0 and is_in_range(ts):
                         dt = datetime.utcfromtimestamp(ts)
                         all_records.append({
                             'asset': gecko_id,
@@ -643,7 +684,7 @@ def process_entity_data(entity, url_results, conn):
                 try:
                     if isinstance(entry, list) and len(entry) >= 2:
                         ts, value = entry[0], entry[1]
-                        if ts and value is not None and value != 0:
+                        if ts and value is not None and value != 0 and is_in_range(ts):
                             dt = datetime.utcfromtimestamp(ts)
                             all_records.append({
                                 'asset': gecko_id,
@@ -666,7 +707,7 @@ def process_entity_data(entity, url_results, conn):
                 try:
                     if isinstance(entry, list) and len(entry) >= 2:
                         ts, value = entry[0], entry[1]
-                        if ts and value is not None and value != 0:
+                        if ts and value is not None and value != 0 and is_in_range(ts):
                             dt = datetime.utcfromtimestamp(ts)
                             all_records.append({
                                 'asset': gecko_id,
@@ -689,7 +730,7 @@ def process_entity_data(entity, url_results, conn):
                 try:
                     if isinstance(entry, list) and len(entry) >= 2:
                         ts, value = entry[0], entry[1]
-                        if ts and value is not None and value != 0:
+                        if ts and value is not None and value != 0 and is_in_range(ts):
                             dt = datetime.utcfromtimestamp(ts)
                             all_records.append({
                                 'asset': gecko_id,
@@ -712,7 +753,7 @@ def process_entity_data(entity, url_results, conn):
                 try:
                     if isinstance(entry, list) and len(entry) >= 2:
                         ts, value = entry[0], entry[1]
-                        if ts and value is not None and value != 0:
+                        if ts and value is not None and value != 0 and is_in_range(ts):
                             dt = datetime.utcfromtimestamp(ts)
                             all_records.append({
                                 'asset': gecko_id,
@@ -735,7 +776,7 @@ def process_entity_data(entity, url_results, conn):
                 try:
                     if isinstance(entry, list) and len(entry) >= 2:
                         ts, value = entry[0], entry[1]
-                        if ts and value is not None and value != 0:
+                        if ts and value is not None and value != 0 and is_in_range(ts):
                             dt = datetime.utcfromtimestamp(ts)
                             all_records.append({
                                 'asset': gecko_id,
@@ -758,7 +799,9 @@ def process_entity_data(entity, url_results, conn):
                     data, 
                     config['chart_key'], 
                     config['metric'],
-                    gecko_id
+                    gecko_id,
+                    start_ts,
+                    end_ts
                 )
                 if records:
                     all_records.extend(records)
@@ -775,7 +818,7 @@ def process_entity_data(entity, url_results, conn):
                     ts = entry.get('date')
                     total = entry.get('totalCirculating', {})
                     value = total.get('peggedUSD')
-                    if ts and value is not None and value > 0:
+                    if ts and value is not None and value > 0 and is_in_range(ts):
                         dt = datetime.utcfromtimestamp(ts)
                         all_records.append({
                             'asset': gecko_id,
@@ -812,7 +855,7 @@ def process_entity_data(entity, url_results, conn):
                             deposit_usd = entry.get('depositUSD', 0) or 0
                             withdraw_usd = entry.get('withdrawUSD', 0) or 0
                             total_volume = deposit_usd + withdraw_usd
-                            if ts and total_volume > 0:
+                            if ts and total_volume > 0 and is_in_range(ts):
                                 dt = datetime.utcfromtimestamp(ts)
                                 all_records.append({
                                     'asset': gecko_id,
@@ -833,14 +876,56 @@ def process_entity_data(entity, url_results, conn):
     return inserted, metrics_found
 
 
+def filter_records_by_date(records, start_ts, end_ts):
+    """Filter records to only include those within date range."""
+    if start_ts is None and end_ts is None:
+        return records
+    
+    filtered = []
+    for r in records:
+        ts = int(r['pulled_at'].timestamp())
+        if (start_ts is None or ts >= start_ts) and (end_ts is None or ts <= end_ts):
+            filtered.append(r)
+    return filtered
+
+
 def main():
+    parser = argparse.ArgumentParser(description='DefiLlama Historical Backfill')
+    parser.add_argument('--days', type=int, help='Number of days to backfill (default: 1095 = 3 years)')
+    parser.add_argument('--start-date', type=str, help='Start date (YYYY-MM-DD)')
+    parser.add_argument('--end-date', type=str, help='End date (YYYY-MM-DD, default: yesterday)')
+    parser.add_argument('--dry-run', action='store_true', help='Preview without inserting')
+    args = parser.parse_args()
+    
+    # Calculate date range
+    end_date = datetime.now() - timedelta(days=1)
+    if args.end_date:
+        end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
+    
+    if args.start_date:
+        start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+    elif args.days:
+        start_date = end_date - timedelta(days=args.days)
+    else:
+        start_date = end_date - timedelta(days=365 * 3)  # Default 3 years
+    
+    start_ts = int(start_date.timestamp())
+    end_ts = int(end_date.replace(hour=23, minute=59, second=59).timestamp())
+    
     print("=" * 70)
     print("DEFILLAMA HISTORICAL BACKFILL (PARALLEL)")
     print("=" * 70)
+    print(f"Date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+    if args.dry_run:
+        print("DRY RUN - no data will be inserted")
     
     entities = load_config()
     print(f"Entities to backfill: {len(entities)}")
     print("=" * 70)
+    
+    if args.dry_run:
+        print("\n[DRY RUN] Would process the above configuration")
+        return
     
     conn = get_db_connection()
     
@@ -869,12 +954,13 @@ def main():
     print("\nProcessing and inserting records...")
     
     total_records = 0
+    filtered_records = 0
     entities_processed = 0
     
     for i, entity in enumerate(entities):
         gecko_id = entity['gecko_id']
         
-        inserted, metrics = process_entity_data(entity, url_results, conn)
+        inserted, metrics = process_entity_data(entity, url_results, conn, start_ts, end_ts)
         total_records += inserted
         entities_processed += 1
         
@@ -893,10 +979,12 @@ def main():
     print("\n" + "=" * 70)
     print("BACKFILL COMPLETE")
     print("=" * 70)
+    print(f"  Date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
     print(f"  Entities processed: {entities_processed}")
     print(f"  Total records inserted: {total_records:,}")
     print(f"  Time elapsed: {elapsed:.1f} seconds")
-    print(f"  Average: {total_records / elapsed:.0f} records/sec")
+    if elapsed > 0:
+        print(f"  Average: {total_records / elapsed:.0f} records/sec")
     print("=" * 70)
 
 if __name__ == "__main__":
