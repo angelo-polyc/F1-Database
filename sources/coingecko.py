@@ -23,8 +23,6 @@ METRIC_MAP = {
     'total_volume': 'VOLUME_24H',
     'market_cap': 'MARKET_CAP',
     'market_cap_rank': 'MARKET_CAP_RANK',
-    'high_24h': 'HIGH_24H',
-    'low_24h': 'LOW_24H',
     'price_change_24h': 'PRICE_CHANGE_24H',
     'price_change_percentage_24h': 'PRICE_CHANGE_PCT_24H',
     'price_change_percentage_1h_in_currency': 'PRICE_CHANGE_PCT_1H',
@@ -32,8 +30,6 @@ METRIC_MAP = {
     'circulating_supply': 'CIRCULATING_SUPPLY',
     'total_supply': 'TOTAL_SUPPLY',
     'max_supply': 'MAX_SUPPLY',
-    'ath': 'ATH',
-    'atl': 'ATL',
     'fully_diluted_valuation': 'FDV',
 }
 
