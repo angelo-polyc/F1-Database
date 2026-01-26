@@ -10,7 +10,7 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
 ```
 .
 ├── main.py                  # CLI entry point
-├── scheduler.py             # Automated pull scheduler (1h DefiLlama/Velo, 24h Artemis)
+├── scheduler.py             # Automated pull scheduler (hourly: DefiLlama/Velo/CoinGecko, daily: Artemis/AlphaVantage)
 ├── backfill_defillama.py   # DefiLlama historical data backfill
 ├── backfill_artemis.py     # Artemis historical data backfill
 ├── backfill_velo.py        # Velo historical data backfill
@@ -21,6 +21,8 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
 ├── velo_config_top20.csv   # Velo config - top 20 coins (~71 pairs)
 ├── velo_config_top50.csv   # Velo config - top 50 coins (~164 pairs)
 ├── velo_config_top100.csv  # Velo config - top 100 coins (~258 pairs)
+├── coingecko_config.csv    # CoinGecko config - 244 coins with symbol→ID mappings
+├── alphavantage_config.csv # Alpha Vantage config - 22 stock tickers
 ├── migrations/
 │   ├── 001_schema_upgrade.sql    # Entity master + enhanced metrics schema
 │   ├── 002_entity_seed_data.sql  # Entity seed with Velo coins + initial mappings
@@ -34,7 +36,9 @@ A Python data pipeline system for recurring API pulls of cryptocurrency and equi
     ├── base.py             # BaseSource abstract class
     ├── artemis.py          # Artemis API source implementation
     ├── defillama.py        # DefiLlama API source implementation
-    └── velo.py             # Velo.xyz API source implementation
+    ├── velo.py             # Velo.xyz API source implementation
+    ├── coingecko.py        # CoinGecko API source implementation
+    └── alphavantage.py     # Alpha Vantage API source implementation
 ```
 
 ## Database Schema
