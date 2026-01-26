@@ -123,6 +123,20 @@ def acquire_lock():
     except (IOError, OSError):
         return None
 
+def get_last_pull_time(source_name: str):
+    """Get the last successful pull time for a source from the database."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT pulled_at FROM pulls 
+        WHERE source_name = %s AND status = 'success'
+        ORDER BY pulled_at DESC LIMIT 1
+    """, (source_name,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row[0] if row else None
+
 def main():
     global last_artemis_date, last_defillama_hour, last_velo_hour, last_alphavantage_date
     
@@ -177,8 +191,13 @@ def main():
     run_pull("velo")
     last_velo_hour = (now_utc.date(), now_utc.hour)
     
-    run_pull("alphavantage")
-    last_alphavantage_date = now_utc.date()
+    last_av_pull = get_last_pull_time("alphavantage")
+    if last_av_pull and last_av_pull.date() == now_utc.date():
+        print(f"[AlphaVantage] Already pulled today at {last_av_pull.strftime('%H:%M:%S UTC')}, skipping initial pull")
+        last_alphavantage_date = now_utc.date()
+    else:
+        run_pull("alphavantage")
+        last_alphavantage_date = now_utc.date()
     
     print(f"\n[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Scheduler running.")
     print(f"  Next Artemis pull: {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC tomorrow")
