@@ -1,8 +1,13 @@
 import os
 import csv
 import time
+import threading
 import requests
+from requests.adapters import HTTPAdapter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from sources.base import BaseSource
+
+_thread_local = threading.local()
 
 GARBAGE_VALUES = {
     "Metric not found.",
@@ -11,8 +16,9 @@ GARBAGE_VALUES = {
     "Latest data not available for this asset.",
 }
 
-BATCH_SIZE = 50  # Artemis API has ~50-75 asset limit for on-chain metrics (FEES, DAU, etc.)
-REQUEST_DELAY = 0.12  # ~8 req/sec
+BATCH_SIZE = 50
+MAX_WORKERS = 5
+RATE_LIMIT_DELAY = 0.15
 
 EXCLUDED_METRICS = {
     "VOLATILITY_90D_ANN",
@@ -72,6 +78,18 @@ class ArtemisSource(BaseSource):
             raise ValueError("ARTEMIS_API_KEY environment variable not set")
         self.config_path = "artemis_config.csv"
         self.base_url = "https://api.artemisxyz.com/data"
+        self.session = requests.Session()
+        adapter = HTTPAdapter(pool_connections=10, pool_maxsize=10)
+        self.session.mount('https://', adapter)
+        self.session.mount('http://', adapter)
+    
+    def _get_thread_session(self):
+        if not hasattr(_thread_local, 'session'):
+            _thread_local.session = requests.Session()
+            adapter = HTTPAdapter(pool_connections=5, pool_maxsize=5)
+            _thread_local.session.mount('https://', adapter)
+            _thread_local.session.mount('http://', adapter)
+        return _thread_local.session
     
     def load_config_from_csv(self) -> dict:
         pull_config = {}
@@ -124,13 +142,14 @@ class ArtemisSource(BaseSource):
         
         return asset_data
     
-    def fetch_metric(self, metric: str, symbols: list) -> dict:
+    def fetch_metric_batch(self, metric: str, symbols: list) -> dict:
+        session = self._get_thread_session()
         url = f"{self.base_url}/{metric.lower()}/?symbols={','.join(symbols)}&APIKey={self.api_key}"
         
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                resp = requests.get(url, timeout=60)
+                resp = session.get(url, timeout=30)
                 
                 if resp.status_code == 200 and resp.text.strip():
                     return resp.json()
@@ -140,12 +159,47 @@ class ArtemisSource(BaseSource):
                     continue
                 else:
                     return {}
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    print(f"    Error: {e}")
+            except Exception:
                 time.sleep(1)
         
         return {}
+    
+    def _process_metric(self, metric: str, assets: list) -> tuple:
+        records = []
+        api_calls = 0
+        errors = 0
+        
+        for batch_start in range(0, len(assets), BATCH_SIZE):
+            batch = assets[batch_start:batch_start + BATCH_SIZE]
+            
+            time.sleep(RATE_LIMIT_DELAY)
+            
+            data = self.fetch_metric_batch(metric, batch)
+            api_calls += 1
+            
+            if not data:
+                errors += 1
+                continue
+            
+            for asset in batch:
+                value = self.extract_value(data, asset, metric)
+                
+                if value is None:
+                    continue
+                if isinstance(value, str) and value in GARBAGE_VALUES:
+                    continue
+                
+                try:
+                    numeric_value = float(value)
+                    records.append({
+                        "asset": asset,
+                        "metric_name": metric,
+                        "value": numeric_value
+                    })
+                except (ValueError, TypeError):
+                    continue
+        
+        return metric, records, api_calls, errors, len(assets)
     
     def pull(self) -> int:
         try:
@@ -166,67 +220,51 @@ class ArtemisSource(BaseSource):
                              for assets in pull_config.values())
         
         print("=" * 60)
-        print("ARTEMIS DATA PULL")
+        print("ARTEMIS DATA PULL (PARALLEL)")
         print("=" * 60)
         print(f"Metrics: {len(all_metrics)}")
         print(f"Assets: {len(all_assets)}")
-        print(f"API requests: {total_requests}")
+        print(f"API requests: ~{total_requests}")
+        print(f"Workers: {MAX_WORKERS}")
         print("=" * 60)
         
         all_records = []
-        api_calls = 0
-        errors = 0
+        total_api_calls = 0
+        total_errors = 0
+        completed = 0
         
-        for idx, metric in enumerate(all_metrics):
-            assets_for_metric = pull_config[metric]
-            print(f"[{idx+1:2d}/{len(all_metrics)}] {metric} ({len(assets_for_metric)})...", end=" ", flush=True)
+        start_time = time.time()
+        
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            futures = {
+                executor.submit(self._process_metric, metric, assets): metric
+                for metric, assets in pull_config.items()
+            }
             
-            values_found = 0
-            for batch_start in range(0, len(assets_for_metric), BATCH_SIZE):
-                batch = assets_for_metric[batch_start:batch_start + BATCH_SIZE]
+            for future in as_completed(futures):
+                metric, records, api_calls, errors, asset_count = future.result()
+                all_records.extend(records)
+                total_api_calls += api_calls
+                total_errors += errors
+                completed += 1
                 
-                data = self.fetch_metric(metric, batch)
-                api_calls += 1
-                
-                if not data:
-                    errors += 1
-                    continue
-                
-                for asset in batch:
-                    value = self.extract_value(data, asset, metric)
-                    
-                    if value is None:
-                        continue
-                    if isinstance(value, str) and value in GARBAGE_VALUES:
-                        continue
-                    
-                    try:
-                        numeric_value = float(value)
-                        all_records.append({
-                            "asset": asset,
-                            "metric_name": metric,
-                            "value": numeric_value
-                        })
-                        values_found += 1
-                    except (ValueError, TypeError):
-                        continue
-                
-                time.sleep(REQUEST_DELAY)
-            
-            print(f"found {values_found}/{len(assets_for_metric)}")
+                elapsed = time.time() - start_time
+                rate = total_api_calls / elapsed if elapsed > 0 else 0
+                print(f"[{completed:2d}/{len(all_metrics)}] {metric}: {len(records)}/{asset_count} values | {rate:.1f} req/s")
         
         total_records = 0
         if all_records:
             total_records = self.insert_metrics(all_records)
         
-        status = "error" if errors == api_calls else ("success" if total_records > 0 else "no_data")
+        elapsed = time.time() - start_time
+        status = "error" if total_errors == total_api_calls else ("success" if total_records > 0 else "no_data")
         self.log_pull(status, total_records)
         
         print("\n" + "=" * 60)
-        print(f"COMPLETE")
-        print(f"  API calls: {api_calls}")
+        print(f"COMPLETE in {elapsed:.1f}s")
+        print(f"  API calls: {total_api_calls}")
         print(f"  Records inserted: {total_records}")
-        print(f"  Errors: {errors}")
+        print(f"  Errors: {total_errors}")
         print("=" * 60)
         
         return total_records
