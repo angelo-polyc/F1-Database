@@ -31,7 +31,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"Scheduler paused - run manually when needed\""
+args = "python scheduler.py --no-backfill"
 
 [[workflows.workflow]]
 name = "Web Server"
