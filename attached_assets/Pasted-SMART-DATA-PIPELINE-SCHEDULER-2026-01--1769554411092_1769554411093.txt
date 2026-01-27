@@ -1,0 +1,115 @@
+SMART DATA PIPELINE SCHEDULER
+============================================================
+[2026-01-27 22:16:56 UTC] Setting up database (tables, entities, views)...
+Entities already populated (985 records)
+Creating views...
+Views created successfully
+Database setup complete.
+
+Schedule:
+  Artemis: daily at 00:05 UTC
+  DefiLlama: hourly at XX:05 UTC
+  Velo: hourly at XX:05 UTC
+  CoinGecko: hourly at XX:05 UTC
+  AlphaVantage: hourly at XX:05 UTC
+  Gap Check: every 6 hours
+
+============================================================
+SMART STARTUP - ANALYZING DATA STATUS
+============================================================
+  artemis: 1,149,961 records, up to date
+  defillama: 629,984 records, up to date
+  velo: 4,597,000 records, last update 2.3h ago - needs gap fill
+  coingecko: 522,630 records, last update 3.3h ago - needs gap fill
+  alphavantage: 238,368 records, last update 46.3h ago - needs gap fill
+
+============================================================
+FULL HISTORY GAP SCAN FOR 5 SOURCE(S)
+============================================================
+Scanning full 3-year history for any gaps...
+[2026-01-27 22:17:21 UTC] velo: Found 2 gap(s) in last 1095 days
+[2026-01-27 22:17:21 UTC] velo: Filling gap from 2023-01-28 to 2023-01-28
+[2026-01-27 22:17:21 UTC] Starting velo backfill...
+======================================================================
+VELO HISTORICAL BACKFILL (Optimized)
+======================================================================
+Date range: 2023-01-25 to 2026-01-27
+Resolution: 15m (aggregated to hourly)
+Days per request: 45 (optimized from 3)
+Request delay: 0.55s
+Workers: 2
+
+Loaded 490 entity mappings
+Loaded 1123 coin-exchange pairs
+
+Total fetch tasks: 27875
+Estimated time: 2.1 hours (128 minutes)
+======================================================================
+  [52/27875] Records: 110,250 fetched, 8,250 inserted | Rate: 1.7 req/s | ETA: 268 min
+  [86/27875] Records: 277,820 fetched, 20,820 inserted | Rate: 1.4 req/s | ETA: 325 min
+  [132/27875] Records: 429,755 fetched, 32,755 inserted | Rate: 1.5 req/s | ETA: 317 min
+  [179/27875] Records: 533,345 fetched, 40,345 inserted | Rate: 1.5 req/s | ETA: 312 min
+  [247/27875] Records: 645,870 fetched, 46,755 inserted | Rate: 1.6 req/s | ETA: 282 min
+  [282/27875] Records: 816,300 fetched, 58,240 inserted | Rate: 1.5 req/s | ETA: 299 min
+  [310/27875] Records: 964,260 fetched, 69,200 inserted | Rate: 1.5 req/s | ETA: 316 min
+  [339/27875] Records: 1,117,620 fetched, 80,560 inserted | Rate: 1.4 req/s | ETA: 331 min
+  [370/27875] Records: 1,229,030 fetched, 88,970 inserted | Rate: 1.3 req/s | ETA: 340 min
+  [416/27875] Records: 1,386,375 fetched, 94,915 inserted | Rate: 1.4 req/s | ETA: 335 min
+  [480/27875] Records: 1,450,395 fetched, 96,590 inserted | Rate: 1.4 req/s | ETA: 319 min
+  [518/27875] Records: 1,548,380 fetched, 104,080 inserted | Rate: 1.4 req/s | ETA: 321 min
+  [570/27875] Records: 1,622,195 fetched, 107,350 inserted | Rate: 1.4 req/s | ETA: 316 min
+  [598/27875] Records: 1,746,395 fetched, 116,550 inserted | Rate: 1.4 req/s | ETA: 325 min
+  [632/27875] Records: 1,923,515 fetched, 129,670 inserted | Rate: 1.4 req/s | ETA: 329 min
+  [678/27875] Records: 2,153,705 fetched, 137,835 inserted | Rate: 1.4 req/s | ETA: 330 min
+  [709/27875] Records: 2,269,265 fetched, 146,395 inserted | Rate: 1.4 req/s | ETA: 334 min
+  [767/27875] Records: 2,318,630 fetched, 150,760 inserted | Rate: 1.4 req/s | ETA: 326 min
+  [816/27875] Records: 2,459,300 fetched, 151,685 inserted | Rate: 1.4 req/s | ETA: 322 min
+  [871/27875] Records: 2,529,770 fetched, 155,270 inserted | Rate: 1.4 req/s | ETA: 317 min
+  [896/27875] Records: 2,654,255 fetched, 164,755 inserted | Rate: 1.4 req/s | ETA: 324 min
+  [933/27875] Records: 2,804,580 fetched, 173,600 inserted | Rate: 1.4 req/s | ETA: 325 min
+  [967/27875] Records: 2,984,145 fetched, 180,620 inserted | Rate: 1.4 req/s | ETA: 327 min
+  [1016/27875] Records: 3,116,700 fetched, 187,275 inserted | Rate: 1.4 req/s | ETA: 324 min
+  [1044/27875] Records: 3,264,660 fetched, 198,235 inserted | Rate: 1.4 req/s | ETA: 329 min
+  [1074/27875] Records: 3,420,180 fetched, 209,755 inserted | Rate: 1.3 req/s | ETA: 332 min
+  [1122/27875] Records: 3,557,655 fetched, 220,230 inserted | Rate: 1.3 req/s | ETA: 332 min
+  [1186/27875] Records: 3,666,075 fetched, 228,650 inserted | Rate: 1.4 req/s | ETA: 327 min
+  [1232/27875] Records: 3,773,020 fetched, 236,595 inserted | Rate: 1.4 req/s | ETA: 325 min
+  [1268/27875] Records: 3,911,325 fetched, 246,900 inserted | Rate: 1.4 req/s | ETA: 326 min
+  [1315/27875] Records: 4,053,000 fetched, 258,575 inserted | Rate: 1.4 req/s | ETA: 326 min
+  [1369/27875] Records: 4,195,395 fetched, 269,970 inserted | Rate: 1.4 req/s | ETA: 322 min
+  [1425/27875] Records: 4,289,435 fetched, 278,010 inserted | Rate: 1.4 req/s | ETA: 318 min
+  [1476/27875] Records: 4,418,850 fetched, 287,425 inserted | Rate: 1.4 req/s | ETA: 317 min
+  [1519/27875] Records: 4,549,445 fetched, 297,020 inserted | Rate: 1.4 req/s | ETA: 318 min
+  [1569/27875] Records: 4,667,210 fetched, 305,785 inserted | Rate: 1.4 req/s | ETA: 316 min
+  [1618/27875] Records: 4,757,940 fetched, 312,165 inserted | Rate: 1.4 req/s | ETA: 314 min
+  [1645/27875] Records: 4,900,500 fetched, 322,725 inserted | Rate: 1.4 req/s | ETA: 316 min
+  [1692/27875] Records: 4,996,675 fetched, 329,645 inserted | Rate: 1.4 req/s | ETA: 315 min
+  [1749/27875] Records: 5,093,345 fetched, 331,345 inserted | Rate: 1.4 req/s | ETA: 312 min
+  [1801/27875] Records: 5,159,980 fetched, 336,980 inserted | Rate: 1.4 req/s | ETA: 309 min
+  [1835/27875] Records: 5,340,340 fetched, 346,340 inserted | Rate: 1.4 req/s | ETA: 310 min
+  [1884/27875] Records: 5,504,165 fetched, 354,375 inserted | Rate: 1.4 req/s | ETA: 310 min
+  [1942/27875] Records: 5,605,990 fetched, 363,200 inserted | Rate: 1.4 req/s | ETA: 308 min
+  [1970/27875] Records: 5,753,950 fetched, 374,160 inserted | Rate: 1.4 req/s | ETA: 310 min
+  [2024/27875] Records: 5,839,575 fetched, 380,785 inserted | Rate: 1.4 req/s | ETA: 308 min
+  [2066/27875] Records: 5,944,580 fetched, 388,790 inserted | Rate: 1.4 req/s | ETA: 307 min
+  [2099/27875] Records: 6,108,430 fetched, 400,640 inserted | Rate: 1.4 req/s | ETA: 309 min
+  [2149/27875] Records: 6,218,675 fetched, 408,885 inserted | Rate: 1.4 req/s | ETA: 309 min
+  [2218/27875] Records: 6,275,760 fetched, 413,970 inserted | Rate: 1.4 req/s | ETA: 305 min
+  [2248/27875] Records: 6,434,520 fetched, 425,730 inserted | Rate: 1.4 req/s | ETA: 307 min
+  [2294/27875] Records: 6,562,645 fetched, 435,855 inserted | Rate: 1.4 req/s | ETA: 307 min
+  [2324/27875] Records: 6,716,535 fetched, 447,745 inserted | Rate: 1.4 req/s | ETA: 309 min
+  [2357/27875] Records: 6,855,595 fetched, 457,805 inserted | Rate: 1.4 req/s | ETA: 310 min
+  [2397/27875] Records: 6,959,195 fetched, 464,765 inserted | Rate: 1.4 req/s | ETA: 309 min
+  [2430/27875] Records: 7,033,625 fetched, 469,250 inserted | Rate: 1.4 req/s | ETA: 310 min
+  [2474/27875] Records: 7,149,580 fetched, 478,205 inserted | Rate: 1.4 req/s | ETA: 309 min
+  [2546/27875] Records: 7,195,495 fetched, 482,120 inserted | Rate: 1.4 req/s | ETA: 305 min
+  [2572/27875] Records: 7,332,655 fetched, 492,280 inserted | Rate: 1.4 req/s | ETA: 307 min
+  [2604/27875] Records: 7,477,375 fetched, 503,000 inserted | Rate: 1.4 req/s | ETA: 307 min
+  [2651/27875] Records: 7,578,600 fetched, 509,680 inserted | Rate: 1.4 req/s | ETA: 306 min
+  [2695/27875] Records: 7,644,865 fetched, 514,945 inserted | Rate: 1.4 req/s | ETA: 306 min
+  [2754/27875] Records: 7,708,275 fetched, 519,210 inserted | Rate: 1.4 req/s | ETA: 303 min
+  [2792/27875] Records: 7,813,305 fetched, 527,240 inserted | Rate: 1.4 req/s | ETA: 303 min
+  [2820/27875] Records: 7,928,605 fetched, 535,540 inserted | Rate: 1.4 req/s | ETA: 304 min
+  [2875/27875] Records: 8,002,460 fetched, 538,420 inserted | Rate: 1.4 req/s | ETA: 302 min
+  [2899/27875] Records: 8,122,015 fetched, 547,975 inserted | Rate: 1.4 req/s | ETA: 304 min
+  [2953/27875] Records: 8,225,495 fetched, 551,445 inserted | 
