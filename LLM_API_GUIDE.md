@@ -19,6 +19,71 @@ X-API-Key: Polychain2030!#
 
 ---
 
+## LLM-Friendly Features
+
+The API is optimized for LLM usage with these convenience features:
+
+### 1. Case-Insensitive Parameters
+All parameter values are case-insensitive:
+- `metric=TVL`, `metric=tvl`, `metric=Tvl` all work
+- `source=CoinGecko`, `source=coingecko` both work
+- `canonical_id=BITCOIN`, `canonical_id=Bitcoin` both work
+
+### 2. Canonical ID Resolution
+Use simple canonical IDs like `bitcoin`, `ethereum`, `solana` instead of source-specific IDs. The API automatically resolves them:
+```bash
+# Instead of knowing source-specific IDs:
+GET /time-series?asset=bitcoin&metric=FEES
+# Auto-resolves to 'btc' for Artemis, 'bitcoin' for DefiLlama, etc.
+```
+
+### 3. Auto-Source Selection
+When you omit the `source` parameter, the API automatically selects the best source for each metric:
+
+| Metric | Auto-Selected Source |
+|--------|---------------------|
+| `TVL`, `CHAIN_TVL`, `FEES_24H`, `DEX_VOLUME_24H` | DefiLlama |
+| `FEES`, `REVENUE`, `DAU`, `TXNS` | Artemis |
+| `PRICE`, `MARKET_CAP`, `VOLUME_24H` | CoinGecko |
+| `FUNDING_RATE_AVG`, `DOLLAR_OI_CLOSE` | Velo |
+| `OPEN`, `HIGH`, `LOW`, `CLOSE` | AlphaVantage |
+
+```bash
+# Source auto-selected based on metric:
+GET /time-series?asset=bitcoin&metric=TVL      # Uses DefiLlama
+GET /time-series?asset=bitcoin&metric=FEES     # Uses Artemis
+GET /time-series?asset=bitcoin&metric=PRICE    # Uses CoinGecko
+```
+
+### 4. Available Metrics Per Entity
+The `/entities/{canonical_id}` endpoint now returns `available_metrics` showing exactly which metrics exist for each source:
+```json
+{
+  "canonical_id": "bitcoin",
+  "source_mappings": {"artemis": "btc", "defillama": "bitcoin", ...},
+  "available_metrics": {
+    "artemis": ["DAU", "FEES", "REVENUE", "TXNS"],
+    "defillama": ["CHAIN_TVL", "CHAIN_DEX_VOLUME"]
+  }
+}
+```
+
+### 5. Resolution Metadata
+When canonical IDs are resolved, responses include `_meta` showing what was resolved:
+```json
+{
+  "asset": "btc",
+  "metric": "FEES",
+  "_meta": {
+    "requested_asset": "bitcoin",
+    "resolved_asset": "btc",
+    "resolved_source": "artemis"
+  }
+}
+```
+
+---
+
 ## Data Sources
 
 The database contains 3 years of historical data from 5 sources:
@@ -116,7 +181,7 @@ curl -H "X-API-Key: Polychain2030!#" \
 ```
 
 ### 3. GET /entities/{canonical_id}
-Get full details for a specific entity including all source ID mappings.
+Get full details for a specific entity including all source ID mappings and available metrics.
 
 ```bash
 curl -H "X-API-Key: Polychain2030!#" \
@@ -126,6 +191,7 @@ curl -H "X-API-Key: Polychain2030!#" \
 **Response includes:**
 - Entity metadata (name, symbol, type, sector)
 - Source mappings (what ID to use for each source)
+- Available metrics per source (shows exactly what data exists)
 
 ### 4. GET /metrics
 List available metrics with record counts.
@@ -144,52 +210,52 @@ curl -H "X-API-Key: Polychain2030!#" \
 Get the most recent value for a metric across all assets. **Best for rankings and comparisons.**
 
 **Parameters:**
-- `metric` (required) - Metric name (PRICE, TVL, FEES, etc.)
-- `source` - Filter by source
-- `assets` - Comma-separated list of assets
+- `metric` (required) - Metric name (case-insensitive: PRICE, tvl, Fees all work)
+- `source` - Filter by source (optional - auto-selected based on metric)
+- `assets` - Comma-separated list of asset IDs or canonical IDs (bitcoin, ethereum)
 - `limit` - Max results (default 100)
 
 **Examples:**
 ```bash
-# Top 20 assets by TVL
+# Top 20 assets by TVL (source auto-selected: DefiLlama)
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/latest?metric=TVL&source=defillama&limit=20"
+  "https://BASE_URL/latest?metric=TVL&limit=20"
 
-# Latest prices from CoinGecko
+# Latest prices (source auto-selected: CoinGecko)
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/latest?metric=PRICE&source=coingecko&limit=50"
+  "https://BASE_URL/latest?metric=PRICE&limit=50"
 
-# Top fee-generating protocols
+# Specific assets using canonical IDs
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/latest?metric=FEES&source=artemis&limit=10"
+  "https://BASE_URL/latest?metric=FEES&assets=bitcoin,ethereum,solana"
 ```
 
 ### 6. GET /time-series
 Get historical time series data. **Best for trends and charts.**
 
 **Parameters:**
-- `asset` (required) - Asset ID (format varies by source)
-- `metric` (required) - Metric name
-- `source` - Source name (recommended)
+- `asset` (required) - Canonical ID (bitcoin, ethereum) or source-specific ID - auto-resolved
+- `metric` (required) - Metric name (case-insensitive)
+- `source` - Source name (optional - auto-selected based on metric)
 - `start_date` - Start date (YYYY-MM-DD)
 - `end_date` - End date (YYYY-MM-DD)
 - `days` - Days of history (default 30)
 
 **Examples:**
 ```bash
-# Bitcoin price history (30 days)
+# Simplified: Just use canonical ID and metric (source auto-selected)
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/time-series?asset=bitcoin&metric=PRICE&source=coingecko&days=30"
+  "https://BASE_URL/time-series?asset=bitcoin&metric=PRICE&days=30"
 
-# Solana TVL trend (90 days)
+# TVL trend - auto-selects DefiLlama
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/time-series?asset=solana&metric=TVL&source=defillama&days=90"
+  "https://BASE_URL/time-series?asset=solana&metric=TVL&days=90"
 
-# Ethereum fee revenue (1 year)
+# Fee revenue - auto-selects Artemis
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/time-series?asset=eth&metric=FEES&source=artemis&days=365"
+  "https://BASE_URL/time-series?asset=ethereum&metric=FEES&days=365"
 
-# COIN stock price history
+# Stock prices still need explicit source (AlphaVantage uses ticker symbols)
 curl -H "X-API-Key: Polychain2030!#" \
   "https://BASE_URL/time-series?asset=COIN&metric=CLOSE&source=alphavantage&days=60"
 ```
@@ -372,5 +438,13 @@ GET /latest?metric=TXNS&source=artemis&limit=20
 
 1. **Understand the schema:** `GET /data-dictionary`
 2. **Find your entity:** `GET /entities?search=bitcoin`
-3. **Get entity details:** `GET /entities/bitcoin`
-4. **Query the data:** `GET /time-series?asset=bitcoin&metric=PRICE&source=coingecko&days=30`
+3. **Get entity details (with available metrics):** `GET /entities/bitcoin`
+4. **Query the data (source auto-selected):** `GET /time-series?asset=bitcoin&metric=PRICE&days=30`
+
+**Simplified Example:**
+```bash
+# Just ask for what you want - no need to specify source
+curl -H "X-API-Key: Polychain2030!#" \
+  "https://BASE_URL/time-series?asset=bitcoin&metric=TVL&days=30"
+# API automatically: resolves 'bitcoin' to 'bitcoin' (DefiLlama ID), selects DefiLlama as source
+```
