@@ -32,7 +32,7 @@ FUTURES_COLUMNS = [
     'dollar_volume',                 # DOLLAR_VOLUME
     'dollar_open_interest_close',    # DOLLAR_OI_CLOSE
     'funding_rate',                  # FUNDING_RATE
-    'premium'                        # PREMIUM
+    'liquidations_dollar_volume'     # LIQ_DOLLAR_VOL
 ]
 
 # For backwards compatibility (both use same 5 columns now)

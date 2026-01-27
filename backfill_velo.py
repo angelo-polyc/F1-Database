@@ -49,7 +49,7 @@ FUTURES_COLUMNS = [
     'dollar_volume',
     'dollar_open_interest_close',
     'funding_rate',
-    'premium'
+    'liquidations_dollar_volume'
 ]
 
 METRIC_MAP = {
