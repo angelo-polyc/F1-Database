@@ -36,9 +36,9 @@ API_KEY = os.environ.get("VELO_API_KEY")
 BASE_URL = "https://api.velo.xyz/api/v1"
 CONFIG_PATH = "velo_config.csv"
 
-REQUEST_DELAY = 1.0
+REQUEST_DELAY = 0.5
 MAX_RETRIES = 5
-BASE_BACKOFF = 2
+BASE_BACKOFF = 1.5
 
 RESOLUTION = '15m'
 INTERVALS_PER_DAY = 96

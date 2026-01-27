@@ -13,6 +13,7 @@ import sys
 import os
 import fcntl
 from datetime import datetime, timezone, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from db.setup import get_connection, setup_database
 
 LOCK_FILE = "/tmp/scheduler.lock"
@@ -317,13 +318,20 @@ def smart_startup():
     
     if sources_needing_backfill:
         print("\n" + "=" * 60)
-        print(f"RUNNING FULL BACKFILLS FOR {len(sources_needing_backfill)} SOURCE(S)")
+        print(f"RUNNING FULL BACKFILLS FOR {len(sources_needing_backfill)} SOURCE(S) IN PARALLEL")
         print("=" * 60)
         
         backfill_start = datetime.now(timezone.utc)
         
-        for source in sources_needing_backfill:
-            run_backfill(source)
+        with ThreadPoolExecutor(max_workers=len(sources_needing_backfill)) as executor:
+            futures = {executor.submit(run_backfill, source): source for source in sources_needing_backfill}
+            for future in as_completed(futures):
+                source = futures[future]
+                try:
+                    result = future.result()
+                    log(f"{source} backfill thread completed (success={result})")
+                except Exception as e:
+                    log(f"{source} backfill thread error: {e}")
         
         backfill_end = datetime.now(timezone.utc)
         hours_elapsed = (backfill_end - backfill_start).total_seconds() / 3600
