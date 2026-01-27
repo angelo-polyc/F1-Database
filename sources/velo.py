@@ -15,9 +15,9 @@ from requests.auth import HTTPBasicAuth
 from sources.base import BaseSource
 from db.setup import get_connection
 
-# Rate limit: 120 requests per 30 seconds = 4/sec max
-# Use 2/sec to stay safely under limit
-REQUEST_DELAY = 0.4  # ~2.5 req/sec per worker (safe threshold)
+# Rate limit: 120 requests per 30 seconds = 4 req/s max
+# 2 workers @ 0.55s delay = 3.6 req/s target, ~2.7 req/s actual (tested stable for 3 min)
+REQUEST_DELAY = 0.55
 
 # Velo API returns 22,500 values max per request
 # API returns ~120 hours (5 days) of data regardless of begin/end params

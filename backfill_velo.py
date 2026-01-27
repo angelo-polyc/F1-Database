@@ -40,7 +40,9 @@ API_KEY = os.environ.get("VELO_API_KEY")
 BASE_URL = "https://api.velo.xyz/api/v1"
 CONFIG_PATH = "velo_config.csv"
 
-REQUEST_DELAY = 0.35
+# Rate limit: 120 requests per 30 seconds = 4 req/s max
+# 2 workers @ 0.55s delay = 3.6 req/s target, ~2.7 req/s actual (tested stable for 3 min)
+REQUEST_DELAY = 0.55
 MAX_RETRIES = 5
 BASE_BACKOFF = 1.5
 
@@ -315,7 +317,7 @@ def main():
     parser.add_argument('--top', type=int, help='Only backfill top N coins by importance')
     parser.add_argument('--dry-run', action='store_true', help='Preview without inserting')
     parser.add_argument('--delay', type=float, default=REQUEST_DELAY, help='Delay between requests in seconds')
-    parser.add_argument('--workers', type=int, default=3, help='Number of parallel workers (default: 3)')
+    parser.add_argument('--workers', type=int, default=2, help='Number of parallel workers (default: 2)')
     args = parser.parse_args()
     
     if not DATABASE_URL:
