@@ -957,6 +957,499 @@ def admin_truncate_table(table_name: str, confirm: bool = Query(False), _: bool 
     }
 
 
+# =============================================================================
+# ADMIN - Backfill & Gap Management
+# =============================================================================
+
+import subprocess
+import threading
+
+backfill_status = {}
+
+
+@app.post("/admin/backfill/{source}")
+def admin_trigger_backfill(
+    source: str,
+    days: int = Query(None, description="Number of days to backfill"),
+    start_date: str = Query(None, description="Start date YYYY-MM-DD"),
+    end_date: str = Query(None, description="End date YYYY-MM-DD"),
+    background: bool = Query(True, description="Run in background"),
+    _: bool = Depends(verify_admin_key)
+):
+    """Trigger a backfill for a specific data source."""
+    valid_sources = ['artemis', 'defillama', 'velo', 'coingecko', 'alphavantage']
+    if source not in valid_sources:
+        raise HTTPException(status_code=400, detail=f"Invalid source. Valid: {valid_sources}")
+    
+    script = f"backfill_{source}.py"
+    cmd = ["python", script]
+    
+    if days:
+        cmd.extend(["--days", str(days)])
+    elif start_date and end_date:
+        cmd.extend(["--start", start_date, "--end", end_date])
+    
+    if background:
+        def run_backfill():
+            backfill_status[source] = {"status": "running", "started": datetime.now().isoformat()}
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=50400)
+                backfill_status[source] = {
+                    "status": "completed" if result.returncode == 0 else "failed",
+                    "exit_code": result.returncode,
+                    "finished": datetime.now().isoformat()
+                }
+            except Exception as e:
+                backfill_status[source] = {"status": "error", "error": str(e)}
+        
+        thread = threading.Thread(target=run_backfill, daemon=True)
+        thread.start()
+        
+        return {
+            "success": True,
+            "message": f"Backfill started for {source} in background",
+            "command": " ".join(cmd),
+            "check_status": f"/admin/backfill-status/{source}"
+        }
+    else:
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
+            return {
+                "success": result.returncode == 0,
+                "exit_code": result.returncode,
+                "stdout": result.stdout[-5000:] if result.stdout else None,
+                "stderr": result.stderr[-2000:] if result.stderr else None
+            }
+        except subprocess.TimeoutExpired:
+            raise HTTPException(status_code=504, detail="Backfill timed out (1 hour limit for sync mode)")
+
+
+@app.get("/admin/backfill-status/{source}")
+def admin_backfill_status(source: str, _: bool = Depends(verify_admin_key)):
+    """Check status of a running backfill."""
+    if source in backfill_status:
+        return backfill_status[source]
+    return {"status": "not_running", "message": f"No backfill running or completed for {source}"}
+
+
+@app.get("/admin/gaps/{source}")
+def admin_detect_gaps(
+    source: str,
+    days: int = Query(30, description="Days to check for gaps"),
+    _: bool = Depends(verify_admin_key)
+):
+    """Detect gaps in data for a source."""
+    valid_sources = ['artemis', 'defillama', 'velo', 'coingecko', 'alphavantage']
+    if source not in valid_sources:
+        raise HTTPException(status_code=400, detail=f"Invalid source. Valid: {valid_sources}")
+    
+    granularity_map = {
+        'artemis': 'daily', 'defillama': 'daily', 'alphavantage': 'daily',
+        'velo': 'hourly', 'coingecko': 'hourly'
+    }
+    granularity = granularity_map[source]
+    
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    if granularity == 'daily':
+        cur.execute("""
+            WITH date_range AS (
+                SELECT generate_series(
+                    CURRENT_DATE - INTERVAL '%s days',
+                    CURRENT_DATE - INTERVAL '1 day',
+                    INTERVAL '1 day'
+                )::date AS expected_date
+            ),
+            actual_dates AS (
+                SELECT DISTINCT DATE(pulled_at) as actual_date
+                FROM metrics WHERE source = %s
+                AND pulled_at >= CURRENT_DATE - INTERVAL '%s days'
+            )
+            SELECT expected_date FROM date_range
+            LEFT JOIN actual_dates ON date_range.expected_date = actual_dates.actual_date
+            WHERE actual_dates.actual_date IS NULL
+            ORDER BY expected_date
+        """, (days, source, days))
+    else:
+        cur.execute("""
+            WITH hour_range AS (
+                SELECT generate_series(
+                    DATE_TRUNC('hour', NOW() - INTERVAL '%s days'),
+                    DATE_TRUNC('hour', NOW() - INTERVAL '1 hour'),
+                    INTERVAL '1 hour'
+                ) AS expected_hour
+            ),
+            actual_hours AS (
+                SELECT DISTINCT DATE_TRUNC('hour', pulled_at) as actual_hour
+                FROM metrics WHERE source = %s
+                AND pulled_at >= NOW() - INTERVAL '%s days'
+            )
+            SELECT expected_hour FROM hour_range
+            LEFT JOIN actual_hours ON hour_range.expected_hour = actual_hours.actual_hour
+            WHERE actual_hours.actual_hour IS NULL
+            ORDER BY expected_hour
+        """, (days, source, days))
+    
+    missing = [row[0].isoformat() if hasattr(row[0], 'isoformat') else str(row[0]) for row in cur.fetchall()]
+    cur.close()
+    conn.close()
+    
+    return {
+        "source": source,
+        "granularity": granularity,
+        "days_checked": days,
+        "gaps_found": len(missing),
+        "missing_periods": missing[:100],
+        "truncated": len(missing) > 100
+    }
+
+
+@app.post("/admin/fill-gaps/{source}")
+def admin_fill_gaps(
+    source: str,
+    days: int = Query(30, description="Days to check and fill"),
+    _: bool = Depends(verify_admin_key)
+):
+    """Detect and fill gaps for a source by running backfill."""
+    gaps = admin_detect_gaps(source, days, _)
+    
+    if gaps["gaps_found"] == 0:
+        return {"success": True, "message": f"No gaps found for {source} in last {days} days"}
+    
+    return admin_trigger_backfill(source, days=days + 3, background=True, _=_)
+
+
+# =============================================================================
+# ADMIN - Entity Management
+# =============================================================================
+
+class EntityCreate(BaseModel):
+    canonical_id: str
+    name: str
+    symbol: Optional[str] = None
+    entity_type: str = "token"
+    asset_class: str = "crypto"
+    sector: Optional[str] = None
+    parent_chain: Optional[str] = None
+    coingecko_id: Optional[str] = None
+
+
+class EntitySourceMapping(BaseModel):
+    source: str
+    source_id: str
+
+
+@app.get("/admin/entities")
+def admin_list_entities(
+    limit: int = Query(100),
+    offset: int = Query(0),
+    search: Optional[str] = Query(None),
+    _: bool = Depends(verify_admin_key)
+):
+    """List all entities with full details."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    query = """
+        SELECT entity_id, canonical_id, name, symbol, entity_type, asset_class, sector, parent_chain, coingecko_id, is_active
+        FROM entities
+    """
+    params = []
+    
+    if search:
+        query += " WHERE canonical_id ILIKE %s OR name ILIKE %s OR symbol ILIKE %s"
+        params = [f"%{search}%", f"%{search}%", f"%{search}%"]
+    
+    query += " ORDER BY canonical_id LIMIT %s OFFSET %s"
+    params.extend([limit, offset])
+    
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    
+    cur.execute("SELECT COUNT(*) FROM entities")
+    total = cur.fetchone()[0]
+    
+    cur.close()
+    conn.close()
+    
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "entities": [
+            {
+                "entity_id": r[0], "canonical_id": r[1], "name": r[2], "symbol": r[3],
+                "entity_type": r[4], "asset_class": r[5], "sector": r[6],
+                "parent_chain": r[7], "coingecko_id": r[8], "is_active": r[9]
+            }
+            for r in rows
+        ]
+    }
+
+
+@app.post("/admin/entities")
+def admin_create_entity(entity: EntityCreate, _: bool = Depends(verify_admin_key)):
+    """Create a new entity."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute("""
+            INSERT INTO entities (canonical_id, name, symbol, entity_type, asset_class, sector, parent_chain, coingecko_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING entity_id
+        """, (entity.canonical_id, entity.name, entity.symbol, entity.entity_type, 
+              entity.asset_class, entity.sector, entity.parent_chain, entity.coingecko_id))
+        entity_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"success": True, "entity_id": entity_id, "canonical_id": entity.canonical_id}
+    except Exception as e:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.put("/admin/entities/{canonical_id}")
+def admin_update_entity(canonical_id: str, entity: EntityCreate, _: bool = Depends(verify_admin_key)):
+    """Update an existing entity."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        UPDATE entities SET name=%s, symbol=%s, entity_type=%s, asset_class=%s, 
+        sector=%s, parent_chain=%s, coingecko_id=%s
+        WHERE canonical_id = %s
+        RETURNING entity_id
+    """, (entity.name, entity.symbol, entity.entity_type, entity.asset_class,
+          entity.sector, entity.parent_chain, entity.coingecko_id, canonical_id))
+    
+    result = cur.fetchone()
+    if not result:
+        cur.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Entity '{canonical_id}' not found")
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"success": True, "entity_id": result[0], "canonical_id": canonical_id}
+
+
+@app.delete("/admin/entities/{canonical_id}")
+def admin_delete_entity(canonical_id: str, confirm: bool = Query(False), _: bool = Depends(verify_admin_key)):
+    """Delete an entity and its source mappings."""
+    if not confirm:
+        raise HTTPException(status_code=400, detail="Add ?confirm=true to confirm deletion")
+    
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT entity_id FROM entities WHERE canonical_id = %s", (canonical_id,))
+    result = cur.fetchone()
+    if not result:
+        cur.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Entity '{canonical_id}' not found")
+    
+    entity_id = result[0]
+    cur.execute("DELETE FROM entity_source_ids WHERE entity_id = %s", (entity_id,))
+    mappings_deleted = cur.rowcount
+    cur.execute("DELETE FROM entities WHERE entity_id = %s", (entity_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return {"success": True, "canonical_id": canonical_id, "mappings_deleted": mappings_deleted}
+
+
+@app.get("/admin/entities/{canonical_id}/mappings")
+def admin_get_entity_mappings(canonical_id: str, _: bool = Depends(verify_admin_key)):
+    """Get all source ID mappings for an entity."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT entity_id FROM entities WHERE canonical_id = %s", (canonical_id,))
+    result = cur.fetchone()
+    if not result:
+        cur.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Entity '{canonical_id}' not found")
+    
+    entity_id = result[0]
+    cur.execute("SELECT source, source_id FROM entity_source_ids WHERE entity_id = %s", (entity_id,))
+    mappings = {r[0]: r[1] for r in cur.fetchall()}
+    
+    cur.close()
+    conn.close()
+    return {"canonical_id": canonical_id, "entity_id": entity_id, "mappings": mappings}
+
+
+@app.post("/admin/entities/{canonical_id}/mappings")
+def admin_add_entity_mapping(canonical_id: str, mapping: EntitySourceMapping, _: bool = Depends(verify_admin_key)):
+    """Add or update a source ID mapping for an entity."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT entity_id FROM entities WHERE canonical_id = %s", (canonical_id,))
+    result = cur.fetchone()
+    if not result:
+        cur.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Entity '{canonical_id}' not found")
+    
+    entity_id = result[0]
+    cur.execute("""
+        INSERT INTO entity_source_ids (entity_id, source, source_id)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (entity_id, source) DO UPDATE SET source_id = EXCLUDED.source_id
+    """, (entity_id, mapping.source, mapping.source_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return {"success": True, "canonical_id": canonical_id, "source": mapping.source, "source_id": mapping.source_id}
+
+
+@app.delete("/admin/entities/{canonical_id}/mappings/{source}")
+def admin_delete_entity_mapping(canonical_id: str, source: str, _: bool = Depends(verify_admin_key)):
+    """Delete a source ID mapping for an entity."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT entity_id FROM entities WHERE canonical_id = %s", (canonical_id,))
+    result = cur.fetchone()
+    if not result:
+        cur.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Entity '{canonical_id}' not found")
+    
+    entity_id = result[0]
+    cur.execute("DELETE FROM entity_source_ids WHERE entity_id = %s AND source = %s", (entity_id, source))
+    deleted = cur.rowcount > 0
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return {"success": deleted, "canonical_id": canonical_id, "source": source}
+
+
+# =============================================================================
+# ADMIN - Pull History & Maintenance
+# =============================================================================
+
+@app.get("/admin/pulls")
+def admin_list_pulls(
+    source: Optional[str] = Query(None),
+    limit: int = Query(50),
+    _: bool = Depends(verify_admin_key)
+):
+    """Get recent pull history."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    query = "SELECT id, source_name, pulled_at, records_count, status FROM pulls"
+    params = []
+    
+    if source:
+        query += " WHERE source_name = %s"
+        params.append(source)
+    
+    query += " ORDER BY pulled_at DESC LIMIT %s"
+    params.append(limit)
+    
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    return {
+        "pulls": [
+            {"id": r[0], "source": r[1], "pulled_at": r[2].isoformat() if r[2] else None, 
+             "records": r[3], "status": r[4]}
+            for r in rows
+        ]
+    }
+
+
+@app.post("/admin/maintenance/vacuum")
+def admin_vacuum(table: Optional[str] = Query(None), _: bool = Depends(verify_admin_key)):
+    """Run VACUUM ANALYZE on tables to optimize performance."""
+    conn = get_connection()
+    conn.autocommit = True
+    cur = conn.cursor()
+    
+    try:
+        if table:
+            cur.execute(f"VACUUM ANALYZE {table}")
+            msg = f"VACUUM ANALYZE completed for {table}"
+        else:
+            cur.execute("VACUUM ANALYZE")
+            msg = "VACUUM ANALYZE completed for all tables"
+        cur.close()
+        conn.close()
+        return {"success": True, "message": msg}
+    except Exception as e:
+        cur.close()
+        conn.close()
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/admin/db-size")
+def admin_db_size(_: bool = Depends(verify_admin_key)):
+    """Get database and table sizes."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT pg_size_pretty(pg_database_size(current_database()))")
+    db_size = cur.fetchone()[0]
+    
+    cur.execute("""
+        SELECT table_name, 
+               pg_size_pretty(pg_total_relation_size(quote_ident(table_name))) as size,
+               pg_total_relation_size(quote_ident(table_name)) as bytes
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        ORDER BY bytes DESC
+    """)
+    tables = [{"table": r[0], "size": r[1]} for r in cur.fetchall()]
+    
+    cur.close()
+    conn.close()
+    
+    return {"database_size": db_size, "tables": tables}
+
+
+@app.get("/admin/metrics-summary")
+def admin_metrics_summary(_: bool = Depends(verify_admin_key)):
+    """Get summary of all metrics across sources."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT source, metric_name, COUNT(*) as records, COUNT(DISTINCT asset) as assets
+        FROM metrics
+        GROUP BY source, metric_name
+        ORDER BY source, records DESC
+    """)
+    rows = cur.fetchall()
+    
+    cur.close()
+    conn.close()
+    
+    summary = {}
+    for r in rows:
+        source = r[0]
+        if source not in summary:
+            summary[source] = []
+        summary[source].append({"metric": r[1], "records": r[2], "assets": r[3]})
+    
+    return {"metrics_by_source": summary}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
