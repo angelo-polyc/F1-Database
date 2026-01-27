@@ -730,6 +730,233 @@ def get_stats(_: bool = Depends(verify_api_key)):
     }
 
 
+# =============================================================================
+# ADMIN ENDPOINTS - Database Administration
+# =============================================================================
+
+ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY")
+admin_key_header = APIKeyHeader(name="X-Admin-Key", auto_error=False)
+
+
+async def verify_admin_key(admin_key: str = Security(admin_key_header)):
+    """Verify admin API key for privileged operations."""
+    if not ADMIN_API_KEY:
+        raise HTTPException(status_code=503, detail="Admin API not configured. Set ADMIN_API_KEY secret.")
+    if admin_key != ADMIN_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing admin key")
+    return True
+
+
+@app.get("/admin/tables")
+def admin_list_tables(_: bool = Depends(verify_admin_key)):
+    """List all database tables with row counts."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        ORDER BY table_name
+    """)
+    tables = [row[0] for row in cur.fetchall()]
+    
+    result = []
+    for table in tables:
+        cur.execute(f"SELECT COUNT(*) FROM {table}")
+        count = cur.fetchone()[0]
+        result.append({"table": table, "rows": count})
+    
+    cur.close()
+    conn.close()
+    
+    return {"tables": result}
+
+
+@app.get("/admin/schema/{table_name}")
+def admin_table_schema(table_name: str, _: bool = Depends(verify_admin_key)):
+    """Get schema details for a specific table."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT column_name, data_type, is_nullable, column_default
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = %s
+        ORDER BY ordinal_position
+    """, (table_name,))
+    columns = cur.fetchall()
+    
+    if not columns:
+        cur.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found")
+    
+    cur.close()
+    conn.close()
+    
+    return {
+        "table": table_name,
+        "columns": [
+            {
+                "name": c[0],
+                "type": c[1],
+                "nullable": c[2] == "YES",
+                "default": c[3]
+            }
+            for c in columns
+        ]
+    }
+
+
+class SQLQuery(BaseModel):
+    sql: str
+    params: Optional[List] = None
+
+
+@app.post("/admin/query")
+def admin_execute_query(query: SQLQuery, _: bool = Depends(verify_admin_key)):
+    """
+    Execute a SQL query on the database.
+    
+    For SELECT queries: Returns results as JSON
+    For INSERT/UPDATE/DELETE: Returns affected row count
+    
+    Use with caution - this has full database access.
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    sql = query.sql.strip()
+    params = query.params or []
+    
+    try:
+        cur.execute(sql, params)
+        
+        is_select = sql.upper().startswith("SELECT") or sql.upper().startswith("WITH")
+        
+        if is_select:
+            columns = [desc[0] for desc in cur.description] if cur.description else []
+            rows = cur.fetchall()
+            
+            data = []
+            for row in rows:
+                row_dict = {}
+                for i, col in enumerate(columns):
+                    val = row[i]
+                    if hasattr(val, 'isoformat'):
+                        val = val.isoformat()
+                    elif isinstance(val, (bytes, memoryview)):
+                        val = str(val)
+                    row_dict[col] = val
+                data.append(row_dict)
+            
+            result = {
+                "success": True,
+                "type": "select",
+                "columns": columns,
+                "row_count": len(data),
+                "data": data
+            }
+        else:
+            conn.commit()
+            result = {
+                "success": True,
+                "type": "mutation",
+                "rows_affected": cur.rowcount,
+                "message": f"Query executed successfully. {cur.rowcount} rows affected."
+            }
+        
+        cur.close()
+        conn.close()
+        return result
+        
+    except Exception as e:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        raise HTTPException(status_code=400, detail=f"SQL Error: {str(e)}")
+
+
+@app.get("/admin/source-status")
+def admin_source_status(_: bool = Depends(verify_admin_key)):
+    """Get detailed status for all data sources."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    sources = ['artemis', 'defillama', 'velo', 'coingecko', 'alphavantage']
+    result = []
+    
+    for source in sources:
+        cur.execute("""
+            SELECT 
+                COUNT(*) as records,
+                COUNT(DISTINCT asset) as assets,
+                COUNT(DISTINCT metric_name) as metrics,
+                MIN(pulled_at) as earliest,
+                MAX(pulled_at) as latest
+            FROM metrics WHERE source = %s
+        """, (source,))
+        row = cur.fetchone()
+        
+        hours_ago = None
+        if row[4]:
+            from datetime import timezone
+            latest = row[4]
+            if latest.tzinfo is None:
+                latest = latest.replace(tzinfo=timezone.utc)
+            hours_ago = (datetime.now(timezone.utc) - latest).total_seconds() / 3600
+        
+        result.append({
+            "source": source,
+            "records": row[0],
+            "assets": row[1],
+            "metrics": row[2],
+            "earliest": row[3].isoformat() if row[3] else None,
+            "latest": row[4].isoformat() if row[4] else None,
+            "hours_since_update": round(hours_ago, 1) if hours_ago else None
+        })
+    
+    cur.close()
+    conn.close()
+    
+    return {"sources": result}
+
+
+@app.post("/admin/truncate/{table_name}")
+def admin_truncate_table(table_name: str, confirm: bool = Query(False), _: bool = Depends(verify_admin_key)):
+    """
+    Truncate a table (delete all rows).
+    Requires confirm=true query parameter.
+    """
+    allowed_tables = ["metrics", "pulls"]
+    
+    if table_name not in allowed_tables:
+        raise HTTPException(status_code=403, detail=f"Cannot truncate '{table_name}'. Allowed: {allowed_tables}")
+    
+    if not confirm:
+        raise HTTPException(status_code=400, detail="Add ?confirm=true to confirm truncation")
+    
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute(f"SELECT COUNT(*) FROM {table_name}")
+    count_before = cur.fetchone()[0]
+    
+    cur.execute(f"TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE")
+    conn.commit()
+    
+    cur.close()
+    conn.close()
+    
+    return {
+        "success": True,
+        "table": table_name,
+        "rows_deleted": count_before,
+        "message": f"Table '{table_name}' truncated. {count_before} rows removed."
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
