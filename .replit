@@ -31,7 +31,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python scheduler.py --no-backfill"
+args = "python scheduler.py"
 
 [[workflows.workflow]]
 name = "Web Server"

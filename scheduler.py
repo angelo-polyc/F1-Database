@@ -281,11 +281,31 @@ def smart_startup():
         if info['count'] == 0:
             print(f"  {source}: EMPTY - needs full backfill")
             sources_needing_backfill.append(source)
-        elif info['earliest'] and info['earliest'] > three_years_ago + timedelta(days=30):
-            print(f"  {source}: {info['count']:,} records, but only from {info['earliest'].date()} - needs backfill")
-            sources_needing_backfill.append(source)
+        elif info['earliest']:
+            earliest = info['earliest']
+            if earliest.tzinfo is None:
+                earliest = earliest.replace(tzinfo=timezone.utc)
+            if earliest > three_years_ago + timedelta(days=30):
+                print(f"  {source}: {info['count']:,} records, but only from {info['earliest'].date()} - needs backfill")
+                sources_needing_backfill.append(source)
+            else:
+                latest = info['latest']
+                if latest and latest.tzinfo is None:
+                    latest = latest.replace(tzinfo=timezone.utc)
+                age_hours = (now - latest).total_seconds() / 3600 if latest else float('inf')
+                threshold = 2 if config['granularity'] == 'hourly' else 26
+                
+                if age_hours > threshold:
+                    print(f"  {source}: {info['count']:,} records, last update {age_hours:.1f}h ago - needs gap fill")
+                    sources_needing_gap_fill.append(source)
+                else:
+                    print(f"  {source}: {info['count']:,} records, up to date")
+                    sources_ok.append(source)
         else:
-            age_hours = (now - info['latest']).total_seconds() / 3600 if info['latest'] else float('inf')
+            latest = info['latest']
+            if latest and latest.tzinfo is None:
+                latest = latest.replace(tzinfo=timezone.utc)
+            age_hours = (now - latest).total_seconds() / 3600 if latest else float('inf')
             threshold = 2 if config['granularity'] == 'hourly' else 26
             
             if age_hours > threshold:
