@@ -47,7 +47,7 @@ outputType = "webview"
 
 [deployment]
 deploymentTarget = "vm"
-run = ["bash", "-c", "streamlit run dashboard.py --server.port 5000 --server.address 0.0.0.0 --server.headless true & python api.py & python scheduler.py"]
+run = ["bash", "-c", "python server.py & python scheduler.py"]
 ignorePorts = true
 
 [[ports]]
