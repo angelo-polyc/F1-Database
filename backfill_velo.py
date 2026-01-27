@@ -24,12 +24,16 @@ import sys
 import csv
 import time
 import argparse
+import threading
 import requests
 import psycopg2
 from psycopg2.extras import execute_values
 from datetime import datetime, timezone, timedelta
 from requests.auth import HTTPBasicAuth
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+_lock = threading.Lock()
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 API_KEY = os.environ.get("VELO_API_KEY")
@@ -311,6 +315,7 @@ def main():
     parser.add_argument('--top', type=int, help='Only backfill top N coins by importance')
     parser.add_argument('--dry-run', action='store_true', help='Preview without inserting')
     parser.add_argument('--delay', type=float, default=REQUEST_DELAY, help='Delay between requests in seconds')
+    parser.add_argument('--workers', type=int, default=2, help='Number of parallel workers (default: 2)')
     args = parser.parse_args()
     
     if not DATABASE_URL:
@@ -344,6 +349,7 @@ def main():
     print(f"Resolution: {RESOLUTION} (aggregated to hourly)")
     print(f"Days per request: {days_per_request} (optimized from 3)")
     print(f"Request delay: {args.delay}s")
+    print(f"Workers: {args.workers}")
     if args.coin:
         print(f"Filtering to coin: {args.coin}")
     if args.exchange:
@@ -379,7 +385,7 @@ def main():
                 window_start = window_end
     
     total_days = (end_dt - start_dt).days
-    estimated_time_sec = len(fetch_tasks) * args.delay
+    estimated_time_sec = len(fetch_tasks) * args.delay / args.workers
     estimated_time_hr = estimated_time_sec / 3600
     
     print(f"\nTotal fetch tasks: {len(fetch_tasks)}")
@@ -402,31 +408,41 @@ def main():
     start_time = time.time()
     last_progress = start_time
     
-    for task in fetch_tasks:
+    def process_task(task):
         exchange, coin, begin_ts, end_ts = task
-        
+        time.sleep(args.delay)
         records = fetch_historical(exchange, coin, begin_ts, end_ts, auth, entity_cache)
-        total_records += len(records)
-        
+        inserted = 0
         if records:
             inserted = insert_batch(records)
-            total_inserted += inserted
+        return len(records), inserted
+    
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+        futures = {executor.submit(process_task, task): task for task in fetch_tasks}
         
-        completed += 1
-        
-        now_time = time.time()
-        if now_time - last_progress >= 30 or completed == len(fetch_tasks):
-            elapsed = now_time - start_time
-            rate = completed / elapsed if elapsed > 0 else 0
-            eta_sec = (len(fetch_tasks) - completed) / rate if rate > 0 else 0
-            eta_min = eta_sec / 60
-            
-            print(f"  [{completed}/{len(fetch_tasks)}] "
-                  f"Records: {total_records:,} fetched, {total_inserted:,} inserted | "
-                  f"Rate: {rate:.1f} req/s | ETA: {eta_min:.0f} min")
-            last_progress = now_time
-        
-        time.sleep(args.delay)
+        for future in as_completed(futures):
+            try:
+                fetched, inserted = future.result()
+                with _lock:
+                    total_records += fetched
+                    total_inserted += inserted
+                    completed += 1
+                    
+                    now_time = time.time()
+                    if now_time - last_progress >= 30 or completed == len(fetch_tasks):
+                        elapsed = now_time - start_time
+                        rate = completed / elapsed if elapsed > 0 else 0
+                        eta_sec = (len(fetch_tasks) - completed) / rate if rate > 0 else 0
+                        eta_min = eta_sec / 60
+                        
+                        print(f"  [{completed}/{len(fetch_tasks)}] "
+                              f"Records: {total_records:,} fetched, {total_inserted:,} inserted | "
+                              f"Rate: {rate:.1f} req/s | ETA: {eta_min:.0f} min")
+                        last_progress = now_time
+            except Exception as e:
+                with _lock:
+                    completed += 1
+                print(f"    Task error: {e}")
     
     elapsed = time.time() - start_time
     
