@@ -82,3 +82,11 @@ The `mcp_server.py` provides Model Context Protocol support for Claude Desktop.
 - `compare_cross_source` - Multi-source comparison
 
 **Setup:** See `CLAUDE_INTEGRATION.md` for configuration instructions.
+
+## LLM API Access
+For giving any LLM access to the REST API, see `LLM_API_GUIDE.md` which contains:
+- API credentials and authentication
+- Complete endpoint documentation
+- All available metrics by source
+- Example queries for financial analysis
+- Entity ID formats for each source
