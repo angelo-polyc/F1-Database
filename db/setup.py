@@ -4,8 +4,8 @@ from psycopg2 import sql
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-def get_connection():
-    return psycopg2.connect(DATABASE_URL)
+def get_connection(timeout=10):
+    return psycopg2.connect(DATABASE_URL, connect_timeout=timeout)
 
 def setup_database():
     conn = get_connection()
