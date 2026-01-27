@@ -3,13 +3,27 @@ REST API for Cryptocurrency & Equity Data Pipeline
 Designed for LLM access (Claude, ChatGPT) to enable AI-driven financial data analysis.
 """
 
-from fastapi import FastAPI, Query, HTTPException, Request
+from fastapi import FastAPI, Query, HTTPException, Request, Depends, Security
 from fastapi.responses import JSONResponse
+from fastapi.security import APIKeyHeader
 from typing import Optional, List
 from datetime import datetime, date
 from pydantic import BaseModel
 from db.setup import get_connection
 import psycopg2
+import os
+
+API_KEY = os.environ.get("DATA_API_KEY")
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+async def verify_api_key(api_key: str = Security(api_key_header)):
+    """Verify API key if one is configured."""
+    if not API_KEY:
+        return True
+    if api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+    return True
 
 app = FastAPI(
     title="Crypto & Equity Data API",
@@ -67,7 +81,7 @@ def root():
 
 
 @app.get("/data-dictionary")
-def data_dictionary():
+def data_dictionary(_: bool = Depends(verify_api_key)):
     """
     Complete data dictionary for LLM understanding.
     Returns schema, available metrics, sources, and query patterns.
@@ -158,7 +172,7 @@ def data_dictionary():
 
 
 @app.get("/sources")
-def list_sources():
+def list_sources(_: bool = Depends(verify_api_key)):
     """List all available data sources with record counts."""
     conn = get_connection()
     cur = conn.cursor()
@@ -193,6 +207,7 @@ def list_sources():
 
 @app.get("/entities")
 def list_entities(
+    _: bool = Depends(verify_api_key),
     type: Optional[str] = Query(None, description="Filter by entity type (token, chain, protocol, equity, etf)"),
     sector: Optional[str] = Query(None, description="Filter by sector (layer-1, defi, btc_mining, etc.)"),
     source: Optional[str] = Query(None, description="Filter by source (artemis, defillama, velo, coingecko, alphavantage)"),
@@ -256,7 +271,7 @@ def list_entities(
 
 
 @app.get("/entities/{canonical_id}")
-def get_entity(canonical_id: str):
+def get_entity(canonical_id: str, _: bool = Depends(verify_api_key)):
     """Get entity details with all source mappings."""
     conn = get_connection()
     cur = conn.cursor()
@@ -295,6 +310,7 @@ def get_entity(canonical_id: str):
 
 @app.get("/metrics")
 def list_metrics(
+    _: bool = Depends(verify_api_key),
     source: Optional[str] = Query(None, description="Filter by source"),
     asset: Optional[str] = Query(None, description="Filter by asset")
 ):
@@ -339,6 +355,7 @@ def list_metrics(
 
 @app.get("/latest")
 def get_latest(
+    _: bool = Depends(verify_api_key),
     metric: str = Query(..., description="Metric name (PRICE, TVL, FEES, etc.)"),
     source: Optional[str] = Query(None, description="Filter by source"),
     assets: Optional[str] = Query(None, description="Comma-separated list of assets"),
@@ -391,6 +408,7 @@ def get_latest(
 
 @app.get("/time-series")
 def get_time_series(
+    _: bool = Depends(verify_api_key),
     asset: str = Query(..., description="Asset ID (btc, bitcoin, BTC_binance-futures, COIN)"),
     metric: str = Query(..., description="Metric name"),
     source: Optional[str] = Query(None, description="Filter by source"),
@@ -452,6 +470,7 @@ def get_time_series(
 
 @app.get("/cross-source")
 def cross_source_comparison(
+    _: bool = Depends(verify_api_key),
     canonical_id: str = Query(..., description="Canonical entity ID (bitcoin, ethereum, solana)"),
     metric: Optional[str] = Query(None, description="Filter by metric name"),
     days: int = Query(7, description="Number of days to look back")
@@ -520,7 +539,7 @@ def cross_source_comparison(
 
 
 @app.get("/stats")
-def get_stats():
+def get_stats(_: bool = Depends(verify_api_key)):
     """Get overall database statistics."""
     conn = get_connection()
     cur = conn.cursor()
