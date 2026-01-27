@@ -74,41 +74,6 @@ def normalize_metric(metric: str) -> str:
     return metric.upper().strip()
 
 
-def resolve_asset_id(asset: str, source: Optional[str], conn) -> tuple[str, Optional[str]]:
-    """
-    Resolve a canonical ID or asset ID to the source-specific ID.
-    Returns (resolved_asset_id, resolved_source).
-    
-    If asset is a canonical_id, looks up the source-specific ID.
-    If source is not specified but can be inferred, returns the best source.
-    """
-    cur = conn.cursor()
-    
-    cur.execute("""
-        SELECT esi.source, esi.source_id 
-        FROM entities e
-        JOIN entity_source_ids esi ON e.entity_id = esi.entity_id
-        WHERE e.canonical_id = %s
-    """, (asset.lower(),))
-    mappings = cur.fetchall()
-    
-    if mappings:
-        mapping_dict = {m[0]: m[1] for m in mappings}
-        
-        if source and source in mapping_dict:
-            cur.close()
-            return mapping_dict[source], source
-        elif source:
-            cur.close()
-            return asset, source
-        else:
-            cur.close()
-            return asset, None
-    
-    cur.close()
-    return asset, source
-
-
 def get_source_mappings(canonical_id: str, conn) -> dict:
     """Get all source ID mappings for a canonical entity."""
     cur = conn.cursor()
@@ -478,16 +443,36 @@ def list_metrics(
 def get_latest(
     _: bool = Depends(verify_api_key),
     metric: str = Query(..., description="Metric name (PRICE, TVL, FEES, etc.) - case insensitive"),
-    source: Optional[str] = Query(None, description="Filter by source - case insensitive"),
-    assets: Optional[str] = Query(None, description="Comma-separated list of assets"),
+    source: Optional[str] = Query(None, description="Filter by source - case insensitive, auto-selected based on metric if omitted"),
+    assets: Optional[str] = Query(None, description="Comma-separated list of asset IDs or canonical IDs (bitcoin, ethereum)"),
     limit: int = Query(100, description="Max results")
 ):
-    """Get latest values for a metric across all assets."""
+    """Get latest values for a metric across all assets. Accepts canonical IDs and auto-resolves to source-specific IDs."""
     metric = normalize_metric(metric)
     source = normalize_source(source)
     
+    if not source:
+        preferred = get_preferred_source_for_metric(metric)
+        if preferred:
+            source = preferred
+    
     conn = get_connection()
     cur = conn.cursor()
+    
+    resolved_assets = []
+    if assets:
+        asset_list = [a.strip().lower() for a in assets.split(",")]
+        for asset in asset_list:
+            mappings = get_source_mappings(asset, conn)
+            if mappings and source and source in mappings:
+                resolved_assets.append(mappings[source])
+            elif mappings and not source:
+                for preferred_source in ["coingecko", "artemis", "defillama", "velo", "alphavantage"]:
+                    if preferred_source in mappings:
+                        resolved_assets.append(mappings[preferred_source])
+                        break
+            else:
+                resolved_assets.append(asset)
     
     query = """
         SELECT DISTINCT ON (asset) 
@@ -501,10 +486,9 @@ def get_latest(
         query += " AND source = %s"
         params.append(source)
     
-    if assets:
-        asset_list = [a.strip() for a in assets.split(",")]
+    if resolved_assets:
         query += " AND asset = ANY(%s)"
-        params.append(asset_list)
+        params.append(resolved_assets)
     
     query += " ORDER BY asset, pulled_at DESC LIMIT %s"
     params.append(limit)
