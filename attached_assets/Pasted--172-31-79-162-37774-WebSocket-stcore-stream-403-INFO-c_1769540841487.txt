@@ -1,0 +1,45 @@
+   172.31.79.162:37774 - "WebSocket /_stcore/stream" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     172.31.79.162:39528 - "GET /_stcore/health HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:39526 - "GET /_stcore/host-config HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33346 - "WebSocket /_stcore/stream" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     172.31.79.162:33358 - "GET /_stcore/host-config HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33360 - "GET /_stcore/health HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33366 - "WebSocket /_stcore/stream" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     172.31.79.162:33360 - "GET /_stcore/health HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33358 - "GET /_stcore/host-config HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33370 - "WebSocket /_stcore/stream" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     172.31.79.162:33358 - "GET /_stcore/health HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33360 - "GET /_stcore/host-config HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:42174 - "WebSocket /_stcore/stream" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     172.31.79.162:33360 - "GET /_stcore/host-config HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33358 - "GET /_stcore/health HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:42190 - "WebSocket /_stcore/stream" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     172.31.79.162:33358 - "GET /_stcore/host-config HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33360 - "GET /_stcore/health HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33360 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33360 - "GET /_stcore/health HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33358 - "GET /_stcore/host-config HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:37006 - "WebSocket /_stcore/stream" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     172.31.79.162:33358 - "GET /_stcore/health HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33360 - "GET /_stcore/host-config HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:37010 - "WebSocket /_stcore/stream" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     172.31.79.162:33360 - "GET /_stcore/host-config HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:33358 - "GET /_stcore/health HTTP/1.1" 304 Not Modified
+INFO:     172.31.79.162:37018 - "WebSocket /_stcore/stream" 403
+INFO:     connection rejected (403 Forbidden)
