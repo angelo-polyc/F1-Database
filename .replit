@@ -22,6 +22,10 @@ args = "Data Pipeline Scheduler"
 task = "workflow.run"
 args = "Dashboard"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "REST API"
+
 [[workflows.workflow]]
 name = "Data Pipeline Scheduler"
 author = "agent"
@@ -45,6 +49,18 @@ waitForPort = 5000
 [workflows.workflow.metadata]
 outputType = "webview"
 
+[[workflows.workflow]]
+name = "REST API"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m uvicorn api:app --host 0.0.0.0 --port 8000"
+waitForPort = 8000
+
+[workflows.workflow.metadata]
+outputType = "console"
+
 [deployment]
 deploymentTarget = "vm"
 run = ["bash", "-c", "streamlit run dashboard.py --server.port 5000 --server.address 0.0.0.0 --server.headless true & python scheduler.py --no-backfill"]
@@ -53,3 +69,7 @@ ignorePorts = true
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 8000
+externalPort = 8000
