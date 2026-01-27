@@ -70,3 +70,15 @@ curl "http://localhost:8000/time-series?asset=solana&metric=PRICE&source=coingec
 # Search for layer-1 entities
 curl "http://localhost:8000/entities?sector=layer-1&limit=20"
 ```
+
+## Claude Integration (MCP Server)
+The `mcp_server.py` provides Model Context Protocol support for Claude Desktop.
+
+**Available Tools:**
+- `get_data_dictionary` - Schema + metrics (call first)
+- `search_entities` - Find assets by type/sector/name
+- `get_time_series` - Historical data
+- `get_latest_values` - Rankings/comparisons
+- `compare_cross_source` - Multi-source comparison
+
+**Setup:** See `CLAUDE_INTEGRATION.md` for configuration instructions.
