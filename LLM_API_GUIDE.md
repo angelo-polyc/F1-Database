@@ -6,9 +6,11 @@ This document contains everything you need to query the Crypto & Equity Data API
 
 | Item | Value |
 |------|-------|
-| **Base URL** | `https://8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev` |
+| **Base URL** | `https://8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev:8000` |
 | **Authentication** | Header: `X-API-Key: Polychain2030!#` |
 | **Format** | JSON |
+
+**IMPORTANT:** The URL must include `:8000` - the main URL without the port goes to the Dashboard, not the API.
 
 **All requests require the API key header:**
 ```
