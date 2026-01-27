@@ -22,6 +22,10 @@ args = "Data Pipeline Scheduler"
 task = "workflow.run"
 args = "Web Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Velo Backfill"
+
 [[workflows.workflow]]
 name = "Data Pipeline Scheduler"
 author = "agent"
@@ -44,6 +48,17 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow]]
+name = "Velo Backfill"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -u backfill_velo.py"
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [deployment]
 deploymentTarget = "vm"

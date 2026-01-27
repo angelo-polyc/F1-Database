@@ -26,12 +26,13 @@ REQUEST_DELAY = 0.5  # 2 req/sec to avoid rate limits
 BATCH_SIZE = 5
 
 # Velo columns to pull (5 essential derivatives metrics)
+# Aligned with backfill script for consistency
 FUTURES_COLUMNS = [
     'close_price',                   # CLOSE_PRICE
     'dollar_volume',                 # DOLLAR_VOLUME
     'dollar_open_interest_close',    # DOLLAR_OI_CLOSE
-    'funding_rate_avg',              # FUNDING_RATE_AVG
-    'liquidations_dollar_volume'     # LIQ_DOLLAR_VOL
+    'funding_rate',                  # FUNDING_RATE
+    'premium'                        # PREMIUM
 ]
 
 # For backwards compatibility (both use same 5 columns now)
@@ -276,7 +277,7 @@ class VeloSource(BaseSource):
                 f"columns={columns_str}&"
                 f"begin={begin_ts}&"
                 f"end={end_ts}&"
-                f"resolution=1h"
+                f"resolution=15m"
             )
             
             try:
