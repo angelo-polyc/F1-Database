@@ -16,22 +16,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Data Pipeline Scheduler"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Web Server"
-
-[[workflows.workflow]]
-name = "Data Pipeline Scheduler"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python scheduler.py"
 
 [[workflows.workflow]]
 name = "Web Server"
