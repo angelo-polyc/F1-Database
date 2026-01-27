@@ -9,24 +9,26 @@ from requests.auth import HTTPBasicAuth
 import requests
 
 API_KEY = os.environ.get('VELO_API_KEY')
-BASE_URL = "https://app.velo.xyz/api"
+BASE_URL = "https://api.velo.xyz/api/v1"
 
 def test_request(request_num, delay):
     """Make a single test request."""
     start = time.time()
     try:
         time.sleep(delay)
+        url = (
+            f"{BASE_URL}/rows?"
+            f"type=futures&"
+            f"exchanges=binance-futures&"
+            f"coins=BTC&"
+            f"columns=close_price,funding_rate&"
+            f"begin=1704067200000&"
+            f"end=1704153600000&"
+            f"resolution=15m"
+        )
         response = requests.get(
-            f"{BASE_URL}/futures/chart",
-            auth=HTTPBasicAuth(API_KEY, ''),
-            params={
-                'coin': 'BTC',
-                'exchange': 'binance',
-                'column': 'funding_rate',
-                'begin': '2024-01-01',
-                'end': '2024-01-02',
-                'resolution': '15'
-            },
+            url,
+            auth=HTTPBasicAuth("api", API_KEY),
             timeout=30
         )
         elapsed = time.time() - start
