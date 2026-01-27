@@ -5,10 +5,15 @@ Backfills hourly futures data from Velo API.
 Uses ON CONFLICT DO NOTHING to preserve existing data.
 
 Usage:
-    python backfill_velo.py                    # Backfill last 30 days
-    python backfill_velo.py --days 90          # Backfill last 90 days
-    python backfill_velo.py --coin BTC         # Backfill only BTC
-    python backfill_velo.py --exchange bybit   # Backfill only Bybit
+    python backfill_velo.py                         # Default: 3 years
+    python backfill_velo.py --days 30               # Last 30 days
+    python backfill_velo.py --start-date 2023-01-26 --end-date 2026-01-25
+    python backfill_velo.py --coin BTC              # Filter to specific coin
+    python backfill_velo.py --exchange bybit        # Filter to specific exchange
+    python backfill_velo.py --dry-run               # Preview without inserting
+
+Note: Velo API returns minute-level data which is aggregated to hourly.
+      72-hour windows used to stay under 22,500 cell API limit.
 """
 
 import os
@@ -279,9 +284,12 @@ def insert_batch(records):
 
 def main():
     parser = argparse.ArgumentParser(description='Backfill Velo historical data')
-    parser.add_argument('--days', type=int, default=30, help='Days of history to backfill')
+    parser.add_argument('--days', type=int, help='Days of history to backfill (default: 1095 = 3 years)')
+    parser.add_argument('--start-date', type=str, help='Start date (YYYY-MM-DD)')
+    parser.add_argument('--end-date', type=str, help='End date (YYYY-MM-DD, default: now)')
     parser.add_argument('--coin', type=str, help='Filter to specific coin')
     parser.add_argument('--exchange', type=str, help='Filter to specific exchange')
+    parser.add_argument('--dry-run', action='store_true', help='Preview without inserting')
     args = parser.parse_args()
     
     if not DATABASE_URL:
@@ -291,14 +299,32 @@ def main():
         print("Error: VELO_API_KEY not set")
         sys.exit(1)
     
+    # Calculate date range
+    now = datetime.now(timezone.utc)
+    
+    if args.end_date:
+        end_dt = datetime.strptime(args.end_date, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+        end_dt = end_dt.replace(hour=23, minute=0, second=0, microsecond=0)
+    else:
+        end_dt = now.replace(minute=0, second=0, microsecond=0)
+    
+    if args.start_date:
+        start_dt = datetime.strptime(args.start_date, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+    elif args.days:
+        start_dt = end_dt - timedelta(days=args.days)
+    else:
+        start_dt = end_dt - timedelta(days=365 * 3)  # Default: 3 years
+    
     print("=" * 70)
     print("VELO HISTORICAL BACKFILL")
     print("=" * 70)
-    print(f"Days to backfill: {args.days}")
+    print(f"Date range: {start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')}")
     if args.coin:
         print(f"Filtering to coin: {args.coin}")
     if args.exchange:
         print(f"Filtering to exchange: {args.exchange}")
+    if args.dry_run:
+        print("DRY RUN - no data will be inserted")
     print()
     
     # Load entity cache
@@ -315,14 +341,6 @@ def main():
         by_exchange[item['exchange']].append(item['coin'])
     
     auth = HTTPBasicAuth("api", API_KEY)
-    
-    # Time range
-    now = datetime.now(timezone.utc)
-    end_dt = now.replace(minute=0, second=0, microsecond=0)
-    start_dt = end_dt - timedelta(days=args.days)
-    
-    print(f"Time range: {start_dt.isoformat()} to {end_dt.isoformat()}")
-    print()
     
     total_records = 0
     total_inserted = 0
@@ -343,10 +361,15 @@ def main():
     
     print(f"Total fetch tasks: {len(fetch_tasks)}")
     print(f"Using {MAX_WORKERS} parallel workers")
-    print()
+    print("=" * 70)
+    
+    if args.dry_run:
+        print("\n[DRY RUN] Would process the above configuration")
+        return
     
     # Process in parallel with rate limiting
     completed = 0
+    start_time = time.time()
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {}
         for task in fetch_tasks:
@@ -372,12 +395,19 @@ def main():
                 task = futures[future]
                 print(f"  Error on {task[0]}: {e}")
     
+    elapsed = time.time() - start_time
+    
     print()
     print("=" * 70)
-    print(f"COMPLETE")
+    print("BACKFILL COMPLETE")
+    print("=" * 70)
+    print(f"  Date range: {start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')}")
     print(f"  Total records fetched:  {total_records:,}")
     print(f"  Total records inserted: {total_inserted:,}")
-    print(f"  (Difference is duplicates skipped)")
+    print(f"  Time: {elapsed:.0f}s ({elapsed/60:.1f} min)")
+    if elapsed > 0 and total_records > 0:
+        print(f"  Rate: {total_records / elapsed:.0f} records/sec")
+    print(f"  (Difference is duplicates skipped via ON CONFLICT DO NOTHING)")
     print("=" * 70)
 
 
