@@ -1,0 +1,163 @@
+Good point - let me show exactly what I'm running and test more carefully:4 stepsWake up the Repl then try againbash# Test 2: See full response including body
+echo "=== FULL RESPONSE ==="
+curl -v -H "X-API-Key: Polychain2030!#" "https://8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev:8000/stats" 2>&1 | tail -30
+
+echo -e "\n\n=== Test without port (wake up the Repl) ==="
+curl -s "https://8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev/" | head -c 100
+sleep 3
+
+echo -e "\n\n=== NOW test port 8000 again ==="
+curl -s -w "\nHTTP: %{http_code}" -H "X-API-Key: Polychain2030!#" "https://8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev:8000/stats"Output=== FULL RESPONSE ===
+*  SSL certificate verify ok.
+*   Certificate level 0: Public key type EC/prime256v1 (256/128 Bits/secBits), signed using sha256WithRSAEncryption
+*   Certificate level 1: Public key type RSA (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
+} [5 bytes data]
+* using HTTP/2
+* [HTTP/2] [1] OPENED stream for https://8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev:8000/stats
+* [HTTP/2] [1] [:method: GET]
+* [HTTP/2] [1] [:scheme: https]
+* [HTTP/2] [1] [:authority: 8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev:8000]
+* [HTTP/2] [1] [:path: /stats]
+* [HTTP/2] [1] [user-agent: curl/8.5.0]
+* [HTTP/2] [1] [accept: */*]
+* [HTTP/2] [1] [x-api-key: Polychain2030!#]
+} [5 bytes data]
+> GET /stats HTTP/2
+> Host: 8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev:8000
+> User-Agent: curl/8.5.0
+> Accept: */*
+> X-API-Key: Polychain2030!#
+> 
+{ [5 bytes data]
+< HTTP/2 403 
+< content-length: 13
+< content-type: text/plain
+< date: Tue, 27 Jan 2026 17:06:44 GMT
+< 
+{ [13 bytes data]
+100    13  100    13    0     0     90      0 --:--:-- --:--:-- --:--:--    91
+* Connection #0 to host 21.0.0.251 left intact
+Access denied-e 
+
+=== Test without port (wake up the Repl) ===
+<!--
+ Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
+
+ Licensed under the Apach-e 
+
+=== NOW test port 8000 again ===
+Access denied
+HTTP: 403Verified API key transmission and diagnosed server-side authentication failure.Looking at the verbose output, I can confirm:
+
+The API key header IS being sent correctly: [x-api-key: Polychain2030!#]
+The request IS reaching port 8000
+The response is: HTTP/2 403 with body "Access denied" (13 bytes)
+
+So the API key is being sent correctly. The 403 is coming from the server, not from a proxy or port issue. Let me check if maybe there's an issue with how Replit handles the port or if the API needs to be configured to accept connections on port 8000 from external IPs.
+Let me try a few more things:
+
+Try URL encoding the API key (the # might be an issue)
+Try a different endpoint
+Check if the main port works with the API key
+The verbose output confirms:
+
+✅ API key IS being sent: [x-api-key: Polychain2030!#]
+✅ Request IS reaching port 8000
+❌ Server returns 403 with body "Access denied"
+
+Let me test a few more hypotheses:Test various API key formats and endpointsbashBASE="https://8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev:8000"
+
+echo "=== Test 1: URL-encode the # in API key ==="
+curl -s -w "\nHTTP: %{http_code}" -H "X-API-Key: Polychain2030!%23" "$BASE/stats"
+
+echo -e "\n\n=== Test 2: Different case for header ==="
+curl -s -w "\nHTTP: %{http_code}" -H "x-api-key: Polychain2030!#" "$BASE/stats"
+
+echo -e "\n\n=== Test 3: Try without API key (see if error message differs) ==="
+curl -s -w "\nHTTP: %{http_code}" "$BASE/stats"
+
+echo -e "\n\n=== Test 4: Try a public endpoint if one exists ==="
+curl -s -w "\nHTTP: %{http_code}" -H "X-API-Key: Polychain2030!#" "$BASE/"
+
+echo -e "\n\n=== Test 5: Check /docs (FastAPI default) ==="
+curl -s -w "\nHTTP: %{http_code}" "$BASE/docs" | head -c 200Output=== Test 1: URL-encode the # in API key ===
+Access denied
+HTTP: 403-e 
+
+=== Test 2: Different case for header ===
+Access denied
+HTTP: 403-e 
+
+=== Test 3: Try without API key (see if error message differs) ===
+Access denied
+HTTP: 403-e 
+
+=== Test 4: Try a public endpoint if one exists ===
+Access denied
+HTTP: 403-e 
+
+=== Test 5: Check /docs (FastAPI default) ===
+Access denied
+HTTP: 403Investigated port-blocking hypothesis over authentication failure theory.Interesting! Every single request returns 403 "Access denied" - even without the API key. This means the 403 is NOT from API key authentication. It's happening at a layer BEFORE the API even checks the key.
+This is definitely a Replit-level block on port 8000 for external access. Replit's infrastructure is rejecting connections to non-standard ports from outside their network.
+Let me confirm this is a port-level block by checking if the main URL (without port) can reach the API if it's running there.Key finding: ALL requests return the same 403 Access denied - even without an API key. This means the block is happening before your API code runs.Compare response headers between port 8000 and default portbash# Final confirmation - check response headers for clues
+echo "=== Response headers from port 8000 ==="
+curl -sI -H "X-API-Key: Polychain2030!#" "https://8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev:8000/stats"
+
+echo -e "\n=== Response headers from main URL (no port) ==="
+curl -sI "https://8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev/stats"Output=== Response headers from port 8000 ===
+HTTP/1.1 200 OK
+date: Tue, 27 Jan 2026 17:07:10 GMT
+server: envoy
+
+HTTP/2 403 
+content-length: 13
+content-type: text/plain
+date: Tue, 27 Jan 2026 17:07:10 GMT
+
+-e 
+=== Response headers from main URL (no port) ===
+HTTP/1.1 200 OK
+date: Tue, 27 Jan 2026 17:07:10 GMT
+server: envoy
+
+HTTP/2 200 
+accept-ranges: bytes
+cache-control: no-cache
+content-length: 1522
+content-type: text/html
+date: Tue, 27 Jan 2026 17:07:10 GMT
+etag: "7d9e795beb02d5dcdf74cc38d352342ed3b6d5c2b91e29e46d25d795c1aade0dc6df0aa9c6141ebf9d712fd99d3cb1aaf9ac2b3dc74acd445e3c631dbfcc847b"
+last-modified: Fri, 23 Jan 2026 19:55:49 GMT
+replit-cluster: riker
+server: TornadoServer/6.5.4
+vary: Accept-Encoding
+x-robots-tag: none, noindex, noarchive, nofollow, nositelinkssearchbox, noimageindex
+x-robots-tag: none, noindex, noarchive, nofollow, nositelinkssearchbox, noimageindex
+
+Examined port access evidence and debunked authentication theory.Now I have definitive evidence:
+Port 8000:
+
+HTTP/2 403
+No server identifier
+Just content-type: text/plain with "Access denied"
+
+Main URL (default port):
+
+HTTP/2 200
+server: TornadoServer/6.5.4 (Streamlit)
+replit-cluster: riker
+
+The port 8000 response has no replit-cluster header and no specific server - this 403 is coming from Replit's infrastructure (the envoy proxy), not from the user's API code.
+This is conclusive: Replit blocks external access to non-standard ports. The API works internally within the Repl, but external connections to :8000 are blocked at the proxy level.
+Solutions:
+
+Run the API on the main port and use path-based routing
+Use Replit's autoscale deployments which can expose additional ports
+Use a reverse proxy
+
+Diagnosis Complete
+The 403 is from Replit's infrastructure, not your API.
+PortResponseServer HeaderDefault (no port)200 OKTornadoServer/6.5.4, replit-cluster: riker:8000403 Access deniedNone (blocked at proxy)
+The :8000 response has no replit-cluster header - it's being rejected by Replit's envoy proxy before reaching your code.
+Your database LLM's hypothesis was partially right - the issue isn't the API key (I confirmed it's being sent correctly). But it IS a Replit-level issue, not auth.

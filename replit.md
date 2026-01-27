@@ -40,7 +40,11 @@ The system is built around a modular architecture, allowing easy integration of 
 ## REST API (api.py)
 The REST API is designed for LLM access (Claude, ChatGPT) to enable AI-driven financial data analysis.
 
-**Base URL:** `http://localhost:8000`
+**Architecture:** Combined server (`server.py`) routes requests on port 5000:
+- `/` → Streamlit Dashboard
+- `/api/*` → FastAPI REST API
+
+**External URL:** `https://<domain>.replit.dev/api/...` (no port needed)
 
 **Endpoints:**
 | Endpoint | Description |

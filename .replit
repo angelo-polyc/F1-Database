@@ -4,7 +4,7 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["cairo", "ffmpeg-full", "freetype", "ghostscript", "glibcLocales", "gobject-introspection", "gtk3", "pkg-config", "qhull", "tcl", "tk"]
+packages = ["cairo", "ffmpeg-full", "freetype", "ghostscript", "glibcLocales", "gobject-introspection", "gtk3", "libxcrypt", "pkg-config", "qhull", "tcl", "tk"]
 
 [workflows]
 runButton = "Project"
@@ -20,11 +20,7 @@ args = "Data Pipeline Scheduler"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Dashboard"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "REST API"
+args = "Web Server"
 
 [[workflows.workflow]]
 name = "Data Pipeline Scheduler"
@@ -38,28 +34,16 @@ task = "shell.exec"
 args = "python scheduler.py --fresh"
 
 [[workflows.workflow]]
-name = "Dashboard"
+name = "Web Server"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "streamlit run dashboard.py --server.port 5000 --server.address 0.0.0.0 --server.headless true"
+args = "python server.py"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
-
-[[workflows.workflow]]
-name = "REST API"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -m uvicorn api:app --host 0.0.0.0 --port 8000"
-waitForPort = 8000
-
-[workflows.workflow.metadata]
-outputType = "console"
 
 [deployment]
 deploymentTarget = "vm"
@@ -69,7 +53,3 @@ ignorePorts = true
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 8000
-externalPort = 8000

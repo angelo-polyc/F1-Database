@@ -6,11 +6,13 @@ This document contains everything you need to query the Crypto & Equity Data API
 
 | Item | Value |
 |------|-------|
-| **Base URL** | `https://8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev:8000` |
+| **Base URL** | `https://8acc5ab4-40f6-4976-b1be-4973166c8566-00-28hrjot7q1pu2.riker.replit.dev/api` |
 | **Authentication** | Header: `X-API-Key: Polychain2030!#` |
 | **Format** | JSON |
 
-**IMPORTANT:** The URL must include `:8000` - the main URL without the port goes to the Dashboard, not the API.
+**URL Structure:**
+- Dashboard: `https://domain.replit.dev/` (Streamlit UI)
+- REST API: `https://domain.replit.dev/api/...` (Data endpoints)
 
 **All requests require the API key header:**
 ```
@@ -33,7 +35,7 @@ All parameter values are case-insensitive:
 Use simple canonical IDs like `bitcoin`, `ethereum`, `solana` instead of source-specific IDs. The API automatically resolves them:
 ```bash
 # Instead of knowing source-specific IDs:
-GET /time-series?asset=bitcoin&metric=FEES
+GET /api/time-series?asset=bitcoin&metric=FEES
 # Auto-resolves to 'btc' for Artemis, 'bitcoin' for DefiLlama, etc.
 ```
 
@@ -50,9 +52,9 @@ When you omit the `source` parameter, the API automatically selects the best sou
 
 ```bash
 # Source auto-selected based on metric:
-GET /time-series?asset=bitcoin&metric=TVL      # Uses DefiLlama
-GET /time-series?asset=bitcoin&metric=FEES     # Uses Artemis
-GET /time-series?asset=bitcoin&metric=PRICE    # Uses CoinGecko
+GET /api/time-series?asset=bitcoin&metric=TVL      # Uses DefiLlama
+GET /api/time-series?asset=bitcoin&metric=FEES     # Uses Artemis
+GET /api/time-series?asset=bitcoin&metric=PRICE    # Uses CoinGecko
 ```
 
 ### 4. Available Metrics Per Entity
@@ -147,15 +149,15 @@ The database contains 3 years of historical data from 5 sources:
 
 ## API Endpoints
 
-### 1. GET /data-dictionary
+### 1. GET /api/data-dictionary
 Returns complete schema documentation. **Call this first** to understand available data.
 
 ```bash
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/data-dictionary"
+  "https://BASE_URL/api/data-dictionary"
 ```
 
-### 2. GET /entities
+### 2. GET /api/entities
 Search and filter entities (assets).
 
 **Parameters:**
@@ -169,23 +171,23 @@ Search and filter entities (assets).
 ```bash
 # Find all layer-1 chains
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/entities?sector=layer-1&limit=20"
+  "https://BASE_URL/api/entities?sector=layer-1&limit=20"
 
 # Search for Bitcoin-related entities
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/entities?search=bitcoin"
+  "https://BASE_URL/api/entities?search=bitcoin"
 
 # List all equities
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/entities?type=equity"
+  "https://BASE_URL/api/entities?type=equity"
 ```
 
-### 3. GET /entities/{canonical_id}
+### 3. GET /api/entities/{canonical_id}
 Get full details for a specific entity including all source ID mappings and available metrics.
 
 ```bash
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/entities/bitcoin"
+  "https://BASE_URL/api/entities/bitcoin"
 ```
 
 **Response includes:**
@@ -193,7 +195,7 @@ curl -H "X-API-Key: Polychain2030!#" \
 - Source mappings (what ID to use for each source)
 - Available metrics per source (shows exactly what data exists)
 
-### 4. GET /metrics
+### 4. GET /api/metrics
 List available metrics with record counts.
 
 **Parameters:**
@@ -203,10 +205,10 @@ List available metrics with record counts.
 ```bash
 # All metrics from Artemis
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/metrics?source=artemis"
+  "https://BASE_URL/api/metrics?source=artemis"
 ```
 
-### 5. GET /latest
+### 5. GET /api/latest
 Get the most recent value for a metric across all assets. **Best for rankings and comparisons.**
 
 **Parameters:**
@@ -219,18 +221,18 @@ Get the most recent value for a metric across all assets. **Best for rankings an
 ```bash
 # Top 20 assets by TVL (source auto-selected: DefiLlama)
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/latest?metric=TVL&limit=20"
+  "https://BASE_URL/api/latest?metric=TVL&limit=20"
 
 # Latest prices (source auto-selected: CoinGecko)
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/latest?metric=PRICE&limit=50"
+  "https://BASE_URL/api/latest?metric=PRICE&limit=50"
 
 # Specific assets using canonical IDs
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/latest?metric=FEES&assets=bitcoin,ethereum,solana"
+  "https://BASE_URL/api/latest?metric=FEES&assets=bitcoin,ethereum,solana"
 ```
 
-### 6. GET /time-series
+### 6. GET /api/time-series
 Get historical time series data. **Best for trends and charts.**
 
 **Parameters:**
@@ -245,22 +247,22 @@ Get historical time series data. **Best for trends and charts.**
 ```bash
 # Simplified: Just use canonical ID and metric (source auto-selected)
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/time-series?asset=bitcoin&metric=PRICE&days=30"
+  "https://BASE_URL/api/time-series?asset=bitcoin&metric=PRICE&days=30"
 
 # TVL trend - auto-selects DefiLlama
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/time-series?asset=solana&metric=TVL&days=90"
+  "https://BASE_URL/api/time-series?asset=solana&metric=TVL&days=90"
 
 # Fee revenue - auto-selects Artemis
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/time-series?asset=ethereum&metric=FEES&days=365"
+  "https://BASE_URL/api/time-series?asset=ethereum&metric=FEES&days=365"
 
 # Stock prices still need explicit source (AlphaVantage uses ticker symbols)
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/time-series?asset=COIN&metric=CLOSE&source=alphavantage&days=60"
+  "https://BASE_URL/api/time-series?asset=COIN&metric=CLOSE&source=alphavantage&days=60"
 ```
 
-### 7. GET /cross-source
+### 7. GET /api/cross-source
 Compare data for an entity across different sources. **Best for data validation and multi-source analysis.**
 
 **Parameters:**
@@ -272,27 +274,27 @@ Compare data for an entity across different sources. **Best for data validation 
 ```bash
 # Compare Bitcoin data across all sources
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/cross-source?canonical_id=bitcoin"
+  "https://BASE_URL/api/cross-source?canonical_id=bitcoin"
 
 # Compare Ethereum prices specifically
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/cross-source?canonical_id=ethereum&metric=PRICE"
+  "https://BASE_URL/api/cross-source?canonical_id=ethereum&metric=PRICE"
 ```
 
-### 8. GET /sources
+### 8. GET /api/sources
 List all data sources with record counts.
 
 ```bash
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/sources"
+  "https://BASE_URL/api/sources"
 ```
 
-### 9. GET /stats
+### 9. GET /api/stats
 Get database statistics and health info.
 
 ```bash
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/stats"
+  "https://BASE_URL/api/stats"
 ```
 
 ---
@@ -316,58 +318,58 @@ Different sources use different ID formats. Use `/entities/{canonical_id}` to fi
 ### Price Analysis
 ```bash
 # Get current prices for top assets
-GET /latest?metric=PRICE&source=coingecko&limit=20
+GET /api/latest?metric=PRICE&source=coingecko&limit=20
 
 # Get Bitcoin 90-day price history
-GET /time-series?asset=bitcoin&metric=PRICE&source=coingecko&days=90
+GET /api/time-series?asset=bitcoin&metric=PRICE&source=coingecko&days=90
 
 # Compare Bitcoin price across sources
-GET /cross-source?canonical_id=bitcoin&metric=PRICE
+GET /api/cross-source?canonical_id=bitcoin&metric=PRICE
 ```
 
 ### DeFi Analysis
 ```bash
 # Top protocols by TVL
-GET /latest?metric=TVL&source=defillama&limit=20
+GET /api/latest?metric=TVL&source=defillama&limit=20
 
 # Aave TVL trend over 6 months
-GET /time-series?asset=aave&metric=TVL&source=defillama&days=180
+GET /api/time-series?asset=aave&metric=TVL&source=defillama&days=180
 
 # Top fee-generating protocols
-GET /latest?metric=FEES_24H&source=defillama&limit=10
+GET /api/latest?metric=FEES_24H&source=defillama&limit=10
 ```
 
 ### Derivatives Analysis
 ```bash
 # Bitcoin funding rates across exchanges
-GET /time-series?asset=BTC_binance-futures&metric=FUNDING_RATE_AVG&source=velo&days=30
+GET /api/time-series?asset=BTC_binance-futures&metric=FUNDING_RATE_AVG&source=velo&days=30
 
 # Open interest for ETH
-GET /time-series?asset=ETH_binance-futures&metric=DOLLAR_OI_CLOSE&source=velo&days=30
+GET /api/time-series?asset=ETH_binance-futures&metric=DOLLAR_OI_CLOSE&source=velo&days=30
 ```
 
 ### Equity/Crypto Correlation
 ```bash
 # COIN stock price
-GET /time-series?asset=COIN&metric=CLOSE&source=alphavantage&days=90
+GET /api/time-series?asset=COIN&metric=CLOSE&source=alphavantage&days=90
 
 # Bitcoin miners (MARA, RIOT)
-GET /time-series?asset=MARA&metric=CLOSE&source=alphavantage&days=90
+GET /api/time-series?asset=MARA&metric=CLOSE&source=alphavantage&days=90
 
 # Compare with Bitcoin
-GET /time-series?asset=bitcoin&metric=PRICE&source=coingecko&days=90
+GET /api/time-series?asset=bitcoin&metric=PRICE&source=coingecko&days=90
 ```
 
 ### Fundamental Analysis
 ```bash
 # Protocol revenue leaders
-GET /latest?metric=REVENUE&source=artemis&limit=20
+GET /api/latest?metric=REVENUE&source=artemis&limit=20
 
 # Ethereum daily active users trend
-GET /time-series?asset=eth&metric=DAU&source=artemis&days=90
+GET /api/time-series?asset=eth&metric=DAU&source=artemis&days=90
 
 # Transaction volume by chain
-GET /latest?metric=TXNS&source=artemis&limit=20
+GET /api/latest?metric=TXNS&source=artemis&limit=20
 ```
 
 ---
@@ -436,15 +438,15 @@ GET /latest?metric=TXNS&source=artemis&limit=20
 
 ## Quick Start Workflow
 
-1. **Understand the schema:** `GET /data-dictionary`
-2. **Find your entity:** `GET /entities?search=bitcoin`
-3. **Get entity details (with available metrics):** `GET /entities/bitcoin`
-4. **Query the data (source auto-selected):** `GET /time-series?asset=bitcoin&metric=PRICE&days=30`
+1. **Understand the schema:** `GET /api/data-dictionary`
+2. **Find your entity:** `GET /api/entities?search=bitcoin`
+3. **Get entity details (with available metrics):** `GET /api/entities/bitcoin`
+4. **Query the data (source auto-selected):** `GET /api/time-series?asset=bitcoin&metric=PRICE&days=30`
 
 **Simplified Example:**
 ```bash
 # Just ask for what you want - no need to specify source
 curl -H "X-API-Key: Polychain2030!#" \
-  "https://BASE_URL/time-series?asset=bitcoin&metric=TVL&days=30"
+  "https://BASE_URL/api/time-series?asset=bitcoin&metric=TVL&days=30"
 # API automatically: resolves 'bitcoin' to 'bitcoin' (DefiLlama ID), selects DefiLlama as source
 ```
