@@ -1,8 +1,13 @@
 """
-Velo Historical Backfill Script
+Velo Historical Backfill Script (Optimized)
 
-Backfills hourly futures data from Velo API.
-Uses ON CONFLICT DO NOTHING to preserve existing data.
+Backfills futures data from Velo API using 15m resolution for efficiency.
+Aggregates to hourly for storage. Uses ON CONFLICT DO NOTHING for backfills.
+
+Key optimizations:
+- Uses resolution=15m (15x fewer rows than 1m, API doesn't support 1h properly)
+- ~46 days per request (vs 3 days before) = 15x fewer API calls
+- Estimated time: ~13 hours for full 3-year backfill (vs 9+ days)
 
 Usage:
     python backfill_velo.py                         # Default: 3 years
@@ -11,9 +16,7 @@ Usage:
     python backfill_velo.py --coin BTC              # Filter to specific coin
     python backfill_velo.py --exchange bybit        # Filter to specific exchange
     python backfill_velo.py --dry-run               # Preview without inserting
-
-Note: Velo API returns minute-level data which is aggregated to hourly.
-      72-hour windows used to stay under 22,500 cell API limit.
+    python backfill_velo.py --top N                 # Only top N coins by volume
 """
 
 import os
@@ -25,30 +28,22 @@ import requests
 import psycopg2
 from psycopg2.extras import execute_values
 from datetime import datetime, timezone, timedelta
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests.auth import HTTPBasicAuth
 from collections import defaultdict
 
-# Configuration
 DATABASE_URL = os.environ.get("DATABASE_URL")
 API_KEY = os.environ.get("VELO_API_KEY")
 BASE_URL = "https://api.velo.xyz/api/v1"
 CONFIG_PATH = "velo_config.csv"
 
-# Rate limiting: 120 req/30s = 4/sec, but use 2/sec to be safe
-REQUEST_DELAY = 0.5
-MAX_WORKERS = 1  # Sequential fetching to avoid rate limits
+REQUEST_DELAY = 1.0
+MAX_RETRIES = 5
+BASE_BACKOFF = 2
 
-# Velo returns max 22,500 values per request
-# API returns MINUTE-level data (1440 rows/day) despite resolution=1h
-# With 5 columns, 1 coin: 22500 / (1440 * 5) = 3.1 days max
-# Use 3 days per request with 1 coin to stay under limit
-HOURS_PER_REQUEST = 72  # 3 days = 72 hours
+RESOLUTION = '15m'
+INTERVALS_PER_DAY = 96
+VALUES_LIMIT = 22500
 
-# Batch size: 1 coin per request (API gives minute data, aggregated hourly client-side)
-BACKFILL_BATCH_SIZE = 1
-
-# Essential metrics only for faster backfill (5 columns = 3.1 days/request max)
 FUTURES_COLUMNS = [
     'close_price',
     'dollar_volume',
@@ -92,12 +87,10 @@ METRIC_MAP = {
 
 
 def get_connection():
-    """Get database connection."""
     return psycopg2.connect(DATABASE_URL)
 
 
 def load_entity_cache():
-    """Load entity_id mappings from database."""
     cache = {}
     try:
         conn = get_connection()
@@ -116,8 +109,7 @@ def load_entity_cache():
     return cache
 
 
-def load_config(coin_filter=None, exchange_filter=None):
-    """Load coin-exchange pairs from config, optionally filtered."""
+def load_config(coin_filter=None, exchange_filter=None, top_n=None):
     if not os.path.exists(CONFIG_PATH):
         print(f"Error: Config file not found: {CONFIG_PATH}")
         sys.exit(1)
@@ -139,48 +131,77 @@ def load_config(coin_filter=None, exchange_filter=None):
             
             config.append({'coin': coin, 'exchange': exchange})
     
+    if top_n:
+        priority_coins = ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX', 'LINK', 
+                         'DOT', 'MATIC', 'UNI', 'ATOM', 'LTC', 'BCH', 'NEAR', 'APT',
+                         'OP', 'ARB', 'FIL', 'INJ', 'SUI', 'SEI', 'TIA', 'JUP',
+                         'PEPE', 'WIF', 'BONK', 'SHIB', 'HYPE', 'AAVE', 'MKR', 'CRV',
+                         'FTM', 'RUNE', 'IMX', 'SAND', 'MANA', 'AXS', 'GALA', 'ENS',
+                         'RENDER', 'FET', 'AGIX', 'OCEAN', 'TAO', 'WLD', 'RNDR', 'GRT']
+        
+        priority_set = set(priority_coins[:top_n])
+        priority_config = [c for c in config if c['coin'] in priority_set]
+        other_config = [c for c in config if c['coin'] not in priority_set]
+        
+        remaining = top_n - len(set(c['coin'] for c in priority_config))
+        if remaining > 0:
+            seen = set(c['coin'] for c in priority_config)
+            for c in other_config:
+                if c['coin'] not in seen:
+                    priority_config.append(c)
+                    seen.add(c['coin'])
+                    if len(seen) >= top_n:
+                        break
+                elif c['coin'] in seen:
+                    priority_config.append(c)
+        
+        config = priority_config
+        unique_coins = len(set(c['coin'] for c in config))
+        print(f"Filtered to top {unique_coins} coins ({len(config)} pairs)")
+    
     return config
 
 
-def fetch_historical(exchange, coins, begin_ts, end_ts, auth, entity_cache):
-    """Fetch historical data for a batch of coins from one exchange.
+def calculate_days_per_request(num_columns):
+    max_intervals = VALUES_LIMIT // num_columns
+    days = max_intervals // INTERVALS_PER_DAY
+    return max(1, days - 1)
+
+
+def fetch_historical(exchange, coin, begin_ts, end_ts, auth, entity_cache):
+    records = []
+    hourly_data = {}
     
-    Aggregates minute-level API data to hourly records.
-    """
-    hourly_data = {}  # Key: (ts_hour, coin, exchange, metric) -> record
-    
-    coins_str = ','.join(coins)
     columns_str = ','.join(FUTURES_COLUMNS)
     
     url = (
         f"{BASE_URL}/rows?"
         f"type=futures&"
         f"exchanges={exchange}&"
-        f"coins={coins_str}&"
+        f"coins={coin}&"
         f"columns={columns_str}&"
         f"begin={begin_ts}&"
         f"end={end_ts}&"
-        f"resolution=1h"
+        f"resolution={RESOLUTION}"
     )
     
-    for attempt in range(3):
+    for attempt in range(MAX_RETRIES):
         try:
-            resp = requests.get(url, auth=auth, timeout=120)
+            resp = requests.get(url, auth=auth, timeout=180)
             
             if resp.status_code == 429:
-                wait = 2 ** (attempt + 1)
-                print(f"    Rate limited, waiting {wait}s...")
+                wait = BASE_BACKOFF ** (attempt + 1)
+                print(f"    Rate limited, waiting {wait}s (attempt {attempt + 1}/{MAX_RETRIES})...")
                 time.sleep(wait)
                 continue
             
             if resp.status_code != 200:
-                if attempt < 2:
-                    time.sleep(1)
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(BASE_BACKOFF)
                     continue
                 print(f"    API error {resp.status_code}: {resp.text[:100]}")
                 return []
             
-            # Parse CSV response
             lines = resp.text.strip().split('\n')
             if len(lines) < 2:
                 return []
@@ -201,22 +222,21 @@ def fetch_historical(exchange, coins, begin_ts, end_ts, auth, entity_cache):
                 except (ValueError, KeyError):
                     continue
                 
-                coin = row['coin']
-                exch = row['exchange']
-                entity_id = entity_cache.get(coin)
+                coin_val = row.get('coin', coin)
+                exch = row.get('exchange', exchange)
+                entity_id = entity_cache.get(coin_val)
                 
                 for velo_col, db_metric in METRIC_MAP.items():
                     if velo_col in row and row[velo_col]:
                         try:
                             value = float(row[velo_col])
-                            # Key for hourly aggregation
-                            key = (ts_hour, coin, exch, db_metric)
+                            key = (ts_hour, coin_val, exch, db_metric)
                             hourly_data[key] = {
                                 'pulled_at': ts_hour,
-                                'asset': coin,
+                                'asset': coin_val,
                                 'entity_id': entity_id,
                                 'metric_name': db_metric,
-                                'value': value,  # Use last value for the hour
+                                'value': value,
                                 'domain': 'derivative',
                                 'exchange': exch,
                                 'granularity': 'hourly'
@@ -224,22 +244,21 @@ def fetch_historical(exchange, coins, begin_ts, end_ts, auth, entity_cache):
                         except ValueError:
                             pass
             
-            # Convert aggregated data to records list
             records = list(hourly_data.values())
             break
         
         except requests.RequestException as e:
-            if attempt < 2:
-                time.sleep(1)
+            if attempt < MAX_RETRIES - 1:
+                wait = BASE_BACKOFF ** (attempt + 1)
+                print(f"    Request error, retrying in {wait}s: {e}")
+                time.sleep(wait)
                 continue
-            print(f"    Request error: {e}")
+            print(f"    Request error after {MAX_RETRIES} attempts: {e}")
     
-    # Return aggregated hourly records
-    return list(hourly_data.values())
+    return records
 
 
 def insert_batch(records):
-    """Insert records with ON CONFLICT DO NOTHING for backfills."""
     if not records:
         return 0
     
@@ -256,7 +275,7 @@ def insert_batch(records):
             r['value'],
             r.get('domain', 'derivative'),
             r.get('exchange'),
-            r.get('granularity', 'hourly')  # Default to hourly for Velo
+            r.get('granularity', 'hourly')
         )
         for r in records
     ]
@@ -283,13 +302,15 @@ def insert_batch(records):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Backfill Velo historical data')
+    parser = argparse.ArgumentParser(description='Backfill Velo historical data (optimized)')
     parser.add_argument('--days', type=int, help='Days of history to backfill (default: 1095 = 3 years)')
     parser.add_argument('--start-date', type=str, help='Start date (YYYY-MM-DD)')
     parser.add_argument('--end-date', type=str, help='End date (YYYY-MM-DD, default: now)')
     parser.add_argument('--coin', type=str, help='Filter to specific coin')
     parser.add_argument('--exchange', type=str, help='Filter to specific exchange')
+    parser.add_argument('--top', type=int, help='Only backfill top N coins by importance')
     parser.add_argument('--dry-run', action='store_true', help='Preview without inserting')
+    parser.add_argument('--delay', type=float, default=REQUEST_DELAY, help='Delay between requests in seconds')
     args = parser.parse_args()
     
     if not DATABASE_URL:
@@ -299,7 +320,6 @@ def main():
         print("Error: VELO_API_KEY not set")
         sys.exit(1)
     
-    # Calculate date range
     now = datetime.now(timezone.utc)
     
     if args.end_date:
@@ -313,87 +333,100 @@ def main():
     elif args.days:
         start_dt = end_dt - timedelta(days=args.days)
     else:
-        start_dt = end_dt - timedelta(days=365 * 3)  # Default: 3 years
+        start_dt = end_dt - timedelta(days=365 * 3)
+    
+    days_per_request = calculate_days_per_request(len(FUTURES_COLUMNS))
     
     print("=" * 70)
-    print("VELO HISTORICAL BACKFILL")
+    print("VELO HISTORICAL BACKFILL (Optimized)")
     print("=" * 70)
     print(f"Date range: {start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')}")
+    print(f"Resolution: {RESOLUTION} (aggregated to hourly)")
+    print(f"Days per request: {days_per_request} (optimized from 3)")
+    print(f"Request delay: {args.delay}s")
     if args.coin:
         print(f"Filtering to coin: {args.coin}")
     if args.exchange:
         print(f"Filtering to exchange: {args.exchange}")
+    if args.top:
+        print(f"Limiting to top {args.top} coins")
     if args.dry_run:
         print("DRY RUN - no data will be inserted")
     print()
     
-    # Load entity cache
     entity_cache = load_entity_cache()
     print(f"Loaded {len(entity_cache)} entity mappings")
     
-    # Load config
-    config = load_config(args.coin, args.exchange)
+    config = load_config(args.coin, args.exchange, args.top)
     print(f"Loaded {len(config)} coin-exchange pairs")
     
-    # Group by exchange
     by_exchange = defaultdict(list)
     for item in config:
         by_exchange[item['exchange']].append(item['coin'])
     
     auth = HTTPBasicAuth("api", API_KEY)
     
-    total_records = 0
-    total_inserted = 0
-    
-    # Build all fetch tasks: (exchange, coins, begin_ts, end_ts)
     fetch_tasks = []
     for exchange, coins in by_exchange.items():
-        for i in range(0, len(coins), BACKFILL_BATCH_SIZE):
-            batch_coins = coins[i:i+BACKFILL_BATCH_SIZE]
-            
+        unique_coins = list(set(coins))
+        for coin in unique_coins:
             window_start = start_dt
             while window_start < end_dt:
-                window_end = min(window_start + timedelta(hours=HOURS_PER_REQUEST), end_dt)
+                window_end = min(window_start + timedelta(days=days_per_request), end_dt)
                 begin_ts = int(window_start.timestamp() * 1000)
                 end_ts = int(window_end.timestamp() * 1000)
-                fetch_tasks.append((exchange, batch_coins, begin_ts, end_ts))
+                fetch_tasks.append((exchange, coin, begin_ts, end_ts))
                 window_start = window_end
     
-    print(f"Total fetch tasks: {len(fetch_tasks)}")
-    print(f"Using {MAX_WORKERS} parallel workers")
+    total_days = (end_dt - start_dt).days
+    estimated_time_sec = len(fetch_tasks) * args.delay
+    estimated_time_hr = estimated_time_sec / 3600
+    
+    print(f"\nTotal fetch tasks: {len(fetch_tasks)}")
+    print(f"Estimated time: {estimated_time_hr:.1f} hours ({estimated_time_sec/60:.0f} minutes)")
     print("=" * 70)
     
     if args.dry_run:
         print("\n[DRY RUN] Would process the above configuration")
+        print(f"\nSample tasks (first 5):")
+        for task in fetch_tasks[:5]:
+            exchange, coin, begin_ts, end_ts = task
+            begin_dt = datetime.fromtimestamp(begin_ts/1000, tz=timezone.utc)
+            end_dt_task = datetime.fromtimestamp(end_ts/1000, tz=timezone.utc)
+            print(f"  {exchange} / {coin}: {begin_dt.strftime('%Y-%m-%d')} to {end_dt_task.strftime('%Y-%m-%d')}")
         return
     
-    # Process in parallel with rate limiting
+    total_records = 0
+    total_inserted = 0
     completed = 0
     start_time = time.time()
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = {}
-        for task in fetch_tasks:
-            exchange, batch_coins, begin_ts, end_ts = task
-            future = executor.submit(fetch_historical, exchange, batch_coins, begin_ts, end_ts, auth, entity_cache)
-            futures[future] = task
-            time.sleep(REQUEST_DELAY)  # Rate limit submissions
+    last_progress = start_time
+    
+    for task in fetch_tasks:
+        exchange, coin, begin_ts, end_ts = task
         
-        for future in as_completed(futures):
-            completed += 1
-            try:
-                records = future.result()
-                total_records += len(records)
-                
-                if records:
-                    inserted = insert_batch(records)
-                    total_inserted += inserted
-                
-                if completed % 10 == 0:
-                    print(f"  Progress: {completed}/{len(fetch_tasks)} tasks, "
-                          f"fetched: {total_records:,}, inserted: {total_inserted:,}")
-            except Exception as e:
-                task = futures[future]
-                print(f"  Error on {task[0]}: {e}")
+        records = fetch_historical(exchange, coin, begin_ts, end_ts, auth, entity_cache)
+        total_records += len(records)
+        
+        if records:
+            inserted = insert_batch(records)
+            total_inserted += inserted
+        
+        completed += 1
+        
+        now_time = time.time()
+        if now_time - last_progress >= 30 or completed == len(fetch_tasks):
+            elapsed = now_time - start_time
+            rate = completed / elapsed if elapsed > 0 else 0
+            eta_sec = (len(fetch_tasks) - completed) / rate if rate > 0 else 0
+            eta_min = eta_sec / 60
+            
+            print(f"  [{completed}/{len(fetch_tasks)}] "
+                  f"Records: {total_records:,} fetched, {total_inserted:,} inserted | "
+                  f"Rate: {rate:.1f} req/s | ETA: {eta_min:.0f} min")
+            last_progress = now_time
+        
+        time.sleep(args.delay)
     
     elapsed = time.time() - start_time
     
