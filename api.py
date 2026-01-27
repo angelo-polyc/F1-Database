@@ -16,6 +16,20 @@ import os
 API_KEY = os.environ.get("DATA_API_KEY")
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
+VALID_SOURCES = ["artemis", "defillama", "velo", "coingecko", "alphavantage"]
+
+
+def normalize_source(source: Optional[str]) -> Optional[str]:
+    """Normalize source to lowercase."""
+    if source is None:
+        return None
+    return source.lower().strip()
+
+
+def normalize_metric(metric: str) -> str:
+    """Normalize metric to uppercase."""
+    return metric.upper().strip()
+
 
 async def verify_api_key(api_key: str = Security(api_key_header)):
     """Verify API key if one is configured."""
@@ -311,10 +325,12 @@ def get_entity(canonical_id: str, _: bool = Depends(verify_api_key)):
 @app.get("/metrics")
 def list_metrics(
     _: bool = Depends(verify_api_key),
-    source: Optional[str] = Query(None, description="Filter by source"),
+    source: Optional[str] = Query(None, description="Filter by source - case insensitive"),
     asset: Optional[str] = Query(None, description="Filter by asset")
 ):
     """List available metrics with counts."""
+    source = normalize_source(source)
+    
     conn = get_connection()
     cur = conn.cursor()
     
@@ -356,12 +372,15 @@ def list_metrics(
 @app.get("/latest")
 def get_latest(
     _: bool = Depends(verify_api_key),
-    metric: str = Query(..., description="Metric name (PRICE, TVL, FEES, etc.)"),
-    source: Optional[str] = Query(None, description="Filter by source"),
+    metric: str = Query(..., description="Metric name (PRICE, TVL, FEES, etc.) - case insensitive"),
+    source: Optional[str] = Query(None, description="Filter by source - case insensitive"),
     assets: Optional[str] = Query(None, description="Comma-separated list of assets"),
     limit: int = Query(100, description="Max results")
 ):
     """Get latest values for a metric across all assets."""
+    metric = normalize_metric(metric)
+    source = normalize_source(source)
+    
     conn = get_connection()
     cur = conn.cursor()
     
@@ -409,15 +428,18 @@ def get_latest(
 @app.get("/time-series")
 def get_time_series(
     _: bool = Depends(verify_api_key),
-    asset: str = Query(..., description="Asset ID (btc, bitcoin, BTC_binance-futures, COIN)"),
-    metric: str = Query(..., description="Metric name"),
-    source: Optional[str] = Query(None, description="Filter by source"),
+    asset: str = Query(..., description="Asset ID or canonical ID (bitcoin, ethereum, solana)"),
+    metric: str = Query(..., description="Metric name - case insensitive"),
+    source: Optional[str] = Query(None, description="Filter by source - case insensitive"),
     start_date: Optional[date] = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(None, description="End date (YYYY-MM-DD)"),
     days: Optional[int] = Query(None, description="Number of days back from today"),
     limit: int = Query(1000, description="Max results")
 ):
     """Get time series data for an asset/metric combination."""
+    metric = normalize_metric(metric)
+    source = normalize_source(source)
+    
     conn = get_connection()
     cur = conn.cursor()
     
