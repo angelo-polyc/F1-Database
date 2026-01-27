@@ -18,6 +18,49 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 VALID_SOURCES = ["artemis", "defillama", "velo", "coingecko", "alphavantage"]
 
+METRIC_TO_PREFERRED_SOURCE = {
+    "TVL": "defillama",
+    "CHAIN_TVL": "defillama",
+    "FEES_24H": "defillama",
+    "REVENUE_24H": "defillama",
+    "DEX_VOLUME_24H": "defillama",
+    "CHAIN_DEX_VOLUME_24H": "defillama",
+    "DERIVATIVES_VOLUME_24H": "defillama",
+    "STABLECOIN_SUPPLY": "defillama",
+    "BRIDGE_VOLUME_24H": "defillama",
+    "BRIDGE_VOLUME_7D": "defillama",
+    "BRIDGE_VOLUME_30D": "defillama",
+    "FUNDING_RATE_AVG": "velo",
+    "DOLLAR_OI_CLOSE": "velo",
+    "LIQ_DOLLAR_VOL": "velo",
+    "CLOSE_PRICE": "velo",
+    "DOLLAR_VOLUME": "velo",
+    "FEES": "artemis",
+    "REVENUE": "artemis",
+    "DAU": "artemis",
+    "TXNS": "artemis",
+    "NEW_USERS": "artemis",
+    "AVG_TXN_FEE": "artemis",
+    "OPEN": "alphavantage",
+    "HIGH": "alphavantage",
+    "LOW": "alphavantage",
+    "CLOSE": "alphavantage",
+    "ADJUSTED_CLOSE": "alphavantage",
+    "DIVIDEND_AMOUNT": "alphavantage",
+    "SPLIT_COEFFICIENT": "alphavantage",
+    "PRICE": "coingecko",
+    "MARKET_CAP": "coingecko",
+    "VOLUME_24H": "coingecko",
+    "PRICE_CHANGE_24H_PCT": "coingecko",
+    "ATH": "coingecko",
+    "ATL": "coingecko",
+}
+
+
+def get_preferred_source_for_metric(metric: str) -> Optional[str]:
+    """Get the preferred source for a metric, or None if ambiguous."""
+    return METRIC_TO_PREFERRED_SOURCE.get(metric.upper())
+
 
 def normalize_source(source: Optional[str]) -> Optional[str]:
     """Normalize source to lowercase."""
@@ -29,6 +72,55 @@ def normalize_source(source: Optional[str]) -> Optional[str]:
 def normalize_metric(metric: str) -> str:
     """Normalize metric to uppercase."""
     return metric.upper().strip()
+
+
+def resolve_asset_id(asset: str, source: Optional[str], conn) -> tuple[str, Optional[str]]:
+    """
+    Resolve a canonical ID or asset ID to the source-specific ID.
+    Returns (resolved_asset_id, resolved_source).
+    
+    If asset is a canonical_id, looks up the source-specific ID.
+    If source is not specified but can be inferred, returns the best source.
+    """
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT esi.source, esi.source_id 
+        FROM entities e
+        JOIN entity_source_ids esi ON e.entity_id = esi.entity_id
+        WHERE e.canonical_id = %s
+    """, (asset.lower(),))
+    mappings = cur.fetchall()
+    
+    if mappings:
+        mapping_dict = {m[0]: m[1] for m in mappings}
+        
+        if source and source in mapping_dict:
+            cur.close()
+            return mapping_dict[source], source
+        elif source:
+            cur.close()
+            return asset, source
+        else:
+            cur.close()
+            return asset, None
+    
+    cur.close()
+    return asset, source
+
+
+def get_source_mappings(canonical_id: str, conn) -> dict:
+    """Get all source ID mappings for a canonical entity."""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT esi.source, esi.source_id 
+        FROM entities e
+        JOIN entity_source_ids esi ON e.entity_id = esi.entity_id
+        WHERE e.canonical_id = %s
+    """, (canonical_id.lower(),))
+    mappings = {row[0]: row[1] for row in cur.fetchall()}
+    cur.close()
+    return mappings
 
 
 async def verify_api_key(api_key: str = Security(api_key_header)):
@@ -286,7 +378,8 @@ def list_entities(
 
 @app.get("/entities/{canonical_id}")
 def get_entity(canonical_id: str, _: bool = Depends(verify_api_key)):
-    """Get entity details with all source mappings."""
+    """Get entity details with all source mappings and available metrics per source."""
+    canonical_id = canonical_id.lower()
     conn = get_connection()
     cur = conn.cursor()
     
@@ -309,6 +402,17 @@ def get_entity(canonical_id: str, _: bool = Depends(verify_api_key)):
     """, (entity_id,))
     mappings = {r[0]: r[1] for r in cur.fetchall()}
     
+    available_metrics = {}
+    for source, source_id in mappings.items():
+        cur.execute("""
+            SELECT DISTINCT metric_name FROM metrics 
+            WHERE source = %s AND asset = %s
+            ORDER BY metric_name
+        """, (source, source_id))
+        metrics = [r[0] for r in cur.fetchall()]
+        if metrics:
+            available_metrics[source] = metrics
+    
     cur.close()
     conn.close()
     
@@ -318,7 +422,8 @@ def get_entity(canonical_id: str, _: bool = Depends(verify_api_key)):
         "symbol": row[3],
         "type": row[4],
         "sector": row[5],
-        "source_mappings": mappings
+        "source_mappings": mappings,
+        "available_metrics": available_metrics
     }
 
 
@@ -428,20 +533,40 @@ def get_latest(
 @app.get("/time-series")
 def get_time_series(
     _: bool = Depends(verify_api_key),
-    asset: str = Query(..., description="Asset ID or canonical ID (bitcoin, ethereum, solana)"),
+    asset: str = Query(..., description="Asset ID or canonical ID (bitcoin, ethereum, solana) - auto-resolves to source-specific ID"),
     metric: str = Query(..., description="Metric name - case insensitive"),
-    source: Optional[str] = Query(None, description="Filter by source - case insensitive"),
+    source: Optional[str] = Query(None, description="Filter by source - case insensitive, auto-selected if omitted"),
     start_date: Optional[date] = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(None, description="End date (YYYY-MM-DD)"),
     days: Optional[int] = Query(None, description="Number of days back from today"),
     limit: int = Query(1000, description="Max results")
 ):
-    """Get time series data for an asset/metric combination."""
+    """Get time series data for an asset/metric combination. Accepts canonical IDs (bitcoin, ethereum) and auto-resolves to source-specific IDs."""
     metric = normalize_metric(metric)
     source = normalize_source(source)
     
     conn = get_connection()
     cur = conn.cursor()
+    
+    original_asset = asset
+    source_mappings = get_source_mappings(asset, conn)
+    
+    if not source:
+        preferred = get_preferred_source_for_metric(metric)
+        if preferred:
+            source = preferred
+    
+    if source_mappings:
+        if source and source in source_mappings:
+            asset = source_mappings[source]
+        elif source:
+            pass
+        elif not source:
+            for preferred_source in ["coingecko", "artemis", "defillama", "velo", "alphavantage"]:
+                if preferred_source in source_mappings:
+                    asset = source_mappings[preferred_source]
+                    source = preferred_source
+                    break
     
     query = """
         SELECT pulled_at, value, source
@@ -475,7 +600,7 @@ def get_time_series(
     cur.close()
     conn.close()
     
-    return {
+    response = {
         "asset": asset,
         "metric": metric,
         "count": len(rows),
@@ -488,6 +613,15 @@ def get_time_series(
             for r in rows
         ]
     }
+    
+    if original_asset != asset or source_mappings:
+        response["_meta"] = {
+            "requested_asset": original_asset,
+            "resolved_asset": asset,
+            "resolved_source": source
+        }
+    
+    return response
 
 
 @app.get("/cross-source")
