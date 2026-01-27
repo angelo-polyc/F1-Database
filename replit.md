@@ -156,12 +156,22 @@ The `scheduler.py` runs continuously and executes pulls at specific times (5 min
 - **Artemis:** Daily at 00:05 UTC (APIs update at midnight UTC)
 - **DefiLlama:** Hourly at XX:05 UTC (APIs update on the hour)
 - **Velo:** Hourly at XX:05 UTC (real-time data, pulled alongside DefiLlama)
+- **CoinGecko:** Hourly at XX:05 UTC (market data)
+- **AlphaVantage:** Hourly at XX:05 UTC (equity data)
 
 All pulls run immediately on startup, then follow their scheduled times.
 
 Run manually: `python scheduler.py`
 Fresh start (clears all data first): `python scheduler.py --fresh`
 Production mode (no backfills): `python scheduler.py --no-backfill`
+
+### Gap-Free Backfill Logic
+When using `--fresh`, the scheduler ensures no gaps between backfill and live pulls:
+1. Records start time before backfills begin
+2. Runs full 3-year backfills for all 5 sources (DefiLlama, Artemis, CoinGecko, AlphaVantage, Velo)
+3. If backfills took 1+ hours, runs catch-up backfills for hourly sources (Velo, CoinGecko) to fill any gaps
+4. Runs initial live pulls for all sources
+5. Starts scheduled hourly/daily pulls
 
 ## Production Deployment
 
@@ -171,8 +181,8 @@ The project is configured for VM deployment with `--no-backfill` flag:
 - Uses the same production database (Neon-backed PostgreSQL)
 
 **To deploy:** Click the "Publish" button in Replit. The production scheduler will:
-1. Run initial pulls for all 3 sources immediately
-2. Continue on schedule: DefiLlama/Velo hourly at XX:05, Artemis daily at 00:05
+1. Run initial pulls for all 5 sources immediately
+2. Continue on schedule: DefiLlama/Velo/CoinGecko/AlphaVantage hourly at XX:05, Artemis daily at 00:05
 
 **To run backfills later:** After deploying, run backfills manually from the dev environment or add them to production when ready.
 

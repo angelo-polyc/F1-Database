@@ -35,13 +35,16 @@ def clear_all_data():
     conn.close()
     print("All data cleared successfully.")
 
-def run_backfill(source: str):
+def run_backfill(source: str, extra_args: list = []):
     """Run backfill script for a source."""
     script = f"backfill_{source}.py"
+    cmd = ["python", script]
+    if extra_args:
+        cmd.extend(extra_args)
     print(f"\n[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}] Starting {source} backfill...")
     try:
         result = subprocess.run(
-            ["python", script],
+            cmd,
             capture_output=False,
             timeout=14400
         )
@@ -184,9 +187,26 @@ def main():
         print("\n" + "=" * 60)
         print("RUNNING FULL BACKFILLS")
         print("=" * 60)
+        backfill_start = datetime.now(timezone.utc)
+        
         run_backfill("defillama")
         run_backfill("artemis")
+        run_backfill("coingecko")
+        run_backfill("alphavantage")
         run_backfill("velo")
+        
+        backfill_end = datetime.now(timezone.utc)
+        hours_elapsed = (backfill_end - backfill_start).total_seconds() / 3600
+        
+        if hours_elapsed >= 1:
+            print("\n" + "=" * 60)
+            print(f"CATCH-UP: Backfills took {hours_elapsed:.1f} hours")
+            print("Running catch-up for hourly sources to fill any gaps...")
+            print("=" * 60)
+            catchup_hours = int(hours_elapsed) + 2
+            run_backfill("velo", ["--days", "1"])
+            run_backfill("coingecko", ["--days", "1"])
+            print("Catch-up complete - no gaps between backfill and live pulls")
     else:
         print("\nSkipping backfills (--no-backfill flag set)")
     
