@@ -16,7 +16,12 @@ The system is built around a modular architecture, allowing easy integration of 
   - **Deduplication:** Utilizes `ON CONFLICT DO NOTHING` for backfills and `ON CONFLICT DO UPDATE` for live pulls to prevent duplicates and handle updates.
 - **Entity Master System:** Provides canonical IDs across different data sources through `entities` and `entity_source_ids` tables, enabling unified queries despite varying source ID formats.
 - **Metric Normalization:** A `v_normalized_metrics` view maps source-specific metric names to canonical names (e.g., Velo `CLOSE_PRICE` to `PRICE`).
-- **Scheduler (`scheduler.py`):** Automates data pulls at specific intervals (hourly for DefiLlama, Velo, CoinGecko, AlphaVantage; daily for Artemis). Includes robust gap-free backfill logic to ensure continuous data streams.
+- **Smart Scheduler (`scheduler.py`):** Self-healing data pipeline that ensures gap-free time series:
+  - On startup: Detects empty sources → runs full 3-year backfills
+  - On startup: Detects gaps → fills them automatically
+  - During operation: Hourly/daily pulls + periodic gap checks (every 6 hours)
+  - Deep gap scan: Checks full year of history for any missed data
+  - Flags: `--fresh` (clear all data), `--no-startup` (skip smart startup)
 - **Performance Optimizations:**
   - Parallel API requests using `ThreadPoolExecutor`.
   - HTTP connection pooling with `requests.Session` and `HTTPAdapter`.
@@ -40,9 +45,8 @@ The system is built around a modular architecture, allowing easy integration of 
 ## REST API (api.py)
 The REST API is designed for LLM access (Claude, ChatGPT) to enable AI-driven financial data analysis.
 
-**Architecture:** Combined server (`server.py`) routes requests on port 5000:
-- `/` → Streamlit Dashboard
-- `/api/*` → FastAPI REST API
+**Architecture:** FastAPI server (`server.py`) on port 5000:
+- `/api/*` → REST API endpoints
 
 **External URL:** `https://<domain>.replit.dev/api/...` (no port needed)
 
