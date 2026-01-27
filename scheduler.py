@@ -14,15 +14,13 @@ ARTEMIS_MINUTE = 5
 DEFILLAMA_MINUTE = 5
 VELO_MINUTE = 5  # Velo is real-time, pull alongside DefiLlama
 COINGECKO_MINUTE = 5  # CoinGecko hourly, same schedule as DefiLlama/Velo
-
-ALPHAVANTAGE_HOUR = 21  # 4:05 PM ET = 21:05 UTC (after market close)
-ALPHAVANTAGE_MINUTE = 5
+ALPHAVANTAGE_MINUTE = 5  # Alpha Vantage hourly (real-time API key)
 
 last_artemis_date = None
 last_defillama_hour = None
 last_velo_hour = None
 last_coingecko_hour = None
-last_alphavantage_date = None
+last_alphavantage_hour = None
 
 def clear_all_data():
     """Clear all metrics and pulls data for a fresh start."""
@@ -115,12 +113,12 @@ def should_run_coingecko(now_utc):
     return False
 
 def should_run_alphavantage(now_utc):
-    """Check if Alpha Vantage should run: daily at 21:05 UTC (4:05 PM ET after market close)."""
-    global last_alphavantage_date
+    """Check if Alpha Vantage should run: at minute 5 of every hour (real-time data)."""
+    global last_alphavantage_hour
     
-    if now_utc.hour == ALPHAVANTAGE_HOUR and now_utc.minute >= ALPHAVANTAGE_MINUTE:
-        today = now_utc.date()
-        if last_alphavantage_date != today:
+    if now_utc.minute >= ALPHAVANTAGE_MINUTE:
+        current_hour = (now_utc.date(), now_utc.hour)
+        if last_alphavantage_hour != current_hour:
             return True
     return False
 
@@ -150,7 +148,7 @@ def get_last_pull_time(source_name: str):
     return row[0] if row else None
 
 def main():
-    global last_artemis_date, last_defillama_hour, last_velo_hour, last_coingecko_hour, last_alphavantage_date
+    global last_artemis_date, last_defillama_hour, last_velo_hour, last_coingecko_hour, last_alphavantage_hour
     
     lock_fd = acquire_lock()
     if lock_fd is None:
@@ -172,7 +170,7 @@ def main():
     print(f"  DefiLlama: hourly at XX:{DEFILLAMA_MINUTE:02d} UTC")
     print(f"  Velo: hourly at XX:{VELO_MINUTE:02d} UTC")
     print(f"  CoinGecko: hourly at XX:{COINGECKO_MINUTE:02d} UTC")
-    print(f"  AlphaVantage: daily at {ALPHAVANTAGE_HOUR:02d}:{ALPHAVANTAGE_MINUTE:02d} UTC (weekdays, after market close)")
+    print(f"  AlphaVantage: hourly at XX:{ALPHAVANTAGE_MINUTE:02d} UTC (real-time API)")
     if fresh_start:
         print("  Mode: FRESH START (clearing all data)")
     if skip_backfill:
@@ -207,20 +205,15 @@ def main():
     run_pull("coingecko")
     last_coingecko_hour = (now_utc.date(), now_utc.hour)
     
-    last_av_pull = get_last_pull_time("alphavantage")
-    if last_av_pull and last_av_pull.date() == now_utc.date():
-        print(f"[AlphaVantage] Already pulled today at {last_av_pull.strftime('%H:%M:%S UTC')}, skipping initial pull")
-        last_alphavantage_date = now_utc.date()
-    else:
-        run_pull("alphavantage")
-        last_alphavantage_date = now_utc.date()
+    run_pull("alphavantage")
+    last_alphavantage_hour = (now_utc.date(), now_utc.hour)
     
     print(f"\n[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Scheduler running.")
     print(f"  Next Artemis pull: {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC tomorrow")
     print(f"  Next DefiLlama pull: XX:{DEFILLAMA_MINUTE:02d} UTC (next hour)")
     print(f"  Next Velo pull: XX:{VELO_MINUTE:02d} UTC (next hour)")
     print(f"  Next CoinGecko pull: XX:{COINGECKO_MINUTE:02d} UTC (next hour)")
-    print(f"  Next AlphaVantage pull: {ALPHAVANTAGE_HOUR:02d}:{ALPHAVANTAGE_MINUTE:02d} UTC")
+    print(f"  Next AlphaVantage pull: XX:{ALPHAVANTAGE_MINUTE:02d} UTC (next hour)")
     
     while True:
         now_utc = datetime.now(timezone.utc)
@@ -247,8 +240,8 @@ def main():
         
         if should_run_alphavantage(now_utc):
             run_pull("alphavantage")
-            last_alphavantage_date = now_utc.date()
-            print(f"[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Next AlphaVantage pull: {ALPHAVANTAGE_HOUR:02d}:{ALPHAVANTAGE_MINUTE:02d} UTC tomorrow")
+            last_alphavantage_hour = (now_utc.date(), now_utc.hour)
+            print(f"[{now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}] Next AlphaVantage pull: XX:{ALPHAVANTAGE_MINUTE:02d} UTC (next hour)")
         
         time.sleep(30)
 
