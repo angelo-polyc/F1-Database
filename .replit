@@ -33,7 +33,6 @@ outputType = "webview"
 [deployment]
 deploymentTarget = "vm"
 run = ["bash", "-c", "python server.py & python scheduler.py"]
-ignorePorts = true
 
 [[ports]]
 localPort = 5000
