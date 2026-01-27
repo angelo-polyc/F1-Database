@@ -1,0 +1,136 @@
+Current Design Issues for LLM Usage
+1. The Multi-ID Problem is the Biggest Issue
+This is where LLMs will fail constantly:
+SourceBitcoin IDEthereum IDArtemisbtcethDefiLlamabitcoinethereumCoinGeckobitcoinethereumVeloBTC_binance-futuresETH_binance-futures
+An LLM has to:
+
+Know which source to use for which metric
+Remember the correct ID format for that source
+Not confuse btc with bitcoin
+
+This guarantees errors. LLMs will write asset=bitcoin&source=artemis and get nothing back.
+2. Two-Step Lookups Required
+To query correctly, an LLM must:
+Step 1: GET /entities/bitcoin  → learn that Artemis uses "btc"
+Step 2: GET /time-series?asset=btc&metric=FEES&source=artemis
+Every extra step = more tokens, more latency, more failure modes.
+3. Implicit Source-Metric Relationships
+An LLM has to know that:
+
+TVL → only exists in DefiLlama
+FUNDING_RATE_AVG → only exists in Velo
+FEES → exists in both Artemis AND DefiLlama (different values!)
+
+There's no way to discover this without calling /metrics first.
+4. No Forgiveness for Minor Errors
+If an LLM sends metric=tvl instead of metric=TVL, does it fail? If it sends asset=Bitcoin instead of asset=bitcoin? Strict APIs break LLM workflows.
+
+Recommendations for LLM-Friendly Design
+Priority 1: Universal Canonical IDs
+Accept the canonical ID (bitcoin) for ALL endpoints and resolve internally:
+bash# Current (error-prone)
+GET /time-series?asset=btc&metric=FEES&source=artemis
+
+# LLM-friendly (API resolves the ID)
+GET /time-series?asset=bitcoin&metric=FEES&source=artemis
+The API should map bitcoin → btc for Artemis automatically. The source-specific IDs should be internal implementation details.
+Priority 2: Smart Defaults & Auto-Resolution
+If source is omitted, pick the best source for that metric automatically:
+bash# LLM just asks for what it wants
+GET /time-series?asset=bitcoin&metric=TVL&days=30
+
+# API knows TVL comes from DefiLlama, returns it
+Add a _meta field in the response showing what was resolved:
+json{
+  "_meta": {
+    "resolved_source": "defillama",
+    "resolved_asset_id": "bitcoin",
+    "metric": "TVL"
+  },
+  "data": [...]
+}
+Priority 3: Fuzzy Matching with Suggestions
+Accept common variations and return helpful errors:
+bashGET /time-series?asset=BTC&metric=fees
+
+# Instead of 404, return:
+{
+  "error": "Asset 'BTC' not found",
+  "suggestions": ["bitcoin", "btc-bitcoin"],
+  "did_you_mean": "bitcoin"
+}
+Priority 4: Single-Call Multi-Asset Endpoint
+LLMs often need comparisons. Allow batch queries:
+bash# Get TVL for multiple assets in one call
+GET /compare?assets=ethereum,solana,avalanche&metric=TVL&days=30
+This reduces a 3-call workflow to 1 call.
+Priority 5: Natural Language Endpoint (Optional but Powerful)
+Add a /query endpoint that parses intent:
+bashPOST /query
+{
+  "q": "Compare Ethereum and Solana fees over the last 90 days"
+}
+The API parses this into the structured query internally. This is the most LLM-friendly pattern because the LLM can just describe what it wants.
+Priority 6: Self-Describing Responses
+Always include context about what was returned:
+json{
+  "request": {
+    "asset": "bitcoin",
+    "metric": "PRICE", 
+    "source": "coingecko",
+    "period": "2025-10-28 to 2025-11-27"
+  },
+  "data_points": 30,
+  "unit": "USD",
+  "data": [...]
+}
+Priority 7: Metric Discovery in Entity Response
+When an LLM calls /entities/bitcoin, return what metrics are available for it:
+json{
+  "canonical_id": "bitcoin",
+  "available_metrics": {
+    "artemis": ["PRICE", "MC", "FEES", "REVENUE", "TXNS"],
+    "coingecko": ["PRICE", "MARKET_CAP", "VOLUME_24H"],
+    "velo": ["FUNDING_RATE_AVG", "DOLLAR_OI_CLOSE"]
+  }
+}
+```
+
+Now the LLM knows exactly what it can ask for in one call.
+
+---
+
+## Proposed Simplified Flow for LLMs
+
+**Current flow (4+ calls):**
+```
+1. GET /data-dictionary        → understand schema
+2. GET /entities?search=eth    → find entity
+3. GET /entities/ethereum      → get source mappings  
+4. GET /metrics?source=artemis → check metric exists
+5. GET /time-series?asset=eth&metric=FEES&source=artemis
+```
+
+**LLM-optimized flow (1-2 calls):**
+```
+1. GET /entities/ethereum      → returns available metrics per source
+2. GET /time-series?asset=ethereum&metric=FEES  → API auto-resolves
+```
+
+Or with natural language:
+```
+1. POST /query {"q": "Ethereum fees last 30 days"}
+
+Quick Wins (Minimal Code Changes)
+ChangeEffortImpactAccept canonical IDs everywhereMediumHighCase-insensitive parametersLowMediumAdd did_you_mean to errorsLowMediumAuto-select source when unambiguousMediumHighAdd available_metrics to entity responseLowHigh
+
+Summary
+Your API isn't badly designed—it's just designed for humans who read docs. For LLMs, the key principles are:
+
+One ID to rule them all - Don't make the caller manage ID mappings
+Fail helpfully - Suggest corrections instead of just 404
+Minimize round-trips - Every call is a failure opportunity
+Be forgiving - Accept reasonable variations
+Self-describe - Tell the caller what you returned and why
+
+Want me to sketch out a wrapper layer or FastAPI middleware that could add these LLM-friendly features on top of your existing API?
