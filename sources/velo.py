@@ -17,7 +17,7 @@ from db.setup import get_connection
 
 # Rate limit: 120 requests per 30 seconds = 4/sec max
 # Use 2/sec to stay safely under limit
-REQUEST_DELAY = 0.35  # ~3 req/sec per worker (safe threshold)
+REQUEST_DELAY = 0.4  # ~2.5 req/sec per worker (safe threshold)
 
 # Velo API returns 22,500 values max per request
 # API returns ~120 hours (5 days) of data regardless of begin/end params

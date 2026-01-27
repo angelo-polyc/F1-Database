@@ -315,7 +315,7 @@ def main():
     parser.add_argument('--top', type=int, help='Only backfill top N coins by importance')
     parser.add_argument('--dry-run', action='store_true', help='Preview without inserting')
     parser.add_argument('--delay', type=float, default=REQUEST_DELAY, help='Delay between requests in seconds')
-    parser.add_argument('--workers', type=int, default=2, help='Number of parallel workers (default: 2)')
+    parser.add_argument('--workers', type=int, default=3, help='Number of parallel workers (default: 3)')
     args = parser.parse_args()
     
     if not DATABASE_URL:
