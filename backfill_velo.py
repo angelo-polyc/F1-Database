@@ -40,7 +40,7 @@ API_KEY = os.environ.get("VELO_API_KEY")
 BASE_URL = "https://api.velo.xyz/api/v1"
 CONFIG_PATH = "velo_config.csv"
 
-REQUEST_DELAY = 0.5
+REQUEST_DELAY = 0.35
 MAX_RETRIES = 5
 BASE_BACKOFF = 1.5
 
