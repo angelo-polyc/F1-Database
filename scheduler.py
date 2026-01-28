@@ -77,18 +77,26 @@ def get_source_status():
     status = {}
     for source in SOURCE_CONFIG.keys():
         cur.execute("""
-            SELECT COUNT(*), MIN(pulled_at), MAX(pulled_at)
-            FROM metrics WHERE source = %s
+            SELECT COUNT(*), MIN(metric_date), MAX(metric_date), MAX(pulled_at)
+            FROM metrics WHERE source = %s AND metric_date IS NOT NULL
         """, (source,))
         row = cur.fetchone()
-        if row:
+        if row and row[0] > 0:
             status[source] = {
-                'count': row[0] or 0,
+                'count': row[0],
                 'earliest': row[1],
                 'latest': row[2],
+                'last_pull': row[3],
             }
         else:
-            status[source] = {'count': 0, 'earliest': None, 'latest': None}
+            cur.execute("SELECT COUNT(*), MAX(pulled_at) FROM metrics WHERE source = %s", (source,))
+            fallback = cur.fetchone()
+            status[source] = {
+                'count': fallback[0] or 0,
+                'earliest': None,
+                'latest': None,
+                'last_pull': fallback[1],
+            }
     
     cur.close()
     conn.close()
@@ -99,6 +107,16 @@ def detect_gaps(source: str, days_to_check: int = 7):
     """
     Detect gaps in data for a source.
     Returns list of (start_date, end_date) tuples for missing periods.
+    
+    Design: Gap detection uses metric_date (DATE) for all sources, regardless of
+    granularity. This means:
+    - Daily sources: gaps detected at day level, backfills fetch daily data
+    - Hourly sources: gaps detected at day level, backfills fetch all hours for missing days
+    
+    This is intentional because:
+    1. If any hours are missing from a day, we backfill the entire day
+    2. Backfill scripts handle granularity (ON CONFLICT skips existing records)
+    3. Simpler, more reliable gap detection with fewer false positives
     """
     config = SOURCE_CONFIG[source]
     granularity = config['granularity']
@@ -116,10 +134,11 @@ def detect_gaps(source: str, days_to_check: int = 7):
                 )::date AS expected_date
             ),
             actual_dates AS (
-                SELECT DISTINCT DATE(pulled_at) as actual_date
+                SELECT DISTINCT metric_date as actual_date
                 FROM metrics
                 WHERE source = %s
-                AND pulled_at >= CURRENT_DATE - INTERVAL '%s days'
+                AND metric_date >= CURRENT_DATE - INTERVAL '%s days'
+                AND metric_date IS NOT NULL
             )
             SELECT expected_date
             FROM date_range
@@ -129,24 +148,25 @@ def detect_gaps(source: str, days_to_check: int = 7):
         """, (days_to_check, source, days_to_check))
     else:
         cur.execute("""
-            WITH hour_range AS (
+            WITH date_range AS (
                 SELECT generate_series(
-                    DATE_TRUNC('hour', NOW() - INTERVAL '%s days'),
-                    DATE_TRUNC('hour', NOW() - INTERVAL '1 hour'),
-                    INTERVAL '1 hour'
-                ) AS expected_hour
+                    CURRENT_DATE - INTERVAL '%s days',
+                    CURRENT_DATE - INTERVAL '1 day',
+                    INTERVAL '1 day'
+                )::date AS expected_date
             ),
-            actual_hours AS (
-                SELECT DISTINCT DATE_TRUNC('hour', pulled_at) as actual_hour
+            actual_dates AS (
+                SELECT DISTINCT metric_date as actual_date
                 FROM metrics
                 WHERE source = %s
-                AND pulled_at >= NOW() - INTERVAL '%s days'
+                AND metric_date >= CURRENT_DATE - INTERVAL '%s days'
+                AND metric_date IS NOT NULL
             )
-            SELECT expected_hour
-            FROM hour_range
-            LEFT JOIN actual_hours ON hour_range.expected_hour = actual_hours.actual_hour
-            WHERE actual_hours.actual_hour IS NULL
-            ORDER BY expected_hour
+            SELECT expected_date
+            FROM date_range
+            LEFT JOIN actual_dates ON date_range.expected_date = actual_dates.actual_date
+            WHERE actual_dates.actual_date IS NULL
+            ORDER BY expected_date
         """, (days_to_check, source, days_to_check))
     
     missing = [row[0] for row in cur.fetchall()]
@@ -161,7 +181,7 @@ def detect_gaps(source: str, days_to_check: int = 7):
     gap_end = missing[0]
     
     for i in range(1, len(missing)):
-        expected_next = gap_end + (timedelta(days=1) if granularity == 'daily' else timedelta(hours=1))
+        expected_next = gap_end + timedelta(days=1)
         if missing[i] == expected_next:
             gap_end = missing[i]
         else:
@@ -306,10 +326,10 @@ def smart_startup():
                 print(f"  {source}: {info['count']:,} records, but only from {info['earliest'].date()} - needs backfill")
                 sources_needing_backfill.append(source)
             else:
-                latest = info['latest']
-                if latest and latest.tzinfo is None:
-                    latest = latest.replace(tzinfo=timezone.utc)
-                age_hours = (now - latest).total_seconds() / 3600 if latest else float('inf')
+                last_pull = info.get('last_pull')
+                if last_pull and last_pull.tzinfo is None:
+                    last_pull = last_pull.replace(tzinfo=timezone.utc)
+                age_hours = (now - last_pull).total_seconds() / 3600 if last_pull else float('inf')
                 threshold = 2 if config['granularity'] == 'hourly' else 26
                 
                 if age_hours > threshold:
@@ -319,10 +339,10 @@ def smart_startup():
                     print(f"  {source}: {info['count']:,} records, up to date", flush=True)
                     sources_ok.append(source)
         else:
-            latest = info['latest']
-            if latest and latest.tzinfo is None:
-                latest = latest.replace(tzinfo=timezone.utc)
-            age_hours = (now - latest).total_seconds() / 3600 if latest else float('inf')
+            last_pull = info.get('last_pull')
+            if last_pull and last_pull.tzinfo is None:
+                last_pull = last_pull.replace(tzinfo=timezone.utc)
+            age_hours = (now - last_pull).total_seconds() / 3600 if last_pull else float('inf')
             threshold = 2 if config['granularity'] == 'hourly' else 26
             
             if age_hours > threshold:
