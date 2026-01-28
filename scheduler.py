@@ -443,24 +443,37 @@ def should_run_alphavantage(now_utc):
 def acquire_lock():
     try:
         if os.path.exists(LOCK_FILE):
+            print(f"Found existing lock file, checking...")
             try:
                 with open(LOCK_FILE, 'r') as f:
-                    old_pid = int(f.read().strip())
-                try:
-                    os.kill(old_pid, 0)
-                except OSError:
-                    print(f"Stale lock file found (PID {old_pid} not running), removing...")
+                    content = f.read().strip()
+                    old_pid = int(content) if content else 0
+                
+                if old_pid > 0:
+                    try:
+                        os.kill(old_pid, 0)
+                        print(f"PID {old_pid} is still running")
+                    except OSError:
+                        print(f"Stale lock (PID {old_pid} dead), removing...")
+                        os.remove(LOCK_FILE)
+                else:
+                    print("Empty lock file, removing...")
                     os.remove(LOCK_FILE)
-            except (ValueError, IOError):
-                print("Invalid lock file, removing...")
-                os.remove(LOCK_FILE)
+            except (ValueError, IOError) as e:
+                print(f"Invalid lock file ({e}), removing...")
+                try:
+                    os.remove(LOCK_FILE)
+                except:
+                    pass
         
         lock_fd = open(LOCK_FILE, 'w')
         fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         lock_fd.write(str(os.getpid()))
         lock_fd.flush()
+        print(f"Lock acquired with PID {os.getpid()}")
         return lock_fd
-    except (IOError, OSError):
+    except (IOError, OSError) as e:
+        print(f"Failed to acquire lock: {e}")
         return None
 
 
