@@ -982,7 +982,7 @@ def admin_trigger_backfill(
         raise HTTPException(status_code=400, detail=f"Invalid source. Valid: {valid_sources}")
     
     script = f"backfill_{source}.py"
-    cmd = ["python", script]
+    cmd = ["python", "-u", script]  # -u for unbuffered output
     
     if days:
         cmd.extend(["--days", str(days)])
@@ -993,7 +993,8 @@ def admin_trigger_backfill(
         def run_backfill():
             backfill_status[source] = {"status": "running", "started": datetime.now().isoformat()}
             try:
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=50400)
+                # capture_output=False so we can see progress in deployment logs
+                result = subprocess.run(cmd, capture_output=False, timeout=50400)
                 backfill_status[source] = {
                     "status": "completed" if result.returncode == 0 else "failed",
                     "exit_code": result.returncode,

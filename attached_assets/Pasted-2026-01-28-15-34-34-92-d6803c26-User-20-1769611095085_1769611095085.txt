@@ -1,0 +1,160 @@
+2026-01-28 15:34:34.92
+d6803c26
+User
+============================================================
+2026-01-28 15:34:34.92
+d6803c26
+User
+============================================================
+2026-01-28 15:34:34.92
+d6803c26
+User
+[2026-01-28 14:34:34 UTC] Starting sequential backfill for artemis...
+2026-01-28 15:34:34.92
+d6803c26
+User
+coingecko: EMPTY - needs full backfill
+2026-01-28 15:34:34.92
+d6803c26
+User
+alphavantage: EMPTY - needs full backfill
+2026-01-28 15:34:35.42
+d6803c26
+User
+======================================================================
+2026-01-28 15:34:35.42
+d6803c26
+User
+======================================================================
+2026-01-28 15:34:35.42
+d6803c26
+User
+ARTEMIS HISTORICAL BACKFILL
+2026-01-28 15:34:35.45
+d6803c26
+User
+Metrics to backfill: 27
+2026-01-28 15:34:35.45
+d6803c26
+User
+Date chunks: 3 (max 365 days each)
+2026-01-28 15:34:35.45
+d6803c26
+User
+Date range: 2023-01-28 to 2026-01-27
+2026-01-28 15:34:35.45
+d6803c26
+User
+Assets to backfill: 297
+2026-01-28 15:34:35.45
+d6803c26
+User
+======================================================================
+2026-01-28 15:34:35.95
+d6803c26
+User
+Total fetch tasks: 222
+2026-01-28 15:34:35.95
+d6803c26
+User
+Using 1 parallel workers, 30s timeout
+2026-01-28 15:34:35.95
+d6803c26
+User
+======================================================================
+2026-01-28 15:35:09.83
+6f8f0ede
+System
+starting up user application
+2026-01-28 15:35:09.83
+6f8f0ede
+System
+metasidecar: loaded enterprise status from environment is_enterprise=false
+2026-01-28 15:35:09.83
+6f8f0ede
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2026-01-28 15:35:23.30
+6f8f0ede
+User
+API-ONLY MODE: Scheduler disabled
+2026-01-28 15:35:23.56
+6f8f0ede
+User
+INFO: Waiting for application startup.
+2026-01-28 15:35:23.56
+6f8f0ede
+User
+INFO: Started server process [18]
+2026-01-28 15:35:23.56
+6f8f0ede
+User
+INFO: Application startup complete.
+2026-01-28 15:35:23.56
+6f8f0ede
+User
+INFO: Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+2026-01-28 15:35:27.36
+6f8f0ede
+User
+INFO: 35.191.120.30:0 - "GET / HTTP/1.1" 200 OK
+2026-01-28 15:35:28.28
+6f8f0ede
+User
+INFO: 35.191.87.109:0 - "GET /stats HTTP/1.1" 200 OK
+2026-01-28 15:35:36.48
+6f8f0ede
+User
+INFO: 35.191.76.171:0 - "POST /admin/backfill/artemis?background=true HTTP/1.1" 200 OK
+2026-01-28 15:35:48.78
+6f8f0ede
+User
+INFO: 35.191.73.243:0 - "GET /admin/backfill-status/artemis HTTP/1.1" 200 OK
+2026-01-28 15:35:49.49
+6f8f0ede
+User
+INFO: 35.191.76.155:0 - "GET /sources HTTP/1.1" 200 OK
+2026-01-28 15:36:11.34
+6f8f0ede
+User
+INFO: 35.191.84.237:0 - "GET /admin/backfill-status/artemis HTTP/1.1" 200 OK
+2026-01-28 15:36:12.35
+6f8f0ede
+User
+INFO: 35.191.82.96:0 - "GET /stats HTTP/1.1" 200 OK
+2026-01-28 15:36:52.33
+6f8f0ede
+User
+INFO: 35.191.80.65:0 - "GET /admin/backfill-status/artemis HTTP/1.1" 200 OK
+2026-01-28 15:36:53.35
+6f8f0ede
+User
+INFO: 35.191.74.21:0 - "GET /stats HTTP/1.1" 200 OK
+2026-01-28 15:36:53.96
+6f8f0ede
+User
+INFO: 35.191.113.171:0 - "GET /sources HTTP/1.1" 200 OK
+2026-01-28 15:37:38.28
+6f8f0ede
+User
+INFO: 35.191.75.51:0 - "GET /admin/backfill-status/artemis HTTP/1.1" 200 OK
+2026-01-28 15:37:39.38
+6f8f0ede
+User
+INFO: 35.191.76.25:0 - "GET /stats HTTP/1.1" 200 OK
+2026-01-28 15:37:39.38
+6f8f0ede
+User
+INFO: 35.191.76.25:0 - "GET /stats HTTP/1.1" 200 OK
+2026-01-28 15:37:39.38
+6f8f0ede
+User
+INFO: 35.191.76.25:0 - "GET /stats HTTP/1.1" 200 OK
+2026-01-28 15:38:00.57
+6f8f0ede
+User
+INFO: 35.191.73.140:0 - "GET /admin/backfill-status/artemis HTTP/1.1" 200 OK
+2026-01-28 15:38:02.00
+6f8f0ede
+User
+INFO: 35.191.79.250:0 - "GET /stats HTTP/1.1" 200 OK
