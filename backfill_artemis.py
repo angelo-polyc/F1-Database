@@ -26,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # Rate limiting: 2 requests per second max (enforced at execution time)
 REQUEST_DELAY = 0.5  # Minimum delay between API calls
 BATCH_SIZE = 50
-MAX_WORKERS = 1  # Single worker to prevent resource exhaustion on constrained VMs
+MAX_WORKERS = 2  # Safe with connection cycling after each batch
 MAX_DAYS_PER_CHUNK = 365
 MAX_RETRIES = 2  # Reduced from 3
 RETRY_DELAY = 2
