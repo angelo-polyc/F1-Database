@@ -1,0 +1,156 @@
+2026-01-28 15:28:43.38
+d6803c26
+System
+metasidecar: loaded enterprise status from environment is_enterprise=false
+2026-01-28 15:28:43.38
+d6803c26
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2026-01-28 15:28:50.80
+d6803c26
+User
+SMART DATA PIPELINE SCHEDULER
+2026-01-28 15:28:50.80
+d6803c26
+User
+============================================================
+2026-01-28 15:28:50.80
+d6803c26
+User
+============================================================
+2026-01-28 15:28:50.80
+d6803c26
+User
+[2026-01-28 14:28:50 UTC] Setting up database (tables, entities, views)...
+2026-01-28 15:28:54.75
+d6803c26
+User
+Seeding entity data...
+2026-01-28 15:28:55.11
+d6803c26
+User
+Entity seed data loaded successfully
+2026-01-28 15:28:55.11
+d6803c26
+User
+Creating views...
+2026-01-28 15:28:55.34
+d6803c26
+User
+Views created successfully
+2026-01-28 15:28:55.34
+d6803c26
+User
+CoinGecko: hourly at XX:05 UTC
+2026-01-28 15:28:55.34
+d6803c26
+User
+Artemis: daily at 00:05 UTC
+2026-01-28 15:28:55.34
+d6803c26
+User
+AlphaVantage: hourly at XX:05 UTC
+2026-01-28 15:28:55.34
+d6803c26
+User
+SMART STARTUP - ANALYZING DATA STATUS
+2026-01-28 15:28:55.34
+d6803c26
+User
+Database setup complete.
+2026-01-28 15:28:55.34
+d6803c26
+User
+Velo: hourly at XX:05 UTC
+2026-01-28 15:28:55.34
+d6803c26
+User
+Schedule:
+2026-01-28 15:28:55.34
+d6803c26
+User
+============================================================
+2026-01-28 15:28:55.34
+d6803c26
+User
+DefiLlama: hourly at XX:05 UTC
+2026-01-28 15:28:55.34
+d6803c26
+User
+Gap Check: every 6 hours
+2026-01-28 15:28:55.34
+d6803c26
+User
+============================================================
+2026-01-28 15:28:56.81
+d6803c26
+User
+defillama: EMPTY - needs full backfill
+2026-01-28 15:28:56.81
+d6803c26
+User
+artemis: EMPTY - needs full backfill
+2026-01-28 15:28:56.81
+d6803c26
+User
+velo: EMPTY - needs full backfill
+2026-01-28 15:28:56.82
+d6803c26
+User
+============================================================
+2026-01-28 15:28:56.82
+d6803c26
+User
+============================================================
+2026-01-28 15:28:56.82
+d6803c26
+User
+RUNNING FULL BACKFILLS FOR 5 SOURCE(S) SEQUENTIALLY
+2026-01-28 15:28:56.82
+d6803c26
+User
+[2026-01-28 14:28:56 UTC] Starting sequential backfill for artemis...
+2026-01-28 15:28:56.82
+d6803c26
+User
+[2026-01-28 14:28:56 UTC] Starting artemis backfill...
+2026-01-28 15:28:56.82
+d6803c26
+User
+alphavantage: EMPTY - needs full backfill
+2026-01-28 15:28:56.82
+d6803c26
+User
+coingecko: EMPTY - needs full backfill
+2026-01-28 15:28:58.52
+d6803c26
+User
+======================================================================
+2026-01-28 15:28:58.53
+d6803c26
+User
+ARTEMIS HISTORICAL BACKFILL
+2026-01-28 15:28:58.53
+d6803c26
+User
+======================================================================
+2026-01-28 15:28:58.56
+d6803c26
+User
+Date chunks: 3 (max 365 days each)
+2026-01-28 15:28:58.56
+d6803c26
+User
+Date range: 2023-01-28 to 2026-01-27
+2026-01-28 15:28:58.56
+d6803c26
+User
+Assets to backfill: 297
+2026-01-28 15:28:58.56
+d6803c26
+User
+Metrics to backfill: 27
+2026-01-28 15:28:58.56
+d6803c26
+User
+======================================================================

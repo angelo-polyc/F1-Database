@@ -32,7 +32,7 @@ outputType = "webview"
 
 [deployment]
 deploymentTarget = "vm"
-run = ["python", "-u", "scheduler.py"]
+run = ["bash", "-c", "API_ONLY=true python -u server.py"]
 
 [[ports]]
 localPort = 5000
