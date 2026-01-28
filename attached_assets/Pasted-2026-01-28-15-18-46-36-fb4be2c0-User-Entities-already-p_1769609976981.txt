@@ -1,0 +1,159 @@
+2026-01-28 15:18:46.36
+fb4be2c0
+User
+Entities already populated (985 records)
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+Mode: FRESH START (clearing all data)
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+Artemis: daily at 00:05 UTC
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+Database setup complete.
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+CLEARING ALL DATA FOR FRESH START
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+Velo: hourly at XX:05 UTC
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+Views created successfully
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+CoinGecko: hourly at XX:05 UTC
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+============================================================
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+DefiLlama: hourly at XX:05 UTC
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+============================================================
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+Schedule:
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+Gap Check: every 6 hours
+2026-01-28 15:18:46.55
+fb4be2c0
+User
+AlphaVantage: hourly at XX:05 UTC
+2026-01-28 15:18:47.19
+fb4be2c0
+User
+All data cleared successfully.
+2026-01-28 15:18:47.19
+fb4be2c0
+User
+============================================================
+2026-01-28 15:18:47.19
+fb4be2c0
+User
+============================================================
+2026-01-28 15:18:47.19
+fb4be2c0
+User
+SMART STARTUP - ANALYZING DATA STATUS
+2026-01-28 15:18:48.20
+fb4be2c0
+User
+velo: EMPTY - needs full backfill
+2026-01-28 15:18:48.20
+fb4be2c0
+User
+alphavantage: EMPTY - needs full backfill
+2026-01-28 15:18:48.20
+fb4be2c0
+User
+============================================================
+2026-01-28 15:18:48.20
+fb4be2c0
+User
+============================================================
+2026-01-28 15:18:48.20
+fb4be2c0
+User
+[2026-01-28 14:18:48 UTC] Starting artemis backfill...
+2026-01-28 15:18:48.20
+fb4be2c0
+User
+coingecko: EMPTY - needs full backfill
+2026-01-28 15:18:48.20
+fb4be2c0
+User
+artemis: EMPTY - needs full backfill
+2026-01-28 15:18:48.20
+fb4be2c0
+User
+defillama: EMPTY - needs full backfill
+2026-01-28 15:18:48.20
+fb4be2c0
+User
+RUNNING FULL BACKFILLS FOR 5 SOURCE(S) SEQUENTIALLY
+2026-01-28 15:18:48.20
+fb4be2c0
+User
+[2026-01-28 14:18:48 UTC] Starting sequential backfill for artemis...
+2026-01-28 15:18:49.38
+fb4be2c0
+User
+======================================================================
+2026-01-28 15:18:49.38
+fb4be2c0
+User
+ARTEMIS HISTORICAL BACKFILL
+2026-01-28 15:18:49.38
+fb4be2c0
+User
+======================================================================
+2026-01-28 15:18:49.41
+fb4be2c0
+User
+Assets to backfill: 297
+2026-01-28 15:18:49.41
+fb4be2c0
+User
+Date range: 2023-01-28 to 2026-01-27
+2026-01-28 15:18:49.41
+fb4be2c0
+User
+Date chunks: 3 (max 365 days each)
+2026-01-28 15:18:49.41
+fb4be2c0
+User
+Metrics to backfill: 27
+2026-01-28 15:18:49.41
+fb4be2c0
+User
+======================================================================
+2026-01-28 15:18:49.91
+fb4be2c0
+User
+Total fetch tasks: 222
+2026-01-28 15:18:49.91
+fb4be2c0
+User
+======================================================================
+2026-01-28 15:18:49.91
+fb4be2c0
+User
+Using 2 parallel workers, 30s timeout
+2026-01-28 15:19:09.17
+fb4be2c0
+System
