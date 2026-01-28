@@ -442,6 +442,19 @@ def should_run_alphavantage(now_utc):
 
 def acquire_lock():
     try:
+        if os.path.exists(LOCK_FILE):
+            try:
+                with open(LOCK_FILE, 'r') as f:
+                    old_pid = int(f.read().strip())
+                try:
+                    os.kill(old_pid, 0)
+                except OSError:
+                    print(f"Stale lock file found (PID {old_pid} not running), removing...")
+                    os.remove(LOCK_FILE)
+            except (ValueError, IOError):
+                print("Invalid lock file, removing...")
+                os.remove(LOCK_FILE)
+        
         lock_fd = open(LOCK_FILE, 'w')
         fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         lock_fd.write(str(os.getpid()))
