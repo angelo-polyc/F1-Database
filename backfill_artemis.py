@@ -13,6 +13,7 @@ Usage:
 """
 
 import os
+import gc
 import csv
 import time
 import argparse
@@ -25,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # Rate limiting: 2 requests per second max (enforced at execution time)
 REQUEST_DELAY = 0.5  # Minimum delay between API calls
 BATCH_SIZE = 50
-MAX_WORKERS = 2  # Reduced to avoid burst
+MAX_WORKERS = 1  # Single worker to prevent resource exhaustion on constrained VMs
 MAX_DAYS_PER_CHUNK = 365
 MAX_RETRIES = 2  # Reduced from 3
 RETRY_DELAY = 2
@@ -334,7 +335,7 @@ def main():
                 else:
                     failed_tasks += 1
                 
-                # Batch commit every DB_BATCH_SIZE tasks or at the end
+                # Batch commit every 500 records or at the end
                 if len(pending_records) >= 500 or completed == len(fetch_tasks):
                     if pending_records:
                         cur.executemany('''
@@ -344,6 +345,13 @@ def main():
                             DO UPDATE SET value = EXCLUDED.value, metric_date = EXCLUDED.metric_date
                         ''', pending_records)
                         conn.commit()
+                        # Close and reopen connection to prevent resource exhaustion
+                        cur.close()
+                        conn.close()
+                        gc.collect()
+                        conn = psycopg2.connect(os.environ['DATABASE_URL'], connect_timeout=30)
+                        cur = conn.cursor()
+                        cur.execute("SET statement_timeout = '60s'")
                         pending_records = []
                 
                 # Progress logging every 10 tasks for visibility
