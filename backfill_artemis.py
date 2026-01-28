@@ -18,15 +18,21 @@ import time
 import argparse
 import requests
 import psycopg2
+import threading
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-REQUEST_DELAY = 0.15
+# Rate limiting: 2 requests per second max (enforced at execution time)
+REQUEST_DELAY = 0.5  # Minimum delay between API calls
 BATCH_SIZE = 50
-MAX_WORKERS = 4
+MAX_WORKERS = 2  # Reduced to avoid burst
 MAX_DAYS_PER_CHUNK = 365
 MAX_RETRIES = 3
 RETRY_DELAY = 2
+
+# Thread-safe rate limiter
+_rate_lock = threading.Lock()
+_last_request_time = 0
 
 EXCLUDED_METRICS = {
     "VOLATILITY_90D_ANN",
@@ -104,7 +110,21 @@ def load_config():
     return pull_config
 
 
+def rate_limit():
+    """Enforce rate limiting between API calls (thread-safe)."""
+    global _last_request_time
+    with _rate_lock:
+        now = time.time()
+        elapsed = now - _last_request_time
+        if elapsed < REQUEST_DELAY:
+            time.sleep(REQUEST_DELAY - elapsed)
+        _last_request_time = time.time()
+
+
 def fetch_historical(api_key, metric, symbols, start_date, end_date):
+    # Enforce rate limit BEFORE making the request
+    rate_limit()
+    
     url = f"https://api.artemisxyz.com/data/{metric.lower()}/"
     params = {
         'symbols': ','.join(symbols),
@@ -120,12 +140,15 @@ def fetch_historical(api_key, metric, symbols, start_date, end_date):
             if resp.status_code == 200 and resp.text.strip():
                 return resp.json()
             elif resp.status_code == 429:
-                wait_time = RETRY_DELAY * (attempt + 1)
+                wait_time = RETRY_DELAY * (attempt + 2)  # Longer backoff for rate limit
+                print(f"    Rate limited on {metric}, waiting {wait_time}s...")
                 time.sleep(wait_time)
                 continue
             elif resp.status_code == 400:
+                print(f"    Bad request for {metric}: {resp.text[:100]}")
                 return None
             else:
+                print(f"    API error {resp.status_code} for {metric}, retrying...")
                 if attempt < MAX_RETRIES - 1:
                     time.sleep(RETRY_DELAY)
                 continue
@@ -284,12 +307,13 @@ def main():
         return []
     
     completed = 0
+    failed_tasks = 0
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {}
         for task in fetch_tasks:
             future = executor.submit(fetch_task, task)
             futures[future] = task
-            time.sleep(REQUEST_DELAY)
+            # No delay here - rate limiting is enforced in fetch_historical()
         
         for future in as_completed(futures):
             completed += 1
@@ -304,15 +328,18 @@ def main():
                     ''', records)
                     conn.commit()
                     total_records += len(records)
+                else:
+                    failed_tasks += 1
                 
-                if completed % 50 == 0 or completed == len(fetch_tasks):
+                if completed % 25 == 0 or completed == len(fetch_tasks):
                     elapsed = time.time() - start_time
                     rate = total_records / elapsed if elapsed > 0 else 0
                     pct = completed / len(fetch_tasks) * 100
                     print(f"  [{pct:5.1f}%] {completed}/{len(fetch_tasks)} tasks, "
-                          f"{total_records:,} records, {rate:.0f} rec/sec")
+                          f"{total_records:,} records, {failed_tasks} empty, {rate:.0f} rec/sec")
             except Exception as e:
                 errors += 1
+                failed_tasks += 1
                 task = futures[future]
                 print(f"  Error on {task[0]}: {e}")
     
@@ -324,6 +351,7 @@ def main():
     print("=" * 70)
     print(f"Total records: {total_records:,}")
     print(f"API calls: {api_calls}")
+    print(f"Tasks with no data: {failed_tasks}")
     print(f"Errors: {errors}")
     print(f"Time: {elapsed:.0f}s ({elapsed/60:.1f} min)")
     if elapsed > 0:
