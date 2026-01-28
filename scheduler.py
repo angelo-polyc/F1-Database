@@ -49,7 +49,7 @@ SOURCE_CONFIG = {
         'backfill_script': 'backfill_coingecko.py',
     },
     'alphavantage': {
-        'granularity': 'daily',
+        'granularity': 'hourly',
         'lookback_years': 3,
         'backfill_script': 'backfill_alphavantage.py',
     },

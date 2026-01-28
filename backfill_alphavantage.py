@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Alpha Vantage Historical Backfill Script
+Alpha Vantage Historical Backfill Script (Hourly)
 
-Backfills daily OHLCV data for equities (crypto-related stocks like MSTR, COIN, etc.)
-from Alpha Vantage API for specified date ranges.
+Backfills hourly OHLCV data for equities (crypto-related stocks like MSTR, COIN, etc.)
+from Alpha Vantage API using TIME_SERIES_INTRADAY with 60min interval.
 
 Usage:
     python backfill_alphavantage.py                              # Default: 3 years
@@ -13,14 +13,13 @@ Usage:
     python backfill_alphavantage.py --dry-run                    # Preview without inserting
 
 Note: 
-    - Free tier: 25 API calls/day (very limited for backfill)
+    - TIME_SERIES_INTRADAY is a premium endpoint
+    - Each month requires a separate API call per ticker
+    - 3 years = 36 months per ticker
     - Premium tiers provide higher rate limits
-    - Each ticker requires 1 API call (full history returned per call)
-    - 20+ years of historical data available
 
-API Metrics (direct from TIME_SERIES_DAILY_ADJUSTED):
-    - OPEN, HIGH, LOW, CLOSE, ADJUSTED_CLOSE, VOLUME
-    - DIVIDEND_AMOUNT, SPLIT_COEFFICIENT
+API Metrics (from TIME_SERIES_INTRADAY):
+    - OPEN, HIGH, LOW, CLOSE, VOLUME
 """
 
 import os
@@ -30,41 +29,26 @@ import argparse
 import requests
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict
+from dateutil.relativedelta import relativedelta
 
 from db.setup import get_connection
 
 
-# ============================================================================
-# CONFIGURATION
-# ============================================================================
-
-# Rate limiting (conservative for premium tier: ~24 req/min)
-REQUEST_DELAY = 2.5  # seconds between requests
-
-# Retry configuration
+REQUEST_DELAY = 2.5
 MAX_RETRIES = 3
-RETRY_DELAY = 60  # seconds to wait on rate limit
+RETRY_DELAY = 60
 
-# Metrics to extract (all directly from API - no client-side calculations)
-METRICS = [
-    'OPEN', 'HIGH', 'LOW', 'CLOSE', 'ADJUSTED_CLOSE', 
-    'VOLUME', 'DIVIDEND_AMOUNT', 'SPLIT_COEFFICIENT'
-]
+METRICS = ['OPEN', 'HIGH', 'LOW', 'CLOSE', 'VOLUME']
 
-# Default backfill: 3 years
 DEFAULT_DAYS = 365 * 3
 
 
-# ============================================================================
-# ALPHA VANTAGE BACKFILL SOURCE CLASS
-# ============================================================================
-
 class AlphaVantageBackfillSource:
     """
-    Alpha Vantage historical backfill source.
+    Alpha Vantage historical backfill source for hourly data.
     
-    Pulls daily OHLCV data for equities using TIME_SERIES_DAILY_ADJUSTED
-    endpoint with full output size (20+ years of history).
+    Uses TIME_SERIES_INTRADAY with interval=60min and month parameter
+    to fetch historical hourly data month by month.
     """
     
     @property
@@ -111,18 +95,28 @@ class AlphaVantageBackfillSource:
         
         return tickers
     
-    def fetch_full_history(self, symbol: str) -> Optional[Dict]:
+    def fetch_intraday_month(self, symbol: str, month: str) -> Optional[Dict]:
         """
-        Fetch full historical daily data for a symbol.
+        Fetch hourly intraday data for a symbol for a specific month.
         
-        Uses TIME_SERIES_DAILY_ADJUSTED with outputsize=full to get
-        20+ years of history including split/dividend adjustments.
+        Uses TIME_SERIES_INTRADAY with interval=60min and month parameter.
+        
+        Args:
+            symbol: Stock ticker symbol
+            month: Month in YYYY-MM format
+        
+        Returns:
+            Dict of timestamp -> OHLCV data, or None on error
         """
         params = {
-            "function": "TIME_SERIES_DAILY_ADJUSTED",
+            "function": "TIME_SERIES_INTRADAY",
             "symbol": symbol,
-            "apikey": self.api_key,
-            "outputsize": "full"
+            "interval": "60min",
+            "month": month,
+            "outputsize": "full",
+            "adjusted": "true",
+            "extended_hours": "true",
+            "apikey": self.api_key
         }
         
         for attempt in range(MAX_RETRIES):
@@ -135,30 +129,29 @@ class AlphaVantageBackfillSource:
                 data = response.json()
                 
                 if "Error Message" in data:
-                    print(f"API Error - {data['Error Message']}")
+                    print(f"    API Error for {month}: {data['Error Message'][:50]}")
                     return None
                 
                 if "Note" in data:
-                    print(f"Rate limit hit, waiting {RETRY_DELAY}s...")
+                    print(f"    Rate limit hit, waiting {RETRY_DELAY}s...")
                     time.sleep(RETRY_DELAY)
                     continue
                 
                 if "Information" in data:
-                    print(f"API Info - {data['Information']}")
+                    print(f"    API Info: {data['Information'][:50]}")
                     if attempt < MAX_RETRIES - 1:
                         time.sleep(RETRY_DELAY)
                         continue
                     return None
                 
-                time_series = data.get("Time Series (Daily)", {})
+                time_series = data.get("Time Series (60min)", {})
                 if not time_series:
-                    print("No time series data")
                     return None
                 
                 return time_series
                 
             except requests.exceptions.RequestException as e:
-                print(f"Request failed - {e}")
+                print(f"    Request failed: {e}")
                 if attempt < MAX_RETRIES - 1:
                     time.sleep(5)
                     continue
@@ -166,39 +159,32 @@ class AlphaVantageBackfillSource:
         
         return None
     
-    def parse_historical_data(self, symbol: str, time_series: Dict, 
-                               start_date: datetime, end_date: datetime) -> List[Dict]:
-        """Parse time series data into records for database insertion."""
+    def parse_intraday_data(self, symbol: str, time_series: Dict, 
+                            start_date: datetime, end_date: datetime) -> List[Dict]:
+        """Parse intraday time series data into records for database insertion."""
         records = []
         
-        for date_str, values in time_series.items():
+        for timestamp_str, values in time_series.items():
             try:
-                date = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                dt = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
                 
-                if date < start_date or date > end_date:
+                if dt < start_date or dt > end_date:
                     continue
                 
-                # Extract all API-provided values (no calculations)
                 open_price = float(values["1. open"])
                 high_price = float(values["2. high"])
                 low_price = float(values["3. low"])
                 close_price = float(values["4. close"])
-                adjusted_close = float(values.get("5. adjusted close", close_price))
-                volume = int(values.get("6. volume", 0))
-                dividend_amount = float(values.get("7. dividend amount", 0))
-                split_coefficient = float(values.get("8. split coefficient", 1))
+                volume = int(values.get("5. volume", 0))
                 
-                pulled_at = date.replace(hour=0, minute=0, second=0, microsecond=0)
+                pulled_at = dt.replace(minute=0, second=0, microsecond=0)
                 
                 metric_values = {
                     'OPEN': open_price,
                     'HIGH': high_price,
                     'LOW': low_price,
                     'CLOSE': close_price,
-                    'ADJUSTED_CLOSE': adjusted_close,
-                    'VOLUME': volume,
-                    'DIVIDEND_AMOUNT': dividend_amount,
-                    'SPLIT_COEFFICIENT': split_coefficient
+                    'VOLUME': volume
                 }
                 
                 for metric_name, value in metric_values.items():
@@ -208,7 +194,7 @@ class AlphaVantageBackfillSource:
                             'asset': symbol.lower(),
                             'metric_name': metric_name,
                             'value': value,
-                            'granularity': 'daily'
+                            'granularity': 'hourly'
                         })
                 
             except (KeyError, ValueError):
@@ -233,8 +219,8 @@ class AlphaVantageBackfillSource:
                 r['asset'],
                 r['metric_name'],
                 r['value'],
-                None,  # exchange is NULL for Alpha Vantage
-                r.get('granularity', 'daily')
+                None,
+                r.get('granularity', 'hourly')
             )
             for r in records
         ]
@@ -278,10 +264,21 @@ class AlphaVantageBackfillSource:
         conn.close()
         return pull_id
     
+    def generate_months(self, start_date: datetime, end_date: datetime) -> List[str]:
+        """Generate list of YYYY-MM strings between start and end dates."""
+        months = []
+        current = start_date.replace(day=1)
+        
+        while current <= end_date:
+            months.append(current.strftime("%Y-%m"))
+            current = current + relativedelta(months=1)
+        
+        return months
+    
     def backfill(self, start_date: datetime, end_date: datetime,
                  entities: List[str] = None, dry_run: bool = False) -> int:
         """
-        Main backfill orchestration method.
+        Main backfill orchestration method for hourly data.
         
         Args:
             start_date: Start of backfill range (UTC)
@@ -293,9 +290,10 @@ class AlphaVantageBackfillSource:
             Total number of records inserted
         """
         print("=" * 70)
-        print("ALPHA VANTAGE HISTORICAL BACKFILL")
+        print("ALPHA VANTAGE HISTORICAL BACKFILL (HOURLY)")
         print("=" * 70)
         print(f"Date range: {start_date.date()} to {end_date.date()}")
+        print(f"Granularity: hourly (60min intervals)")
         if dry_run:
             print("DRY RUN - no data will be inserted")
         
@@ -309,10 +307,15 @@ class AlphaVantageBackfillSource:
                 self.log_pull("no_data", 0)
             return 0
         
+        months = self.generate_months(start_date, end_date)
+        
         print(f"Tickers: {len(tickers)}")
+        print(f"Months to fetch: {len(months)} ({months[0]} to {months[-1]})")
         print(f"Metrics: {', '.join(METRICS)}")
         
-        estimated_time = len(tickers) * REQUEST_DELAY / 60
+        total_api_calls = len(tickers) * len(months)
+        estimated_time = total_api_calls * REQUEST_DELAY / 60
+        print(f"Total API calls: {total_api_calls}")
         print(f"Estimated time: {estimated_time:.1f} minutes")
         print("=" * 70)
         
@@ -320,43 +323,51 @@ class AlphaVantageBackfillSource:
             print("\n[DRY RUN] Would process the following tickers:")
             for t in tickers:
                 print(f"  {t['symbol']} ({t.get('category', 'N/A')})")
+            print(f"\nMonths: {', '.join(months[:6])}{'...' if len(months) > 6 else ''}")
             return 0
         
         total_records = 0
         success_count = 0
         all_records = []
         start_time = time.time()
+        api_calls_made = 0
         
         for i, ticker_info in enumerate(tickers, 1):
             symbol = ticker_info['symbol']
-            print(f"[{i:2}/{len(tickers)}] {symbol}...", end=" ", flush=True)
+            ticker_records = 0
+            ticker_start = time.time()
             
-            time_series = self.fetch_full_history(symbol)
+            print(f"\n[{i:2}/{len(tickers)}] {symbol} ({len(months)} months):")
             
-            if time_series:
-                records = self.parse_historical_data(symbol, time_series, start_date, end_date)
+            for month in months:
+                api_calls_made += 1
+                time_series = self.fetch_intraday_month(symbol, month)
                 
-                if records:
-                    all_records.extend(records)
-                    success_count += 1
-                    
-                    dates = [r['pulled_at'] for r in records if r['metric_name'] == 'CLOSE']
-                    if dates:
-                        min_date = min(dates).date()
-                        max_date = max(dates).date()
-                        print(f"{len(dates)} days ({min_date} to {max_date})")
-                    else:
-                        print(f"{len(records)} records")
-                else:
-                    print("no data in range")
-            else:
-                print("failed")
+                if time_series:
+                    records = self.parse_intraday_data(symbol, time_series, start_date, end_date)
+                    if records:
+                        all_records.extend(records)
+                        ticker_records += len(records)
             
-            if len(all_records) >= 10000:
+            if ticker_records > 0:
+                success_count += 1
+                ticker_elapsed = time.time() - ticker_start
+                print(f"  -> {ticker_records:,} records in {ticker_elapsed:.0f}s")
+            else:
+                print(f"  -> no data")
+            
+            if len(all_records) >= 50000:
                 inserted = self.insert_historical_metrics(all_records)
                 total_records += inserted
                 print(f"  [Batch insert: {inserted:,} records]")
                 all_records = []
+            
+            elapsed = time.time() - start_time
+            remaining_calls = total_api_calls - api_calls_made
+            if api_calls_made > 0:
+                avg_time_per_call = elapsed / api_calls_made
+                eta_minutes = (remaining_calls * avg_time_per_call) / 60
+                print(f"  Progress: {api_calls_made}/{total_api_calls} calls, ETA: {eta_minutes:.0f} min")
         
         if all_records:
             inserted = self.insert_historical_metrics(all_records)
@@ -372,8 +383,10 @@ class AlphaVantageBackfillSource:
         print("BACKFILL COMPLETE")
         print("=" * 70)
         print(f"  Date range: {start_date.date()} to {end_date.date()}")
+        print(f"  Granularity: hourly")
         print(f"  Tickers processed: {success_count}/{len(tickers)}")
         print(f"  Total records inserted: {total_records:,}")
+        print(f"  API calls: {api_calls_made}")
         print(f"  Time: {elapsed:.0f}s ({elapsed/60:.1f} min)")
         if elapsed > 0 and total_records > 0:
             print(f"  Rate: {total_records / elapsed:.0f} records/sec")
@@ -383,13 +396,9 @@ class AlphaVantageBackfillSource:
         return total_records
 
 
-# ============================================================================
-# CLI MAIN
-# ============================================================================
-
 def main():
     parser = argparse.ArgumentParser(
-        description='Backfill Alpha Vantage historical equity data',
+        description='Backfill Alpha Vantage historical hourly equity data',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -416,12 +425,14 @@ Examples:
     
     args = parser.parse_args()
     
-    end_date = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    end_date = datetime.now(timezone.utc).replace(hour=23, minute=59, second=59, microsecond=0)
     
     if args.start_date:
         start_date = datetime.strptime(args.start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
         if args.end_date:
-            end_date = datetime.strptime(args.end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            end_date = datetime.strptime(args.end_date, "%Y-%m-%d").replace(
+                hour=23, minute=59, second=59, tzinfo=timezone.utc
+            )
     else:
         start_date = end_date - timedelta(days=args.days)
     
