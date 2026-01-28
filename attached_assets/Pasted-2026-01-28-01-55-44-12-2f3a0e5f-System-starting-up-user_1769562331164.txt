@@ -1,0 +1,144 @@
+2026-01-28 01:55:44.12
+2f3a0e5f
+System
+starting up user application
+2026-01-28 01:55:44.13
+2f3a0e5f
+System
+metasidecar: loaded enterprise status from environment is_enterprise=false
+2026-01-28 01:55:44.13
+2f3a0e5f
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2026-01-28 01:55:56.96
+2f3a0e5f
+User
+Starting scheduler in background thread...
+2026-01-28 01:55:56.96
+2f3a0e5f
+User
+Scheduler thread started, launching API server...
+2026-01-28 01:55:57.43
+2f3a0e5f
+User
+INFO: Started server process [20]
+2026-01-28 01:55:57.43
+2f3a0e5f
+User
+INFO: Waiting for application startup.
+2026-01-28 01:55:57.43
+2f3a0e5f
+User
+INFO: Application startup complete.
+2026-01-28 01:55:57.43
+2f3a0e5f
+User
+INFO: Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+2026-01-28 01:57:39.33
+2f3a0e5f
+User
+[2026-01-28 00:55:56 UTC] Setting up database (tables, entities, views)...
+2026-01-28 01:57:39.33
+2f3a0e5f
+User
+============================================================
+2026-01-28 01:57:39.33
+2f3a0e5f
+User
+============================================================
+2026-01-28 01:57:39.33
+2f3a0e5f
+User
+SMART DATA PIPELINE SCHEDULER
+2026-01-28 01:57:39.33
+2f3a0e5f
+User
+Lock acquired with PID 20
+2026-01-28 01:57:39.33
+2f3a0e5f
+User
+INFO: 35.191.76.121:0 - "GET /admin/source-status HTTP/1.1" 200 OK
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+artemis: 7,993 records, last update 17545.0h ago - needs gap fill
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+RUNNING FULL BACKFILLS FOR 4 SOURCE(S) SEQUENTIALLY
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+SMART STARTUP - ANALYZING DATA STATUS
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+velo: EMPTY - needs full backfill
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+DefiLlama: hourly at XX:05 UTC
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+CoinGecko: hourly at XX:05 UTC
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+defillama: EMPTY - needs full backfill
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+Velo: hourly at XX:05 UTC
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+[2026-01-28 01:00:47 UTC] Starting sequential backfill for defillama...
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+Entities already populated (985 records)
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+Artemis: daily at 00:05 UTC
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+Gap Check: every 6 hours
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+Views created successfully
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+alphavantage: EMPTY - needs full backfill
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+Creating views...
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+Database setup complete.
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+Schedule:
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+[2026-01-28 01:00:47 UTC] Starting defillama backfill...
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+============================================================
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+INFO: 35.191.74.216:0 - "GET /admin/source-status HTTP/1.1" 200 OK
+2026-01-28 02:01:41.73
+2f3a0e5f
+User
+AlphaVantage: hourly at XX:05 UTC
