@@ -4,7 +4,7 @@
 This project is a Python-based data pipeline designed for the recurring collection and storage of cryptocurrency and equity data from various APIs into a PostgreSQL database. Its primary purpose is to provide a robust, modular, and extensible system for financial data aggregation and analysis. The system supports multiple data sources, handles historical backfills, and ensures data integrity through sophisticated deduplication and normalization. The ultimate goal is to enable unified cross-source queries for comprehensive market insights.
 
 ## User Preferences
-- **Do NOT restart workflows automatically** - Only restart when explicitly instructed
+- Workflows can be restarted as needed for testing and development
 
 ## System Architecture
 The system is built around a modular architecture, allowing easy integration of new data sources. It features a CLI for database setup and data pulling, a scheduler for automated recurring pulls, and a REST API (FastAPI) for LLM access.
