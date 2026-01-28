@@ -231,16 +231,38 @@ def fill_gaps(source: str, days_to_check: int = 30):
     log(f"{source}: Found {len(gaps)} gap(s) in last {days_to_check} days")
     
     now = datetime.now(timezone.utc)
+    MIN_GAP_DAYS = 7  # Minimum gap size to ensure APIs return data
     
     for gap_start, gap_end in gaps:
-        if hasattr(gap_start, 'strftime'):
-            start_str = gap_start.strftime('%Y-%m-%d')
+        # Calculate gap size and expand if too small
+        if hasattr(gap_start, 'date'):
+            start_date = gap_start.date() if hasattr(gap_start, 'date') else gap_start
+            end_date = gap_end.date() if hasattr(gap_end, 'date') else gap_end
         else:
-            start_str = str(gap_start)[:10]
-        if hasattr(gap_end, 'strftime'):
-            end_str = gap_end.strftime('%Y-%m-%d')
+            start_date = gap_start
+            end_date = gap_end
+        
+        # For date objects, calculate gap size
+        try:
+            gap_days = (end_date - start_date).days + 1
+        except:
+            gap_days = 1
+        
+        # Expand small gaps to minimum size (APIs like CoinGecko need larger ranges)
+        if gap_days < MIN_GAP_DAYS:
+            # Expand end date to meet minimum
+            if hasattr(end_date, 'strftime'):
+                end_date = end_date + timedelta(days=(MIN_GAP_DAYS - gap_days))
+            log(f"{source}: Expanding {gap_days}-day gap to {MIN_GAP_DAYS} days")
+        
+        if hasattr(start_date, 'strftime'):
+            start_str = start_date.strftime('%Y-%m-%d')
         else:
-            end_str = str(gap_end)[:10]
+            start_str = str(start_date)[:10]
+        if hasattr(end_date, 'strftime'):
+            end_str = end_date.strftime('%Y-%m-%d')
+        else:
+            end_str = str(end_date)[:10]
         
         log(f"{source}: Filling gap from {start_str} to {end_str}")
         
