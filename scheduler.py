@@ -491,15 +491,24 @@ def clear_all_data():
     print("All data cleared successfully.")
 
 
+_scheduler_running = False
+
 def main():
     global last_artemis_date, last_defillama_hour, last_velo_hour
     global last_coingecko_hour, last_alphavantage_hour, last_gap_check
+    global _scheduler_running
     
-    lock_fd = acquire_lock()
-    if lock_fd is None:
-        print("ERROR: Another scheduler instance is already running!")
-        print("Kill the other instance or remove /tmp/scheduler.lock")
-        sys.exit(1)
+    if _scheduler_running:
+        print("Scheduler already running in this process, skipping...")
+        return
+    _scheduler_running = True
+    
+    if os.path.exists(LOCK_FILE):
+        try:
+            os.remove(LOCK_FILE)
+            print("Removed stale lock file from previous deployment")
+        except:
+            pass
     
     fresh_start = "--fresh" in sys.argv
     skip_smart_startup = "--no-startup" in sys.argv
