@@ -181,7 +181,9 @@ def run_backfill(source: str, start_date=None, end_date=None, days=None):
     if days:
         cmd.extend(["--days", str(days)])
     elif start_date and end_date:
-        cmd.extend(["--start", start_date, "--end", end_date])
+        cmd.extend(["--start-date", start_date, "--end-date", end_date])
+    elif start_date:
+        cmd.extend(["--start-date", start_date])
     
     log(f"Starting {source} backfill...")
     try:
@@ -242,15 +244,7 @@ def fill_gaps(source: str, days_to_check: int = 30):
         
         log(f"{source}: Filling gap from {start_str} to {end_str}")
         
-        if hasattr(gap_start, 'date'):
-            days_ago = (now.date() - gap_start.date()).days
-        elif hasattr(gap_start, 'day'):
-            days_ago = (now.date() - gap_start).days
-        else:
-            days_ago = 7
-        
-        days_to_backfill = max(days_ago + 3, 7)
-        run_backfill(source, days=days_to_backfill)
+        run_backfill(source, start_date=start_str, end_date=end_str)
     
     return True
 
