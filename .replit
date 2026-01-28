@@ -41,4 +41,3 @@ externalPort = 80
 [userenv]
 
 [userenv.development]
-API_ONLY = "true"
