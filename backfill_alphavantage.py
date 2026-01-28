@@ -25,6 +25,7 @@ API Metrics (from TIME_SERIES_INTRADAY):
 import os
 import csv
 import time
+import gc
 import argparse
 import requests
 from datetime import datetime, timezone, timedelta
@@ -329,7 +330,6 @@ class AlphaVantageBackfillSource:
         
         total_records = 0
         success_count = 0
-        all_records = []
         start_time = time.time()
         api_calls_made = 0
         
@@ -340,15 +340,28 @@ class AlphaVantageBackfillSource:
             
             print(f"\n[{i:2}/{len(tickers)}] {symbol} ({len(months)} months):")
             
-            for month in months:
-                api_calls_made += 1
-                time_series = self.fetch_intraday_month(symbol, month)
+            # Process months in small batches and insert per batch
+            MONTHS_PER_BATCH = 6
+            for batch_start in range(0, len(months), MONTHS_PER_BATCH):
+                batch_months = months[batch_start:batch_start + MONTHS_PER_BATCH]
+                batch_records = []
                 
-                if time_series:
-                    records = self.parse_intraday_data(symbol, time_series, start_date, end_date)
-                    if records:
-                        all_records.extend(records)
-                        ticker_records += len(records)
+                for month in batch_months:
+                    api_calls_made += 1
+                    time_series = self.fetch_intraday_month(symbol, month)
+                    
+                    if time_series:
+                        records = self.parse_intraday_data(symbol, time_series, start_date, end_date)
+                        if records:
+                            batch_records.extend(records)
+                            ticker_records += len(records)
+                
+                # Insert after each batch of months
+                if batch_records:
+                    inserted = self.insert_historical_metrics(batch_records)
+                    total_records += inserted
+                    del batch_records
+                    gc.collect()
             
             if ticker_records > 0:
                 success_count += 1
@@ -357,22 +370,12 @@ class AlphaVantageBackfillSource:
             else:
                 print(f"  -> no data")
             
-            if len(all_records) >= 50000:
-                inserted = self.insert_historical_metrics(all_records)
-                total_records += inserted
-                print(f"  [Batch insert: {inserted:,} records]")
-                all_records = []
-            
             elapsed = time.time() - start_time
             remaining_calls = total_api_calls - api_calls_made
             if api_calls_made > 0:
                 avg_time_per_call = elapsed / api_calls_made
                 eta_minutes = (remaining_calls * avg_time_per_call) / 60
                 print(f"  Progress: {api_calls_made}/{total_api_calls} calls, ETA: {eta_minutes:.0f} min")
-        
-        if all_records:
-            inserted = self.insert_historical_metrics(all_records)
-            total_records += inserted
         
         status = "success" if total_records > 0 else "no_data"
         self.log_pull(status, total_records)

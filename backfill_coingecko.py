@@ -20,6 +20,7 @@ API Notes:
 import os
 import csv
 import time
+import gc
 import argparse
 import threading
 import requests
@@ -232,17 +233,24 @@ def insert_records_batch(conn, records):
     return inserted
 
 
-def backfill_coin(coin_id, asset, start_date, end_date, start_ts, end_ts):
-    all_records = []
+def backfill_coin(coin_id, asset, start_date, end_date, start_ts, end_ts, conn=None):
+    """Fetch and insert records for a single coin, inserting per chunk to limit memory."""
+    total_inserted = 0
     chunks = chunk_date_range(start_date, end_date)
     
     for chunk_start, chunk_end in chunks:
         data = fetch_market_chart_range(coin_id, chunk_start, chunk_end)
         if data:
             records = parse_timeseries(data, asset, start_ts, end_ts)
-            all_records.extend(records)
+            if records and conn:
+                inserted = insert_records_batch(conn, records)
+                total_inserted += inserted
+                del records
+            elif records:
+                total_inserted += len(records)
+        gc.collect()
     
-    return all_records
+    return total_inserted
 
 
 def main():
@@ -307,35 +315,39 @@ def main():
     api_calls = 0
     start_time = time.time()
     
-    def process_coin(coin_data):
-        coin_id, asset = coin_data
-        return coin_id, asset, backfill_coin(coin_id, asset, start_date, end_date, start_ts, end_ts)
-    
-    print(f"\nProcessing {len(coin_list)} coins with {MAX_WORKERS} workers...")
+    # Process coins in batches to limit memory usage
+    BATCH_SIZE_COINS = 20
+    print(f"\nProcessing {len(coin_list)} coins in batches of {BATCH_SIZE_COINS}...")
     print("-" * 70)
     
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = {executor.submit(process_coin, coin): coin for coin in coin_list}
+    for batch_start in range(0, len(coin_list), BATCH_SIZE_COINS):
+        batch_end = min(batch_start + BATCH_SIZE_COINS, len(coin_list))
+        batch = coin_list[batch_start:batch_end]
+        batch_num = (batch_start // BATCH_SIZE_COINS) + 1
+        total_batches = (len(coin_list) + BATCH_SIZE_COINS - 1) // BATCH_SIZE_COINS
         
-        for i, future in enumerate(as_completed(futures), 1):
+        print(f"\n[Batch {batch_num}/{total_batches}] Coins {batch_start+1}-{batch_end}/{len(coin_list)}")
+        
+        for i, (coin_id, asset) in enumerate(batch, batch_start + 1):
             try:
-                coin_id, asset, records = future.result()
+                inserted = backfill_coin(coin_id, asset, start_date, end_date, start_ts, end_ts, conn)
                 api_calls += len(date_chunks)
                 
-                if records:
-                    inserted = insert_records_batch(conn, records)
+                if inserted > 0:
                     total_records += inserted
                     successful += 1
-                    unique_dates = len(set(r['pulled_at'] for r in records))
-                    print(f"[{i:3d}/{len(coin_list)}] {coin_id:30s} -> {len(records):5d} records ({unique_dates} days)")
+                    print(f"  [{i:3d}/{len(coin_list)}] {coin_id:30s} -> {inserted:5d} records")
                 else:
-                    print(f"[{i:3d}/{len(coin_list)}] {coin_id:30s} -> No data")
+                    print(f"  [{i:3d}/{len(coin_list)}] {coin_id:30s} -> No data")
                     failed.append(coin_id)
                     
             except Exception as e:
-                coin = futures[future]
-                print(f"[{i:3d}/{len(coin_list)}] {coin[0]:30s} -> Error: {e}")
-                failed.append(coin[0])
+                print(f"  [{i:3d}/{len(coin_list)}] {coin_id:30s} -> Error: {e}")
+                failed.append(coin_id)
+        
+        # Memory cleanup between batches
+        gc.collect()
+        print(f"  --- Batch complete: {total_records:,} total records ---")
     
     conn.close()
     
