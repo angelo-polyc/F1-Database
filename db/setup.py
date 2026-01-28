@@ -33,8 +33,22 @@ def setup_database():
             domain VARCHAR(50),
             exchange VARCHAR(100),
             entity_id INTEGER,
-            granularity VARCHAR(20)
+            granularity VARCHAR(20),
+            metric_date DATE
         );
+    """)
+    
+    # Add metric_date column if it doesn't exist (for existing databases)
+    cur.execute("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'metrics' AND column_name = 'metric_date'
+            ) THEN
+                ALTER TABLE metrics ADD COLUMN metric_date DATE;
+            END IF;
+        END $$;
     """)
     
     cur.execute("""
