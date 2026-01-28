@@ -10,7 +10,7 @@ packages = ["cairo", "ffmpeg-full", "freetype", "ghostscript", "glibcLocales", "
 
 [deployment]
 deploymentTarget = "vm"
-run = ["bash", "-c", "python server.py & python scheduler.py"]
+run = ["python", "server.py"]
 
 [[ports]]
 localPort = 5000
