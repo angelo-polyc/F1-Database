@@ -14,6 +14,7 @@ The system is built around a modular architecture, allowing easy integration of 
 - **Database:** PostgreSQL used for data storage.
   - **Schema:** `pulls` table logs API pull metadata, and `metrics` table stores time-series data with a unique index for deduplication.
   - **Deduplication:** Utilizes `ON CONFLICT DO NOTHING` for backfills and `ON CONFLICT DO UPDATE` for live pulls to prevent duplicates and handle updates.
+  - **metric_date column:** Stores the actual date of the metric data (derived from pulled_at timestamp). Used by gap detection to accurately identify missing data periods.
 - **Entity Master System:** Provides canonical IDs across different data sources through `entities` and `entity_source_ids` tables, enabling unified queries despite varying source ID formats.
 - **Metric Normalization:** A `v_normalized_metrics` view maps source-specific metric names to canonical names (e.g., Velo `CLOSE_PRICE` to `PRICE`).
 - **Smart Scheduler (`scheduler.py`):** Self-healing data pipeline that ensures gap-free time series:
