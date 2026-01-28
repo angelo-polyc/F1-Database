@@ -20,8 +20,14 @@ def run_scheduler():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-    scheduler_thread.start()
-    print("Scheduler thread started, launching API server...", flush=True)
+    # Check for API-only mode (no scheduler)
+    api_only = os.environ.get("API_ONLY", "").lower() in ("1", "true", "yes")
+    
+    if api_only:
+        print("API-ONLY MODE: Scheduler disabled", flush=True)
+    else:
+        scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+        scheduler_thread.start()
+        print("Scheduler thread started, launching API server...", flush=True)
     
     uvicorn.run(app, host="0.0.0.0", port=5000)

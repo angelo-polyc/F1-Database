@@ -37,3 +37,8 @@ run = ["python", "server.py"]
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[userenv]
+
+[userenv.development]
+API_ONLY = "true"
