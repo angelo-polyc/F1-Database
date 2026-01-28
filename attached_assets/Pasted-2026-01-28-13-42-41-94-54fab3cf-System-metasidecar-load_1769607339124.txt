@@ -1,0 +1,156 @@
+2026-01-28 13:42:41.94
+54fab3cf
+System
+metasidecar: loaded enterprise status from environment is_enterprise=false
+2026-01-28 13:42:41.94
+54fab3cf
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2026-01-28 13:42:54.10
+54fab3cf
+User
+Scheduler thread started, launching API server...
+2026-01-28 13:42:54.10
+54fab3cf
+User
+Starting scheduler in background thread...
+2026-01-28 13:42:54.12
+54fab3cf
+User
+============================================================
+2026-01-28 13:42:54.12
+54fab3cf
+User
+SMART DATA PIPELINE SCHEDULER
+2026-01-28 13:42:54.12
+54fab3cf
+User
+============================================================
+2026-01-28 13:42:54.12
+54fab3cf
+User
+[2026-01-28 12:42:54 UTC] Setting up database (tables, entities, views)...
+2026-01-28 13:42:54.42
+54fab3cf
+User
+INFO: Waiting for application startup.
+2026-01-28 13:42:54.42
+54fab3cf
+User
+INFO: Started server process [19]
+2026-01-28 13:42:54.42
+54fab3cf
+User
+INFO: Application startup complete.
+2026-01-28 13:42:54.42
+54fab3cf
+User
+INFO: Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+2026-01-28 13:42:56.70
+54fab3cf
+User
+Velo: hourly at XX:05 UTC
+2026-01-28 13:42:56.70
+54fab3cf
+User
+Creating views...
+2026-01-28 13:42:56.70
+54fab3cf
+User
+DefiLlama: hourly at XX:05 UTC
+2026-01-28 13:42:56.70
+54fab3cf
+User
+Seeding entity data...
+2026-01-28 13:42:56.70
+54fab3cf
+User
+Entity seed data loaded successfully
+2026-01-28 13:42:56.70
+54fab3cf
+User
+CoinGecko: hourly at XX:05 UTC
+2026-01-28 13:42:56.70
+54fab3cf
+User
+SMART STARTUP - ANALYZING DATA STATUS
+2026-01-28 13:42:56.70
+54fab3cf
+User
+AlphaVantage: hourly at XX:05 UTC
+2026-01-28 13:42:56.70
+54fab3cf
+User
+============================================================
+2026-01-28 13:42:56.70
+54fab3cf
+User
+Gap Check: every 6 hours
+2026-01-28 13:42:56.70
+54fab3cf
+User
+Schedule:
+2026-01-28 13:42:56.70
+54fab3cf
+User
+Database setup complete.
+2026-01-28 13:42:56.70
+54fab3cf
+User
+============================================================
+2026-01-28 13:42:56.70
+54fab3cf
+User
+Artemis: daily at 00:05 UTC
+2026-01-28 13:42:56.70
+54fab3cf
+User
+Views created successfully
+2026-01-28 13:42:57.73
+54fab3cf
+User
+defillama: EMPTY - needs full backfill
+2026-01-28 13:42:57.73
+54fab3cf
+User
+RUNNING FULL BACKFILLS FOR 5 SOURCE(S) SEQUENTIALLY
+2026-01-28 13:42:57.73
+54fab3cf
+User
+artemis: EMPTY - needs full backfill
+2026-01-28 13:42:57.73
+54fab3cf
+User
+alphavantage: EMPTY - needs full backfill
+2026-01-28 13:42:57.73
+54fab3cf
+User
+coingecko: EMPTY - needs full backfill
+2026-01-28 13:42:57.73
+54fab3cf
+User
+[2026-01-28 12:42:57 UTC] Starting sequential backfill for artemis...
+2026-01-28 13:42:57.73
+54fab3cf
+User
+velo: EMPTY - needs full backfill
+2026-01-28 13:42:57.73
+54fab3cf
+User
+============================================================
+2026-01-28 13:42:57.73
+54fab3cf
+User
+[2026-01-28 12:42:57 UTC] Starting artemis backfill...
+2026-01-28 13:42:57.73
+54fab3cf
+User
+============================================================
+2026-01-28 13:42:58.43
+54fab3cf
+User
+ARTEMIS HISTORICAL BACKFILL
+2026-01-28 13:42:58.43
+54fab3cf
+User
+======================================================================
