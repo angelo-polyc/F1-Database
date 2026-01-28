@@ -318,20 +318,24 @@ def smart_startup():
     
     if sources_needing_backfill:
         print("\n" + "=" * 60)
-        print(f"RUNNING FULL BACKFILLS FOR {len(sources_needing_backfill)} SOURCE(S) IN PARALLEL")
+        print(f"RUNNING FULL BACKFILLS FOR {len(sources_needing_backfill)} SOURCE(S) SEQUENTIALLY")
         print("=" * 60)
         
         backfill_start = datetime.now(timezone.utc)
         
-        with ThreadPoolExecutor(max_workers=len(sources_needing_backfill)) as executor:
-            futures = {executor.submit(run_backfill, source): source for source in sources_needing_backfill}
-            for future in as_completed(futures):
-                source = futures[future]
-                try:
-                    result = future.result()
-                    log(f"{source} backfill thread completed (success={result})")
-                except Exception as e:
-                    log(f"{source} backfill thread error: {e}")
+        # Run backfills in specific order: artemis, defillama, coingecko, alphavantage, velo
+        backfill_order = ['artemis', 'defillama', 'coingecko', 'alphavantage', 'velo']
+        ordered_sources = [s for s in backfill_order if s in sources_needing_backfill]
+        # Add any sources not in the predefined order (shouldn't happen, but just in case)
+        ordered_sources += [s for s in sources_needing_backfill if s not in backfill_order]
+        
+        for source in ordered_sources:
+            log(f"Starting sequential backfill for {source}...")
+            try:
+                result = run_backfill(source)
+                log(f"{source} backfill completed (success={result})")
+            except Exception as e:
+                log(f"{source} backfill error: {e}")
         
         backfill_end = datetime.now(timezone.utc)
         hours_elapsed = (backfill_end - backfill_start).total_seconds() / 3600
@@ -339,7 +343,7 @@ def smart_startup():
         if hours_elapsed >= 1:
             print("\n" + "-" * 40)
             log(f"Backfills took {hours_elapsed:.1f} hours - running catch-up")
-            for source in sources_needing_backfill:
+            for source in ordered_sources:
                 if SOURCE_CONFIG[source]['granularity'] == 'hourly':
                     run_backfill(source, days=1)
     
