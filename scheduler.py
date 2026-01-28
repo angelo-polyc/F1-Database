@@ -66,7 +66,7 @@ last_gap_check = None
 def log(msg: str):
     """Print timestamped log message."""
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
-    print(f"[{ts}] {msg}")
+    print(f"[{ts}] {msg}", flush=True)
 
 
 def get_source_status():
@@ -263,9 +263,9 @@ def smart_startup():
     3. Sources with data get gap detection and filling
     4. Run initial pulls to bring everything current
     """
-    print("\n" + "=" * 60)
-    print("SMART STARTUP - ANALYZING DATA STATUS")
-    print("=" * 60)
+    print("\n" + "=" * 60, flush=True)
+    print("SMART STARTUP - ANALYZING DATA STATUS", flush=True)
+    print("=" * 60, flush=True)
     
     status = get_source_status()
     
@@ -280,7 +280,7 @@ def smart_startup():
         config = SOURCE_CONFIG[source]
         
         if info['count'] == 0:
-            print(f"  {source}: EMPTY - needs full backfill")
+            print(f"  {source}: EMPTY - needs full backfill", flush=True)
             sources_needing_backfill.append(source)
         elif info['earliest']:
             earliest = info['earliest']
@@ -297,10 +297,10 @@ def smart_startup():
                 threshold = 2 if config['granularity'] == 'hourly' else 26
                 
                 if age_hours > threshold:
-                    print(f"  {source}: {info['count']:,} records, last update {age_hours:.1f}h ago - needs gap fill")
+                    print(f"  {source}: {info['count']:,} records, last update {age_hours:.1f}h ago - needs gap fill", flush=True)
                     sources_needing_gap_fill.append(source)
                 else:
-                    print(f"  {source}: {info['count']:,} records, up to date")
+                    print(f"  {source}: {info['count']:,} records, up to date", flush=True)
                     sources_ok.append(source)
         else:
             latest = info['latest']
@@ -310,16 +310,16 @@ def smart_startup():
             threshold = 2 if config['granularity'] == 'hourly' else 26
             
             if age_hours > threshold:
-                print(f"  {source}: {info['count']:,} records, last update {age_hours:.1f}h ago - needs gap fill")
+                print(f"  {source}: {info['count']:,} records, last update {age_hours:.1f}h ago - needs gap fill", flush=True)
                 sources_needing_gap_fill.append(source)
             else:
-                print(f"  {source}: {info['count']:,} records, up to date")
+                print(f"  {source}: {info['count']:,} records, up to date", flush=True)
                 sources_ok.append(source)
     
     if sources_needing_backfill:
-        print("\n" + "=" * 60)
+        print("\n" + "=" * 60, flush=True)
         print(f"RUNNING FULL BACKFILLS FOR {len(sources_needing_backfill)} SOURCE(S) SEQUENTIALLY")
-        print("=" * 60)
+        print("=" * 60, flush=True)
         
         backfill_start = datetime.now(timezone.utc)
         
@@ -341,7 +341,7 @@ def smart_startup():
         hours_elapsed = (backfill_end - backfill_start).total_seconds() / 3600
         
         if hours_elapsed >= 1:
-            print("\n" + "-" * 40)
+            print("\n" + "-" * 40, flush=True)
             log(f"Backfills took {hours_elapsed:.1f} hours - running catch-up")
             for source in ordered_sources:
                 if SOURCE_CONFIG[source]['granularity'] == 'hourly':
@@ -350,22 +350,22 @@ def smart_startup():
     all_sources_with_data = sources_needing_gap_fill + sources_ok
     
     if all_sources_with_data:
-        print("\n" + "=" * 60)
+        print("\n" + "=" * 60, flush=True)
         print(f"FULL HISTORY GAP SCAN FOR {len(all_sources_with_data)} SOURCE(S)")
-        print("=" * 60)
-        print("Scanning full 3-year history for any gaps...")
+        print("=" * 60, flush=True)
+        print("Scanning full 3-year history for any gaps...", flush=True)
         
         for source in all_sources_with_data:
             fill_gaps(source, days_to_check=1095)
     
-    print("\n" + "=" * 60)
-    print("RUNNING INITIAL PULLS")
-    print("=" * 60)
+    print("\n" + "=" * 60, flush=True)
+    print("RUNNING INITIAL PULLS", flush=True)
+    print("=" * 60, flush=True)
     
     for source in SOURCE_CONFIG.keys():
         run_pull(source)
     
-    print("\nStartup complete - all sources initialized")
+    print("\nStartup complete - all sources initialized", flush=True)
 
 
 def periodic_gap_check():
@@ -443,7 +443,7 @@ def should_run_alphavantage(now_utc):
 def acquire_lock():
     try:
         if os.path.exists(LOCK_FILE):
-            print(f"Found existing lock file, checking...")
+            print(f"Found existing lock file, checking...", flush=True)
             try:
                 with open(LOCK_FILE, 'r') as f:
                     content = f.read().strip()
@@ -452,12 +452,12 @@ def acquire_lock():
                 if old_pid > 0:
                     try:
                         os.kill(old_pid, 0)
-                        print(f"PID {old_pid} is still running")
+                        print(f"PID {old_pid} is still running", flush=True)
                     except OSError:
                         print(f"Stale lock (PID {old_pid} dead), removing...")
                         os.remove(LOCK_FILE)
                 else:
-                    print("Empty lock file, removing...")
+                    print("Empty lock file, removing...", flush=True)
                     os.remove(LOCK_FILE)
             except (ValueError, IOError) as e:
                 print(f"Invalid lock file ({e}), removing...")
@@ -473,22 +473,22 @@ def acquire_lock():
         print(f"Lock acquired with PID {os.getpid()}")
         return lock_fd
     except (IOError, OSError) as e:
-        print(f"Failed to acquire lock: {e}")
+        print(f"Failed to acquire lock: {e}", flush=True)
         return None
 
 
 def clear_all_data():
     """Clear all metrics and pulls data for a fresh start."""
-    print("\n" + "=" * 60)
-    print("CLEARING ALL DATA FOR FRESH START")
-    print("=" * 60)
+    print("\n" + "=" * 60, flush=True)
+    print("CLEARING ALL DATA FOR FRESH START", flush=True)
+    print("=" * 60, flush=True)
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("TRUNCATE TABLE metrics, pulls RESTART IDENTITY CASCADE;")
     conn.commit()
     cur.close()
     conn.close()
-    print("All data cleared successfully.")
+    print("All data cleared successfully.", flush=True)
 
 
 _scheduler_running = False
@@ -499,34 +499,34 @@ def main():
     global _scheduler_running
     
     if _scheduler_running:
-        print("Scheduler already running in this process, skipping...")
+        print("Scheduler already running in this process, skipping...", flush=True)
         return
     _scheduler_running = True
     
     if os.path.exists(LOCK_FILE):
         try:
             os.remove(LOCK_FILE)
-            print("Removed stale lock file from previous deployment")
+            print("Removed stale lock file from previous deployment", flush=True)
         except:
             pass
     
     fresh_start = "--fresh" in sys.argv
     skip_smart_startup = "--no-startup" in sys.argv
     
-    print("=" * 60)
-    print("SMART DATA PIPELINE SCHEDULER")
-    print("=" * 60)
+    print("=" * 60, flush=True)
+    print("SMART DATA PIPELINE SCHEDULER", flush=True)
+    print("=" * 60, flush=True)
     
     log("Setting up database (tables, entities, views)...")
     setup_database()
     
-    print(f"\nSchedule:")
-    print(f"  Artemis: daily at {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC")
-    print(f"  DefiLlama: hourly at XX:{DEFILLAMA_MINUTE:02d} UTC")
-    print(f"  Velo: hourly at XX:{VELO_MINUTE:02d} UTC")
-    print(f"  CoinGecko: hourly at XX:{COINGECKO_MINUTE:02d} UTC")
-    print(f"  AlphaVantage: hourly at XX:{ALPHAVANTAGE_MINUTE:02d} UTC")
-    print(f"  Gap Check: every {GAP_CHECK_INTERVAL_HOURS} hours")
+    print(f"\nSchedule:", flush=True)
+    print(f"  Artemis: daily at {ARTEMIS_HOUR:02d}:{ARTEMIS_MINUTE:02d} UTC", flush=True)
+    print(f"  DefiLlama: hourly at XX:{DEFILLAMA_MINUTE:02d} UTC", flush=True)
+    print(f"  Velo: hourly at XX:{VELO_MINUTE:02d} UTC", flush=True)
+    print(f"  CoinGecko: hourly at XX:{COINGECKO_MINUTE:02d} UTC", flush=True)
+    print(f"  AlphaVantage: hourly at XX:{ALPHAVANTAGE_MINUTE:02d} UTC", flush=True)
+    print(f"  Gap Check: every {GAP_CHECK_INTERVAL_HOURS} hours", flush=True)
     
     if fresh_start:
         print("\n  Mode: FRESH START (clearing all data)")
@@ -545,9 +545,9 @@ def main():
     last_alphavantage_hour = (now_utc.date(), now_utc.hour)
     last_gap_check = now_utc
     
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 60, flush=True)
     log("Scheduler running - entering main loop")
-    print("=" * 60)
+    print("=" * 60, flush=True)
     
     while True:
         now_utc = datetime.now(timezone.utc)
