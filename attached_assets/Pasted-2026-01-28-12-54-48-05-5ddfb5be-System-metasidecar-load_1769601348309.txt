@@ -1,0 +1,156 @@
+2026-01-28 12:54:48.05
+5ddfb5be
+System
+metasidecar: loaded enterprise status from environment is_enterprise=false
+2026-01-28 12:54:48.05
+5ddfb5be
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2026-01-28 12:55:00.89
+5ddfb5be
+User
+Scheduler thread started, launching API server...
+2026-01-28 12:55:00.89
+5ddfb5be
+User
+Starting scheduler in background thread...
+2026-01-28 12:55:00.89
+5ddfb5be
+User
+============================================================
+2026-01-28 12:55:00.89
+5ddfb5be
+User
+============================================================
+2026-01-28 12:55:00.89
+5ddfb5be
+User
+SMART DATA PIPELINE SCHEDULER
+2026-01-28 12:55:00.89
+5ddfb5be
+User
+[2026-01-28 11:55:00 UTC] Setting up database (tables, entities, views)...
+2026-01-28 12:55:01.28
+5ddfb5be
+User
+INFO: Started server process [22]
+2026-01-28 12:55:01.28
+5ddfb5be
+User
+INFO: Waiting for application startup.
+2026-01-28 12:55:01.28
+5ddfb5be
+User
+INFO: Application startup complete.
+2026-01-28 12:55:01.28
+5ddfb5be
+User
+INFO: Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+Views created successfully
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+Gap Check: every 6 hours
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+============================================================
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+Velo: hourly at XX:05 UTC
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+Database setup complete.
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+Creating views...
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+SMART STARTUP - ANALYZING DATA STATUS
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+Schedule:
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+Seeding entity data...
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+DefiLlama: hourly at XX:05 UTC
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+Artemis: daily at 00:05 UTC
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+Entity seed data loaded successfully
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+============================================================
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+CoinGecko: hourly at XX:05 UTC
+2026-01-28 12:55:06.37
+5ddfb5be
+User
+AlphaVantage: hourly at XX:05 UTC
+2026-01-28 12:55:07.45
+5ddfb5be
+User
+[2026-01-28 11:55:07 UTC] Starting sequential backfill for artemis...
+2026-01-28 12:55:07.45
+5ddfb5be
+User
+artemis: EMPTY - needs full backfill
+2026-01-28 12:55:07.45
+5ddfb5be
+User
+RUNNING FULL BACKFILLS FOR 5 SOURCE(S) SEQUENTIALLY
+2026-01-28 12:55:07.45
+5ddfb5be
+User
+defillama: EMPTY - needs full backfill
+2026-01-28 12:55:07.45
+5ddfb5be
+User
+============================================================
+2026-01-28 12:55:07.45
+5ddfb5be
+User
+============================================================
+2026-01-28 12:55:07.45
+5ddfb5be
+User
+alphavantage: EMPTY - needs full backfill
+2026-01-28 12:55:07.45
+5ddfb5be
+User
+[2026-01-28 11:55:07 UTC] Starting artemis backfill...
+2026-01-28 12:55:07.45
+5ddfb5be
+User
+velo: EMPTY - needs full backfill
+2026-01-28 12:55:07.45
+5ddfb5be
+User
+coingecko: EMPTY - needs full backfill
+2026-01-28 12:55:13.24
+5ddfb5be
+User
+INFO: 35.191.82.123:0 - "GET /stats HTTP/1.1" 200 OK
+2026-01-28 12:55:28.09
+5ddfb5be
+User
+INFO: 35.191.74.19:0 - "GET /stats HTTP/1.1" 200 OK
