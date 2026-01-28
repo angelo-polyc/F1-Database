@@ -1,0 +1,245 @@
+symbol,coingecko_id,name,enabled,notes
+1INCH,1inch,1inch,true,
+2Z,2z,2Z,true,VERIFY - May not exist on CoinGecko
+0G,0g,0G,true,VERIFY - Check exact ID
+ADA,cardano,Cardano,true,
+AAVE,aave,Aave,true,
+ACT,act-i-the-ai-prophecy,ACT I The AI Prophecy,true,AMBIGUOUS - Multiple ACT tokens exist
+ACX,across-protocol,Across Protocol,true,
+AERO,aerodrome-finance,Aerodrome Finance,true,
+AEVO,aevo-exchange,Aevo,true,
+AIXBT,aixbt,aixbt by Virtuals,true,
+AKT,akash-network,Akash Network,true,
+ALEO,aleo,Aleo,true,
+ALGO,algorand,Algorand,true,
+ALT,altlayer,AltLayer,true,
+AO,ao,AO,true,VERIFY - Check exact ID
+APE,apecoin,ApeCoin,true,
+APT,aptos,Aptos,true,
+AR,arweave,Arweave,true,
+ARB,arbitrum,Arbitrum,true,
+ARC,arc,AI Rig Complex,true,AMBIGUOUS - Multiple ARC tokens
+ARKM,arkham,Arkham,true,
+ASTER,aster,Aster,true,VERIFY - Check exact ID
+ATH,aethir,Aethir,true,
+ATOM,cosmos,Cosmos Hub,true,
+AVAIL,avail,Avail,true,
+AVAX,avalanche-2,Avalanche,true,
+AXL,axelar,Axelar,true,
+AXS,axie-infinity,Axie Infinity,true,
+B3,b3,B3,true,VERIFY - Check exact ID
+BABY,baby,BabyDoge,true,AMBIGUOUS - Multiple BABY tokens
+BAL,balancer,Balancer,true,
+BANANA,banana-gun,Banana Gun,true,
+BARD,bard-ai,Bard AI,true,VERIFY - Check exact ID
+BEAM,beam-2,Beam,true,
+BERA,berachain-bera,Berachain,true,
+BGB,bitget-token,Bitget Token,true,
+BIO,bio-protocol,BIO Protocol,true,
+BLAST,blast,Blast,true,
+BLUE,bluefin,Bluefin,true,VERIFY - Check exact ID
+BNB,binancecoin,BNB,true,
+BONK,bonk,Bonk,true,
+BTC,bitcoin,Bitcoin,true,
+CAKE,pancakeswap-token,PancakeSwap,true,
+CC,collective-coin,Collective Coin,true,VERIFY - Check exact ID
+CELO,celo,Celo,true,
+CETUS,cetus-protocol,Cetus Protocol,true,
+CFG,centrifuge,Centrifuge,true,
+CLANKER,clanker,Clanker,true,VERIFY - Check exact ID
+COMP,compound-governance-token,Compound,true,
+CORE,coredaoorg,Core,true,
+COW,cow-protocol,CoW Protocol,true,
+CPOOL,clearpool,Clearpool,true,
+CRO,crypto-com-chain,Cronos,true,
+CRV,curve-dao-token,Curve DAO Token,true,
+CVX,convex-finance,Convex Finance,true,
+DAI,dai,Dai,true,
+DBR,dbr,deBridge,true,VERIFY - Check exact ID
+DEEP,deep,DeepBook Protocol,true,VERIFY - Check exact ID
+DEGEN,degen-base,Degen (Base),true,
+DEUS,deus-finance-2,DEUS Finance,true,
+DOGE,dogecoin,Dogecoin,true,
+DOT,polkadot,Polkadot,true,
+DRIFT,drift-protocol,Drift,true,
+DRV,drive,Drip Network,true,VERIFY - Check exact ID
+DYDX,dydx-chain,dYdX,true,
+DYM,dymension,Dymension,true,
+EIGEN,eigenlayer,EigenLayer,true,
+ENA,ethena,Ethena,true,
+ENS,ethereum-name-service,Ethereum Name Service,true,
+ETC,ethereum-classic,Ethereum Classic,true,
+ETH,ethereum,Ethereum,true,
+ETHFI,ether-fi,Ether.fi,true,
+EUL,euler,Euler,true,
+FARTCOIN,fartcoin,Fartcoin,true,
+FET,artificial-superintelligence-alliance,Artificial Superintelligence Alliance,true,
+FIL,filecoin,Filecoin,true,
+FRAX,frax,Frax,true,
+FTT,ftx-token,FTX Token,true,
+G,gravity-bridge,Gravity,true,AMBIGUOUS - Multiple G tokens
+GALA,gala,GALA,true,
+GEOD,geod,Geod,true,VERIFY - Check exact ID
+GFI,goldfinch,Goldfinch,true,
+GMX,gmx,GMX,true,
+GNO,gnosis,Gnosis,true,
+GOAT,goatseus-maximus,Goatseus Maximus,true,
+GRASS,grass,Grass,true,
+GRT,the-graph,The Graph,true,
+HNT,helium,Helium,true,
+HONEY,hivemapper,Hivemapper,true,AMBIGUOUS - Multiple HONEY tokens
+HYPE,hyperliquid,Hyperliquid,true,
+ICP,internet-computer,Internet Computer,true,
+ILV,illuvium,Illuvium,true,
+IMX,immutable-x,Immutable,true,
+INIT,initia,Initia,true,
+INJ,injective-protocol,Injective,true,
+IO,io-net,io.net,true,
+IP,story-protocol,Story Protocol,true,VERIFY - Check exact ID
+JTO,jito-governance-token,Jito,true,
+JUP,jupiter-exchange-solana,Jupiter,true,
+KAITO,kaito,Kaito,true,
+KMNO,kamino,Kamino,true,
+KNTQ,kintsugi,Kintsugi,true,VERIFY - Check exact ID
+L3,layer3,Layer3,true,
+LA,la-token,LATOKEN,true,VERIFY - Check exact ID
+LAYER,layer,Layer,true,VERIFY - Check exact ID
+LBTC,lombard-staked-btc,Lombard Staked BTC,true,
+LDO,lido-dao,Lido DAO,true,
+LINK,chainlink,Chainlink,true,
+LIT,litentry,Litentry,true,
+LQTY,liquity,Liquity,true,
+LPT,livepeer,Livepeer,true,
+LTC,litecoin,Litecoin,true,
+LUNA,terra-luna-2,Terra,true,AMBIGUOUS - Luna Classic vs Luna 2.0
+MAGIC,magic,MAGIC,true,
+MANA,decentraland,Decentraland,true,
+MASK,mask-network,Mask Network,true,
+MAV,maverick-protocol,Maverick Protocol,true,
+ME,magic-eden,Magic Eden,true,
+MEGA,mega,Mega,true,VERIFY - Check exact ID
+MERL,merlin-chain,Merlin Chain,true,
+META,metadium,Metadium,true,AMBIGUOUS - Multiple META tokens
+MET,metronome,Metronome,true,VERIFY - Check exact ID
+MINA,mina-protocol,Mina Protocol,true,
+MNT,mantle,Mantle,true,
+MON,mon,MON Protocol,true,VERIFY - Check exact ID
+MOODENG,moo-deng,Moo Deng,true,
+MOR,morpheus,Morpheus,true,VERIFY - Check exact ID
+MORPHO,morpho,Morpho,true,
+MOVE,movement,Movement,true,
+MPLX,metaplex,Metaplex,true,
+NATIX,natix-network,NATIX Network,true,
+NEAR,near,NEAR Protocol,true,
+NEON,neon,Neon EVM,true,
+NIL,nil,Nil,true,VERIFY - Check exact ID
+NOT,notcoin,Notcoin,true,
+NS,namestrategy,Name Strategy,true,VERIFY - Check exact ID
+NTRN,neutron-3,Neutron,true,
+NXPC,nxpc,NXPC,true,VERIFY - Check exact ID
+NYM,nym,Nym,true,
+OLAS,autonolas,Autonolas,true,
+OM,mantra-dao,MANTRA,true,
+OMNI,omni-network,Omni Network,true,
+ONDO,ondo-finance,Ondo,true,
+OP,optimism,Optimism,true,
+ORCA,orca,Orca,true,
+OSMO,osmosis,Osmosis,true,
+PAAL,paal-ai,PAAL AI,true,
+PAXG,pax-gold,PAX Gold,true,
+PEAQ,peaq,peaq,true,
+PENDLE,pendle,Pendle,true,
+PENGU,pudgy-penguins,Pudgy Penguins,true,
+PEPE,pepe,Pepe,true,
+PI,pi-network,Pi Network,true,VERIFY - Check exact ID
+PIPPIN,pippin,Pippin,true,VERIFY - Check exact ID
+PLUME,plume-2,Plume,true,
+PNUT,peanut-the-squirrel,Peanut the Squirrel,true,
+POL,polygon-ecosystem-token,POL (ex-MATIC),true,
+POLY,polymath,Polymath,true,
+POPCAT,popcat,Popcat,true,
+PUFFER,puffer-finance,Puffer Finance,true,
+PUMP,pump-fun,pump.fun,true,VERIFY - Check exact ID
+PYTH,pyth-network,Pyth Network,true,
+RAIN,rain,Rain,true,VERIFY - Check exact ID
+RAY,raydium,Raydium,true,
+RED,red,Red,true,VERIFY - Check exact ID
+RENDER,render-token,Render,true,
+RETARDIO,retardio,Retardio,true,
+REZ,renzo,Renzo,true,
+RIVER,river,River,true,VERIFY - Check exact ID
+RLB,rollbit-coin,Rollbit Coin,true,
+RON,ronin,Ronin,true,
+RPL,rocket-pool,Rocket Pool,true,
+RUNE,thorchain,THORChain,true,
+S,sonic-3,Sonic,true,VERIFY - Check exact ID
+SAFE,safe,Safe,true,
+SAGA,saga-2,Saga,true,
+SAHARA,sahara,Sahara,true,VERIFY - Check exact ID
+SAND,the-sandbox,The Sandbox,true,
+SCR,scroll,Scroll,true,
+SEI,sei-network,Sei,true,
+SHELL,shell-protocol,Shell Protocol,true,
+SHFL,shuffle-2,Shuffle,true,
+SHIB,shiba-inu,Shiba Inu,true,
+SIGN,sign,Sign,true,VERIFY - Check exact ID
+SKY,sky,Sky,true,
+SNT,status,Status,true,
+SNX,havven,Synthetix,true,
+SOL,solana,Solana,true,
+SOLV,solv-protocol,Solv Protocol,true,
+SOPH,soph,Soph,true,VERIFY - Check exact ID
+SPEC,spectral,Spectral,true,
+SPK,sparkpoint,SparkPoint,true,AMBIGUOUS - Multiple SPK tokens
+SPX,spx6900,SPX6900,true,
+SQD,subsquid,Subsquid,true,
+SSV,ssv-network,ssv.network,true,
+STABLE,stable,Stable,true,VERIFY - Check exact ID
+stETH,staked-ether,Lido Staked Ether,true,
+STG,stargate-finance,Stargate Finance,true,
+STRK,starknet,Starknet,true,
+STX,blockstack,Stacks,true,
+SUI,sui,Sui,true,
+SUSHI,sushi,Sushi,true,
+SWEAT,sweat-economy,Sweat Economy,true,
+SWELL,swell,Swell,true,
+SXT,sxt,Space and Time,true,VERIFY - Check exact ID
+SYRUP,maple,Maple,true,VERIFY - Symbol may be different
+TAIKO,taiko,Taiko,true,
+TAO,bittensor,Bittensor,true,
+TIA,celestia,Celestia,true,
+TNSR,tensor,Tensor,true,
+TON,the-open-network,Toncoin,true,
+TORN,tornado-cash,Tornado Cash,true,
+TRUMP,official-trump,Official Trump,true,
+TRX,tron,TRON,true,
+U,uthentic,Uthentic,true,VERIFY - Check exact ID
+UMA,uma,UMA,true,
+UNI,uniswap,Uniswap,true,
+USDC,usd-coin,USD Coin,true,
+USDT,tether,Tether,true,
+USUAL,usual,Usual,true,
+VANA,vana,Vana,true,
+VIRTUAL,virtual-protocol,Virtuals Protocol,true,
+VVV,velar,Venice Token,true,AMBIGUOUS - Check exact ID
+W,wormhole,Wormhole,true,
+WAL,walrus,Walrus,true,
+WCT,wct,WCT,true,VERIFY - Check exact ID
+WET,wet,WET,true,VERIFY - Check exact ID
+WIF,dogwifcoin,dogwifhat,true,
+WLD,worldcoin-wld,Worldcoin,true,
+XAI,xai-blockchain,Xai,true,
+XAN,xana,XANA,true,
+XLM,stellar,Stellar,true,
+XMR,monero,Monero,true,
+XPL,xpl,XPL,true,VERIFY - Check exact ID
+XRP,ripple,XRP,true,
+XTZ,tezos,Tezos,true,
+YFI,yearn-finance,yearn.finance,true,
+YGG,yield-guild-games,Yield Guild Games,true,
+YNE,yne,YNE,true,VERIFY - Check exact ID
+ZEC,zcash,Zcash,true,
+ZEREBRO,zerebro,Zerebro,true,
+ZK,zksync,ZKsync,true,
+ZRO,layerzero,LayerZero,true,
+ZRX,0x,0x Protocol,true,

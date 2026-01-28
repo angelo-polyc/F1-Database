@@ -1,0 +1,362 @@
+name,slug,gecko_id,category
+ICPSwap,icpswap,icpswap-token,Dexs
+xExchange,xexchange,maiar-dex,Dexs
+T RIZE,t-rize,rize,RWA
+Bwatch,bwatch,b-watch-box,Indexes
+Flexa,flexa,amp-token,Payments
+Filecoin,filecoin,filecoin,Chain
+IOTA,iota,iota,Chain
+BiFi,bifi,bifi,Lending
+Avantis,avantis,avantis,Derivatives
+ZyFAI,zyfai,zyfi,Yield
+Sui,sui,sui,Chain
+Railgun,railgun,railgun,Privacy
+ACryptoS,acryptos,acryptos,Liquidity manager
+Indigo,indigo,indigo-dao-governance-token,CDP
+Kinetic,kinetic,joule-2,Lending
+SushiSwap,sushiswap,sushi,Dexs
+Superfluid,superfluid,superfluid,Payments
+Zircuit,zircuit,zircuit,Chain
+LumenSwap,lumenswap,lumenswap,Dexs
+Chainflip,chainflip,chainflip,Chain
+Avalanche,avalanche,avalanche-2,Chain
+SwissBorg,swissborg,swissborg,CEX
+Gearbox,gearbox,gearbox,Lending
+Waves,waves,waves,Chain
+Mansory,mansory,mansory-token,RWA
+pNetwork,pnetwork,pnetwork,Bridge
+Hegic,hegic,hegic,Options
+Tectonic,tectonic,tectonic,Lending
+Storm Trade,storm-trade,storm-trade,Derivatives
+Stacks,stacks,blockstack,Chain
+Hyperliquid L1,hyperliquid-l1,hyperliquid,Chain
+Enzyme Finance,enzyme-finance,melon,Indexes
+XDC,xdc,xdce-crowd-sale,Chain
+Usual,usual,usual,RWA
+Gnosis,gnosis,gnosis,Chain
+EigenCloud,eigencloud,eigenlayer,Restaking
+Angle,angle,angle-protocol,CDP
+FlashTrade,flashtrade,flash-trade,Derivatives
+Maya Protocol,maya-protocol,cacao,Chain
+NEAR,near,near,Chain
+Aura,aura,aura-finance,Yield
+Nexus Mutual,nexus-mutual,nxm,Insurance
+Doge,doge,dogecoin,Chain
+dYdX,dydx,dydx-chain,Chain
+Astroport,astroport,astroport-fi,Dexs
+Stride,stride,stride,Chain
+BlazeStake,blazestake,solblaze,Liquid Staking
+Kava Lend,kava-lend,kava-lend,Lending
+Bitmex,bitmex,bitmex-token,CEX
+Rootstock,rootstock,rootstock,Chain
+Kaia,kaia,klay-token,Chain
+ICP,icp,internet-computer,Chain
+Belt Finance,belt-finance,belt,Yield
+Chainge Finance,chainge-finance,chainge-finance,Dexs
+Berachain,berachain,berachain-bera,Chain
+Reserve Protocol,reserve-protocol,reserve-rights-token,Indexes
+Binance CEX,binance-cex,binancecoin,Chain
+Fraxtal,fraxtal,fraxtal,Chain
+Bitkub,bitkub,bitkub-coin,Chain
+Paxos Gold,paxos-gold,pax-gold,RWA
+Bonzo Finance,bonzo-finance,bonzo-finance,Lending
+Loopring,loopring,loopring,Dexs
+Stables Labs USDX,stables-labs-usdx,usdx-money-usdx,Basis Trading
+Sei,sei,sei-network,Chain
+Cardano,cardano,cardano,Chain
+Bifrost Network,bifrost-network,bifrost,Chain
+FlokiFi Locker,flokifi-locker,floki,Token Locker
+Linea,linea,linea,Chain
+Serum,serum,serum,Dexs
+Metis,metis,metis-token,Chain
+Stellar,stellar,stellar,Chain
+MultiversX,multiversx,elrond-erd-2,Chain
+Rocket Pool,rocket-pool,rocket-pool,Liquid Staking
+Aave V2,aave-v2,aave,Lending
+Portal,portal,wormhole,Bridge
+Obol,obol,obol-2,Staking Pool
+Plume Mainnet,plume-mainnet,plume,Chain
+BlackRock BUIDL,blackrock-buidl,blackrock-usd-institutional-digital-liquidity-fund,RWA
+Harvest Finance,harvest-finance,harvest-finance,Yield Aggregator
+Immutable zkEVM,immutable-zkevm,immutable-x,Chain
+X Layer,x-layer,x-layer,Chain
+Flare,flare,flare-networks,Chain
+Zeus Network,zeus-network,zeus-network,Decentralized BTC
+Overnight Finance,overnight-finance,overnight-finance,CDP
+XSY,xsy,unity-2,Basis Trading
+Injective,injective,injective-protocol,Chain
+Movement,movement,movement,Chain
+Stake DAO,stake-dao,stake-dao,Yield
+Gravity Bridge,gravity-bridge,graviton,Bridge
+Gala,gala,gala,Chain
+Mento,mento,mento,Algo-Stables
+CoinEx,coinex,coinex-token,Chain
+Synapse,synapse,synapse-2,Cross Chain Bridge
+Orbit Bridge,orbit-bridge,orbit-chain,Bridge
+Polygon,polygon,polygon-ecosystem-token,Chain
+ICHI,ichi,ichi,Liquidity manager
+MerlinSwap,merlinswap,merlinswap,Dexs
+Looped Hype,looped-hype,looped-hype,Yield
+Yield Yak Aggregator,yield-yak-aggregator,yield-yak,Yield Aggregator
+Osmosis,osmosis,osmosis,Chain
+Benqi Lending,benqi-lending,benqi,Lending
+Octus Bridge,octus-bridge,octus-bridge,Bridge
+Republic Note,republic-note,republic-note,RWA
+OKX,okx,okb,CEX
+Beefy,beefy,beefy-finance,Yield Aggregator
+MYX Finance,myx-finance,myx-finance,Derivatives
+Tether Gold,tether-gold,tether-gold,RWA
+Yield Basis,yield-basis,yield-basis,Leveraged Farming
+PinkSale,pinksale,pinksale,Launchpad
+Gravity by Galxe,gravity-by-galxe,g-token,Chain
+Proxy,proxy,proxy,Bridge
+Dolomite,dolomite,dolomite,Lending
+Astar,astar,astar,Chain
+Gains Network,gains-network,gains-network,Derivatives
+Youves,youves,youves-you-governance,Synthetics
+GETH,geth,guarded-ether,Liquid Staking
+MorpheusAI,morpheusai,morpheusai,AI Agents
+Monad,monad,monad,Chain
+Treehouse Protocol,treehouse-protocol,treehouse,DOR
+Index Coop,index-coop,index-cooperative,Indexes
+Badger DAO,badger-dao,badger-dao,Yield Aggregator
+Blur Bids,blur-bids,blur,NFT Marketplace
+Lido,lido,lido-dao,Liquid Staking
+Verus,verus,verus-coin,Chain
+Taiko Bridge,taiko-bridge,taiko,Canonical Bridge
+Arbitrum,arbitrum,arbitrum,Chain
+Momentum,momentum,momentum-3,Dexs
+PayCash,paycash,malinka,Dexs
+BitKan,bitkan,kan,CEX
+Mantle,mantle,mantle,Chain
+Plasma,plasma,plasma,Chain
+Connext,connext,connext,Bridge
+Tezos,tezos,tezos,Chain
+Pendle,pendle,pendle,Yield
+Hypha,hypha,gogopool,Liquid Staking
+zkSync Era,zksync-era,zksync,Chain
+UniRouter,unirouter,unirouter,Bridge
+xDAI Stake Bridge,xdai-stake-bridge,xdai-stake,Canonical Bridge
+Vaulta,vaulta,eos,Chain
+Saga,saga,saga-2,Chain
+Nexo,nexo,nexo,CEX
+WEEX,weex,weex-token,CEX
+YieldNest,yieldnest,yieldnest,Onchain Capital Allocator
+Celo,celo,celo,Chain
+Ankr,ankr,ankr,Liquid Staking
+STON.fi,ston.fi,ston-2,Dexs
+deBridge,debridge,debridge,Bridge
+JustLend,justlend,just,Lending
+DxSale,dxsale,dxsale-network,Launchpad
+Brickken,brickken,brickken,RWA
+Flow,flow,flow,Chain
+Realms,realms,epics-token,Governance Incentives
+Liqwid,liqwid,liqwid-finance,Lending
+MetalX Lending,metalx-lending,proton-loan,Lending
+Manta,manta,manta-network,Chain
+Quickswap Dex,quickswap-dex,quickswap,Dexs
+Alchemix,alchemix,alchemix,Synthetics
+Aquarius Stellar,aquarius-stellar,aquarius,Dexs
+Beraborrow,beraborrow,pollen-2,CDP
+World Chain,world-chain,worldcoin-wld,Chain
+Amnis Finance,amnis-finance,ami,Liquid Staking
+Idle,idle,idle,Yield Aggregator
+Phemex,phemex,phemex,CEX
+Vesper,vesper,vesper-finance,Yield Aggregator
+Tron,tron,tron,Chain
+Across,across,across-protocol,Cross Chain Bridge
+Aptos,aptos,aptos,Chain
+LiNEAR Protocol,linear-protocol,linear-protocol-lnr,Liquid Staking
+Minswap,minswap,minswap,Dexs
+Kava,kava,kava,Chain
+Merkle Trade,merkle-trade,merkle-trade,Derivatives
+cBridge,cbridge,celer-network,Bridge
+Hop Protocol,hop-protocol,hop-protocol,Cross Chain Bridge
+ORIGYN,origyn,origyn-foundation,RWA
+Nibiru,nibiru,nibiru,Chain
+SYMMIO,symmio,symmio,Derivatives
+NEO,neo,neo,Chain
+Algorand,algorand,algorand,Chain
+Blueshift,blueshift,blueshift,Dexs
+Boson Protocol,boson-protocol,boson-protocol,RWA
+Resolv,resolv,resolv,Basis Trading
+Wombat Exchange,wombat-exchange,wombat-exchange,Dexs
+QiDao,qidao,qi-dao,CDP
+Stader,stader,stader,Liquid Staking
+Concentrator,concentrator,concentrator,Yield
+Resupply,resupply,resupply,Lending
+ApeChain,apechain,apecoin,Chain
+Anvil,anvil,anvil,Collateral Management
+Frankencoin,frankencoin,frankencoin,CDP
+Fantom,fantom,fantom,Chain
+ZEROBASE CeDeFi,zerobase-cedefi,zerobase,Basis Trading
+SatLayer,satlayer,satlayer,Anchor BTC
+Ekubo,ekubo,ekubo-protocol,Dexs
+Ontology,ontology,ontology,Chain
+Babylon Genesis,babylon-genesis,babylon,Chain
+Veno Finance,veno-finance,veno-finance,Liquid Staking
+POWERCITY Earn Protocol,powercity-earn-protocol,powercity-earn-protocol,CDP
+XPR Network,xpr-network,proton,Chain
+WingRiders,wingriders,wingriders,Dexs
+Piku,piku,piku-utility-token,Yield
+aelf,aelf,aelf,Chain
+Penpie,penpie,penpie,Yield
+IoTeX,iotex,iotex,Chain
+Harmonix Finance,harmonix-finance,harmonix-finance,Yield
+stUSDT,stusdt,staked-usdt,RWA
+fx Protocol,fx-protocol,fxn-token,Dual-Token Stablecoin
+Sphere Finance,sphere-finance,sphere-finance,Yield
+DeDust,dedust,scaleton,Dexs
+xWin Finance,xwin-finance,xwin-finance,Indexes
+Equilibria,equilibria,equilibria-finance,Yield
+Wing Finance,wing-finance,wing-finance,Lending
+Keep3r Network,keep3r-network,keep3rv1,Derivatives
+Hedera,hedera,hedera-hashgraph,Chain
+Sophon,sophon,sophon,Chain
+Renzo,renzo,renzo,Liquid Restaking
+Terra2,terra2,terra-luna-2,Chain
+MoneyOnChain,moneyonchain,money-on-chain,Dual-Token Stablecoin
+Lisk,lisk,lisk,Chain
+Icon,icon,icon,Chain
+Ethereal,ethereal,ethena-usde,Chain
+Ronin Bridge,ronin-bridge,ronin,Canonical Bridge
+Equilibre,equilibre,equilibre,Dexs
+Gate,gate,gatechain-token,CEX
+Pulsechain,pulsechain,pulsechain,Chain
+Gamma,gamma,gamma-strategies,Liquidity manager
+XRPL,xrpl,ripple,Chain
+LayerBank,layerbank,lineabank,Lending
+Inverse Finance FiRM,inverse-finance-firm,inverse-finance,CDP
+Sonic,sonic,sonic-3,Chain
+Unitus,unitus,unitus-2,Lending
+Hakka Finance,hakka-finance,hakka-finance,Derivatives
+Uranium.io,uranium.io,uranium,RWA
+WEMIX3.0,wemix3.0,wemix-token,Chain
+Bitcoin,bitcoin,bitcoin,Chain
+ABC Pool,abc-pool,abc-pos-pool,Staking Pool
+DeltaPrime,deltaprime,prime-2,Leveraged Farming
+Iron Bank,iron-bank,iron-bank,Lending
+Ethereum,ethereum,ethereum,Chain
+ZIGChain,zigchain,zignaly,Chain
+Saber,saber,saber,Dexs
+Chiliz,chiliz,chiliz,Chain
+Turbos,turbos,turbos-finance,Dexs
+CLever,clever,clever-token,Yield
+Peapods Finance,peapods-finance,peapods-finance,Yield
+Tornado Cash,tornado-cash,tornado-cash,Privacy
+Starknet,starknet,starknet,Chain
+Autofarm,autofarm,auto,Yield Aggregator
+PumpBTC,pumpbtc,pumpbtc,Bridge
+ThalaSwap,thalaswap,thala,Dexs
+Tinyman,tinyman,tiny,Dexs
+Radpie,radpie,radpie,Yield
+Team Finance,team-finance,trustswap,Token Locker
+Conflux,conflux,conflux-token,Chain
+HawkFi,hawkfi,hawksight,Liquidity manager
+Bio Protocol,bio-protocol,bio-protocol,Launchpad
+ZeroLend Lending,zerolend-lending,zerolend,Lending
+ProBit Global,probit-global,probit-exchange,CEX
+Vires Finance,vires-finance,vires-finance,Lending
+MAP Protocol,map-protocol,marcopolo,Chain
+Stafi,stafi,stafi,Chain
+Tranchess Yield,tranchess-yield,tranchess,Yield
+Splash Protocol,splash-protocol,splash-trade,Dexs
+cVault Finance,cvault-finance,cvault-finance,Yield
+TON,ton,the-open-network,Chain
+Ferro,ferro,ferro,Dexs
+Bifrost,bifrost,bifrost-native-coin,Chain
+Pickle,pickle,pickle-finance,Yield Aggregator
+Mixin,mixin,mixin,Chain
+sDAI,sdai,savings-xdai,Yield
+AUTOfinance,autofinance,tokemak,Yield
+The Idols,the-idols,virtue,Reserve Currency
+Hydration,hydration,hydradx,Chain
+mETH Protocol,meth-protocol,meth-protocol,Liquid Staking
+Hamilton Lane Senior Credit Opportunities Securitize Fund,hamilton-lane-senior-credit-opportunities-securitize-fund,hamilton-lane-senior-credit-opportunities-securitize-fund,RWA
+Provenance,provenance,hash-2,Chain
+Solana,solana,solana,Chain
+Gyroscope GYD,gyroscope-gyd,gyroscope-gyd,Stablecoin
+Easedefi.org,easedefi.org,ease,Insurance
+Multichain,multichain,multichain,Bridge
+kpk,kpk,kpk,Risk Curators
+Aktionariat,aktionariat,draggable-aktionariat-ag,RWA
+Symbiosis,symbiosis,symbiosis-finance,Cross Chain Bridge
+Mode,mode,mode,Chain
+Thorchain,thorchain,thorchain,Chain
+WaterNeuron,waterneuron,waterneuron,Liquid Staking
+LiquidLoans,liquidloans,liquid-loans,CDP
+Convex Finance,convex-finance,convex-finance,Yield
+AlphaLend,alphalend,bluefin,Lending
+0x Aggregator,0x-aggregator,0x,DEX Aggregator
+Agora Dollar,agora-dollar,agora-dollar,Stablecoin
+AltLayer,altlayer,altlayer,Developer Tools
+Arkham,arkham,arkham,Services
+Axie Infinity,axie-infinity,axie-infinity,Gaming
+Banana Gun,banana-gun,banana-gun,Telegram Bot
+basedmarkets,basedmarkets,based-markets,Derivatives
+Beam,beam,beam-2,Chain
+Bittensor,bittensor,bittensor,Protocol
+Celo Dollar,celo-dollar,celo-dollar,Stablecoin
+Celo Euro,celo-euro,celo-euro,Stablecoin
+Celo Real,celo-real,celo-real-creal,Stablecoin
+Chronicle,chronicle,chronicle,Services
+Dai,dai,dai,Stablecoin
+Falcon USD,falcon-usd,falcon-finance,Stablecoin
+fxUSD,fxusd,f-x-protocol-usd,Stablecoin
+Helium Network,helium-network,helium,DePIN
+Houdini Swap,houdini-swap,houdini-swap,DEX Aggregator
+LayerZero,layerzero,layerzero,Bridge
+Magic Internet Money,magic-internet-money,magic-internet-money,Stablecoin
+MetaDAO,metadao,meta-2-2,Dexs
+Metaplex,metaplex,metaplex,Launchpad
+mStable USD,mstable-usd,musd,Stablecoin
+Official Trump,official-trump,official-trump,Meme
+Olympus DAO,olympus-dao,olympus,Reserve Currency
+Ondo US Dollar Yield,ondo-us-dollar-yield,ondo-us-dollar-yield,Stablecoin
+OP Mainnet,op-mainnet,optimism,Chain
+Pudgy Penguins,pudgy-penguins,pudgy-penguins,Protocol
+pump.fun,pump.fun,pump-fun,Launchpad
+Request Network,request-network,request-network,Developer Tools
+Resolv USD,resolv-usd,resolv-usr,Stablecoin
+Sky Dollar,sky-dollar,usds,Stablecoin
+THORSwap,thorswap,thorswap,DEX Aggregator
+Tornado Finance,tornado-finance,tornadocore,Yield
+Walrus Protocol,walrus-protocol,walrus-2,Developer Tools
+Ronin,ronin,ronin,Chain
+Aerodrome,aerodrome,aerodrome-finance,Dexs
+Aftermath Finance,aftermath-finance,aftermath-token,Dexs
+Aevo,aevo,aevo-exchange,Derivatives
+Axelar,axelar,axelar,Bridge
+Base,base,base,Chain
+BOB,bob,bob,Chain
+Celestia,celestia,celestia,Chain
+Chainlink,chainlink,chainlink,Oracle
+crvUSD,crvusd,crvusd,Stablecoin
+Cronos,cronos,cronos,Chain
+DFlow,dflow,dflow,Dexs
+ether.fi,ether.fi,ether-fi,Liquid Staking
+Euler,euler,euler,Lending
+Extended,extended,extended,Unknown
+Ink,ink,ink,Chain
+Infrared Finance,infrared,infrared,Yield
+Jito,jito,jito-governance-token,Liquid Staking
+Kalshi,kalshi,kalshi,Prediction Market
+Kamino,kamino-lend,kamino,Lending
+Lighter,lighter,lighter,Dexs
+Liquity,liquity,liquity,CDP
+M0,m0,m0,Stablecoin
+Ostium,ostium,ostium,Derivatives
+Paradex,paradex,paradex,Derivatives
+Safe,safe,safe,Multisig
+Scroll,scroll,scroll,Chain
+Stargate Finance,stargate,stargate-finance,Bridge
+Superstate,superstate,superstate,RWA
+Maple Finance,maple-finance,syrup-finance,Lending
+The Graph,the-graph,the-graph,Indexer
+Collector Crypt,collector-crypt,cards,NFT
+Drift,drift,drift-protocol,Dexs
+Fluid,fluid,fluid,Lending
+Felix CDP,felix-cdp,felix-cdp,CDP
+Felix Perps,felix-perps,felix-perps,Derivatives
+Morpho,morpho,morpho,Lending
+Compound V3,compound-v3,compound-governance-token,Lending

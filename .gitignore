@@ -24,8 +24,13 @@ wheels/
 env/
 venv/
 ENV/
-*.csv
-!artemis_pull_config.csv
+# Exclude exported data but keep config files
 export*.csv
+entities_export.csv
+entity_mappings*.csv
+
+# Include all config CSVs (they're needed for the pipeline)
+# artemis_config.csv, defillama_config.csv, coingecko_config.csv, 
+# alphavantage_config.csv, velo_config.csv are tracked
 *.log
 .DS_Store
