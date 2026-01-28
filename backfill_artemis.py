@@ -340,7 +340,8 @@ def main():
                         cur.executemany('''
                             INSERT INTO metrics (pulled_at, source, asset, metric_name, value, metric_date)
                             VALUES (%s, %s, %s, %s, %s, %s)
-                            ON CONFLICT (source, asset, metric_name, pulled_at, COALESCE(exchange, '')) DO NOTHING
+                            ON CONFLICT (source, asset, metric_name, pulled_at, COALESCE(exchange, '')) 
+                            DO UPDATE SET value = EXCLUDED.value, metric_date = EXCLUDED.metric_date
                         ''', pending_records)
                         conn.commit()
                         pending_records = []
