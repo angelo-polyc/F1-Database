@@ -208,7 +208,8 @@ def run_backfill(source: str, start_date=None, end_date=None, days=None):
     log(f"Starting {source} backfill...")
     try:
         timeout = 50400 if source == 'velo' else 14400
-        result = subprocess.run(cmd, capture_output=False, timeout=timeout)
+        # Use -u for unbuffered output so we see progress in real-time
+        result = subprocess.run(["python", "-u"] + cmd[1:], capture_output=False, timeout=timeout)
         log(f"{source} backfill completed (exit code: {result.returncode})")
         return result.returncode == 0
     except subprocess.TimeoutExpired:
@@ -226,7 +227,7 @@ def run_pull(source: str):
     log(f"Starting {source} pull...")
     try:
         result = subprocess.run(
-            ["python", "main.py", "pull", source],
+            ["python", "-u", "main.py", "pull", source],
             capture_output=False,
             timeout=timeout_seconds
         )
