@@ -1,0 +1,108 @@
+2026-01-28 09:51:03.57
+60428377
+User
+scheduler_main()
+2026-01-28 09:51:03.57
+60428377
+User
+^^^^^^^^^^^^^^^
+2026-01-28 09:51:03.57
+60428377
+User
+File "/home/runner/workspace/scheduler.py", line 572, in main
+2026-01-28 09:51:03.57
+60428377
+User
+Traceback (most recent call last):
+2026-01-28 09:51:03.57
+60428377
+User
+AttributeError: 'datetime.date' object has no attribute 'tzinfo'
+2026-01-28 09:51:03.57
+60428377
+User
+if earliest.tzinfo is None:
+2026-01-28 09:51:03.57
+60428377
+User
+File "/home/runner/workspace/server.py", line 16, in run_scheduler
+2026-01-28 09:51:03.57
+60428377
+User
+File "/home/runner/workspace/scheduler.py", line 323, in smart_startup
+2026-01-28 09:51:03.57
+60428377
+User
+smart_startup()
+2026-01-28 09:51:03.57
+60428377
+User
+smart_startup()
+2026-01-28 09:51:03.57
+60428377
+User
+File "/home/runner/workspace/scheduler.py", line 323, in smart_startup
+2026-01-28 09:51:03.57
+60428377
+User
+File "/home/runner/workspace/server.py", line 16, in run_scheduler
+2026-01-28 09:51:03.57
+60428377
+User
+if earliest.tzinfo is None:
+2026-01-28 09:51:03.57
+60428377
+User
+AttributeError: 'datetime.date' object has no attribute 'tzinfo'
+2026-01-28 09:51:03.57
+60428377
+User
+Traceback (most recent call last):
+2026-01-28 09:51:03.57
+60428377
+User
+File "/home/runner/workspace/scheduler.py", line 572, in main
+2026-01-28 09:51:03.57
+60428377
+User
+^^^^^^^^^^^^^^^
+2026-01-28 09:51:03.57
+60428377
+User
+scheduler_main()
+2026-01-28 09:51:03.57
+60428377
+User
+smart_startup()
+2026-01-28 09:51:03.57
+60428377
+User
+File "/home/runner/workspace/scheduler.py", line 323, in smart_startup
+2026-01-28 09:51:03.57
+60428377
+User
+File "/home/runner/workspace/server.py", line 16, in run_scheduler
+2026-01-28 09:51:03.57
+60428377
+User
+if earliest.tzinfo is None:
+2026-01-28 09:51:03.57
+60428377
+User
+AttributeError: 'datetime.date' object has no attribute 'tzinfo'
+2026-01-28 09:51:03.57
+60428377
+User
+Traceback (most recent call last):
+2026-01-28 09:51:03.57
+60428377
+User
+File "/home/runner/workspace/scheduler.py", line 572, in main
+2026-01-28 09:51:03.57
+60428377
+User
+^^^^^^^^^^^^^^^
+2026-01-28 09:51:03.57
+60428377
+User
+scheduler_main()

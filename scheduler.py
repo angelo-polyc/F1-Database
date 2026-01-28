@@ -12,7 +12,7 @@ import subprocess
 import sys
 import os
 import fcntl
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, date, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from db.setup import get_connection, setup_database
 
@@ -320,10 +320,14 @@ def smart_startup():
             sources_needing_backfill.append(source)
         elif info['earliest']:
             earliest = info['earliest']
-            if earliest.tzinfo is None:
+            # Handle date vs datetime - metric_date returns date objects
+            if isinstance(earliest, date) and not isinstance(earliest, datetime):
+                earliest = datetime.combine(earliest, datetime.min.time(), tzinfo=timezone.utc)
+            elif earliest.tzinfo is None:
                 earliest = earliest.replace(tzinfo=timezone.utc)
             if earliest > three_years_ago + timedelta(days=30):
-                print(f"  {source}: {info['count']:,} records, but only from {info['earliest'].date()} - needs backfill")
+                earliest_date = info['earliest'] if isinstance(info['earliest'], date) else info['earliest'].date()
+                print(f"  {source}: {info['count']:,} records, but only from {earliest_date} - needs backfill")
                 sources_needing_backfill.append(source)
             else:
                 last_pull = info.get('last_pull')
