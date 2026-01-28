@@ -220,13 +220,14 @@ class AlphaVantageBackfillSource:
                 r['metric_name'],
                 r['value'],
                 None,
-                r.get('granularity', 'hourly')
+                r.get('granularity', 'hourly'),
+                r['pulled_at'].date() if hasattr(r['pulled_at'], 'date') else r['pulled_at']
             )
             for r in records
         ]
         
         query = """
-            INSERT INTO metrics (pulled_at, source, asset, metric_name, value, exchange, granularity)
+            INSERT INTO metrics (pulled_at, source, asset, metric_name, value, exchange, granularity, metric_date)
             VALUES %s
             ON CONFLICT (source, asset, metric_name, pulled_at, COALESCE(exchange, '')) 
             DO NOTHING

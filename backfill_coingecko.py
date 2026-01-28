@@ -210,17 +210,19 @@ def insert_records_batch(conn, records):
         batch = records[i:i + BATCH_SIZE]
         values = []
         for r in batch:
+            metric_date = r['pulled_at'].date() if hasattr(r['pulled_at'], 'date') else r['pulled_at']
             values.append((
                 r['pulled_at'],
                 'coingecko',
                 r['asset'],
                 r['metric_name'],
-                r['value']
+                r['value'],
+                metric_date
             ))
         
         cur.executemany("""
-            INSERT INTO metrics (pulled_at, source, asset, metric_name, value)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO metrics (pulled_at, source, asset, metric_name, value, metric_date)
+            VALUES (%s, %s, %s, %s, %s, %s)
             ON CONFLICT (source, asset, metric_name, pulled_at, COALESCE(exchange, '')) DO NOTHING
         """, values)
         inserted += len(batch)

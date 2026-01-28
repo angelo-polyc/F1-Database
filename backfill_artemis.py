@@ -168,7 +168,7 @@ def extract_records(data, metric_name):
                                     continue
                                 value = float(value)
                             dt = datetime.strptime(date_str[:10], '%Y-%m-%d')
-                            records.append((dt, 'artemis', asset, metric_name, float(value)))
+                            records.append((dt, 'artemis', asset, metric_name, float(value), dt.date()))
                         except (ValueError, TypeError):
                             continue
                             
@@ -183,7 +183,7 @@ def extract_records(data, metric_name):
                                 continue
                             value = float(value)
                         dt = datetime.strptime(date_str[:10], '%Y-%m-%d')
-                        records.append((dt, 'artemis', asset, metric_name, float(value)))
+                        records.append((dt, 'artemis', asset, metric_name, float(value), dt.date()))
                     except (ValueError, TypeError):
                         continue
     
@@ -298,8 +298,8 @@ def main():
                 records = future.result()
                 if records:
                     cur.executemany('''
-                        INSERT INTO metrics (pulled_at, source, asset, metric_name, value)
-                        VALUES (%s, %s, %s, %s, %s)
+                        INSERT INTO metrics (pulled_at, source, asset, metric_name, value, metric_date)
+                        VALUES (%s, %s, %s, %s, %s, %s)
                         ON CONFLICT (source, asset, metric_name, pulled_at, COALESCE(exchange, '')) DO NOTHING
                     ''', records)
                     conn.commit()
