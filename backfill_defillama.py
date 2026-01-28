@@ -1,4 +1,5 @@
 import os
+import gc
 import csv
 import time
 import argparse
@@ -9,10 +10,13 @@ import psycopg2
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-MAX_WORKERS = 10  # Concurrent requests (1000/min limit = 16.6/sec)
-BATCH_SIZE = 1000
-MAX_RETRIES = 3
+MAX_WORKERS = 6  # Moderate concurrency (was 10, reduced to prevent overload)
+BATCH_SIZE = 500  # Reduced batch size
+MAX_RETRIES = 2  # Reduced from 3
 RETRY_DELAY = 2
+REQUEST_TIMEOUT = 30  # Explicit timeout
+ENTITY_BATCH_SIZE = 20  # Commit and cycle connection every N entities
+URL_BATCH_SIZE = 100  # Fetch URLs in batches to show progress
 
 API_KEY = os.environ.get('DEFILLAMA_API_KEY')
 PRO_BASE_URL = "https://pro-api.llama.fi"
@@ -97,7 +101,7 @@ ENDPOINTS = {
 def get_db_connection():
     return psycopg2.connect(os.environ['DATABASE_URL'])
 
-RATE_LIMIT_PER_SEC = 15  # Stay under 1000/min = 16.6/sec
+RATE_LIMIT_PER_SEC = 14  # 840/min, safely under 1000/min limit
 
 # Global rate limiter using a simple token bucket
 import threading
@@ -119,11 +123,13 @@ def fetch_json(url):
     for attempt in range(MAX_RETRIES):
         _wait_for_rate_limit()
         try:
-            resp = main_session.get(url, timeout=60)
+            resp = main_session.get(url, timeout=REQUEST_TIMEOUT)
             if resp.status_code == 200:
                 return resp.json()
             elif resp.status_code == 429:
-                time.sleep(RETRY_DELAY * (attempt + 1))
+                wait_time = RETRY_DELAY * (attempt + 2)
+                print(f"    Rate limited, waiting {wait_time}s...", flush=True)
+                time.sleep(wait_time)
                 continue
             elif resp.status_code == 404:
                 return None
@@ -142,11 +148,12 @@ def fetch_json_threadsafe(url):
         _wait_for_rate_limit()
         try:
             session = get_thread_session()
-            resp = session.get(url, timeout=60)
+            resp = session.get(url, timeout=REQUEST_TIMEOUT)
             if resp.status_code == 200:
                 return resp.json()
             elif resp.status_code == 429:
-                time.sleep(RETRY_DELAY * (attempt + 1))
+                wait_time = RETRY_DELAY * (attempt + 2)
+                time.sleep(wait_time)
                 continue
             elif resp.status_code == 404:
                 return None
@@ -176,20 +183,29 @@ def fetch_pro_json(endpoint):
 def fetch_urls_parallel(urls):
     results = {}
     total = len(urls)
+    start_time = time.time()
     
     # Use parallel fetch but each worker respects global rate limit
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_url = {executor.submit(fetch_json_threadsafe, url): url for url in urls}
         done = 0
+        success = 0
         for future in as_completed(future_to_url):
             url = future_to_url[future]
             try:
-                results[url] = future.result()
+                result = future.result()
+                results[url] = result
+                if result is not None:
+                    success += 1
             except Exception:
                 results[url] = None
             done += 1
-            if done % 100 == 0:
-                print(f"    Fetched {done}/{total} URLs...")
+            # Progress every 50 URLs for better visibility
+            if done % 50 == 0 or done == total:
+                elapsed = time.time() - start_time
+                rate = done / elapsed if elapsed > 0 else 0
+                eta = (total - done) / rate if rate > 0 else 0
+                print(f"    [{done:4d}/{total}] Fetched, {success} successful, {rate:.1f} req/sec, ETA: {eta:.0f}s", flush=True)
     
     return results
 
@@ -930,49 +946,60 @@ def main():
         return
     
     conn = get_db_connection()
-    
-    print("\nBuilding URL list for all entities...")
-    all_urls = []
-    entity_url_map = {}
-    
-    for entity in entities:
-        gecko_id = entity['gecko_id']
-        urls = build_entity_urls(entity)
-        entity_url_map[gecko_id] = urls
-        all_urls.extend(urls.values())
-    
-    print(f"Total URLs to fetch: {len(all_urls)}")
-    print(f"Estimated time at 16 req/sec: {len(all_urls) / 16:.0f}s")
-    print("=" * 70)
-    
-    print("\nFetching all historical data in parallel...")
     start_time = time.time()
     
-    url_results = fetch_urls_parallel(all_urls)
-    
-    fetch_time = time.time() - start_time
-    print(f"Fetch completed in {fetch_time:.1f}s ({len(all_urls) / fetch_time:.1f} req/sec)")
-    
-    print("\nProcessing and inserting records...")
+    # Process entities in batches to prevent memory exhaustion
+    print(f"\nProcessing entities in batches of {ENTITY_BATCH_SIZE}...")
+    print("=" * 70, flush=True)
     
     total_records = 0
-    filtered_records = 0
     entities_processed = 0
+    batch_num = 0
     
-    for i, entity in enumerate(entities):
-        gecko_id = entity['gecko_id']
+    for batch_start in range(0, len(entities), ENTITY_BATCH_SIZE):
+        batch_end = min(batch_start + ENTITY_BATCH_SIZE, len(entities))
+        batch_entities = entities[batch_start:batch_end]
+        batch_num += 1
         
-        inserted, metrics = process_entity_data(entity, url_results, conn, start_ts, end_ts)
-        total_records += inserted
-        entities_processed += 1
+        # Build URLs for this batch only
+        batch_urls = []
+        entity_url_map = {}
+        for entity in batch_entities:
+            gecko_id = entity['gecko_id']
+            urls = build_entity_urls(entity)
+            entity_url_map[gecko_id] = urls
+            batch_urls.extend(urls.values())
         
-        if metrics:
-            metrics_str = ", ".join(metrics)
-            print(f"[{i+1:3d}/{len(entities)}] {gecko_id:30s} +{inserted:6d} records ({metrics_str})")
+        print(f"\n[Batch {batch_num}] Entities {batch_start+1}-{batch_end}/{len(entities)}, {len(batch_urls)} URLs", flush=True)
         
-        if (i + 1) % 100 == 0:
-            elapsed = time.time() - start_time
-            print(f"    --- Progress: {total_records:,} records, {entities_processed} entities ---")
+        # Fetch URLs for this batch
+        url_results = fetch_urls_parallel(batch_urls)
+        
+        # Process each entity in the batch
+        for i, entity in enumerate(batch_entities):
+            gecko_id = entity['gecko_id']
+            global_idx = batch_start + i + 1
+            
+            try:
+                inserted, metrics = process_entity_data(entity, url_results, conn, start_ts, end_ts)
+                total_records += inserted
+                entities_processed += 1
+                
+                if metrics:
+                    metrics_str = ", ".join(metrics)
+                    print(f"  [{global_idx:3d}/{len(entities)}] {gecko_id:30s} +{inserted:6d} records ({metrics_str})", flush=True)
+            except Exception as e:
+                print(f"  [{global_idx:3d}/{len(entities)}] {gecko_id}: ERROR - {e}", flush=True)
+        
+        # Connection cycling and memory cleanup after each batch
+        conn.close()
+        del url_results
+        gc.collect()
+        conn = get_db_connection()
+        
+        elapsed = time.time() - start_time
+        rate = total_records / elapsed if elapsed > 0 else 0
+        print(f"  --- Batch complete: {total_records:,} total records, {rate:.0f} rec/sec ---", flush=True)
     
     conn.close()
     
