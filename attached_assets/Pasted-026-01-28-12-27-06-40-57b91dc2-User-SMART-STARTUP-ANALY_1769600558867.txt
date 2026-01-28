@@ -1,0 +1,96 @@
+026-01-28 12:27:06.40
+57b91dc2
+User
+SMART STARTUP - ANALYZING DATA STATUS
+2026-01-28 12:27:06.40
+57b91dc2
+User
+CoinGecko: hourly at XX:05 UTC
+2026-01-28 12:27:06.40
+57b91dc2
+User
+Views created successfully
+2026-01-28 12:27:07.47
+57b91dc2
+User
+[2026-01-28 11:27:07 UTC] Starting sequential backfill for artemis...
+2026-01-28 12:27:07.47
+57b91dc2
+User
+alphavantage: EMPTY - needs full backfill
+2026-01-28 12:27:07.47
+57b91dc2
+User
+RUNNING FULL BACKFILLS FOR 5 SOURCE(S) SEQUENTIALLY
+2026-01-28 12:27:07.47
+57b91dc2
+User
+coingecko: EMPTY - needs full backfill
+2026-01-28 12:27:07.47
+57b91dc2
+User
+[2026-01-28 11:27:07 UTC] Starting artemis backfill...
+2026-01-28 12:27:07.47
+57b91dc2
+User
+velo: EMPTY - needs full backfill
+2026-01-28 12:27:07.47
+57b91dc2
+User
+defillama: EMPTY - needs full backfill
+2026-01-28 12:27:07.47
+57b91dc2
+User
+============================================================
+2026-01-28 12:27:07.47
+57b91dc2
+User
+artemis: EMPTY - needs full backfill
+2026-01-28 12:27:07.47
+57b91dc2
+User
+============================================================
+2026-01-28 12:36:46.04
+57b91dc2
+User
+INFO: 35.191.123.170:0 - "GET /stats HTTP/1.1" 200 OK
+2026-01-28 12:36:47.36
+57b91dc2
+User
+INFO: 35.191.74.53:0 - "GET /admin/source-status HTTP/1.1" 200 OK
+2026-01-28 12:36:48.36
+57b91dc2
+User
+INFO: 35.191.74.120:0 - "GET /admin/db-size HTTP/1.1" 200 OK
+2026-01-28 12:37:03.63
+57b91dc2
+User
+INFO: 35.191.1.212:0 - "GET /admin/metrics-summary HTTP/1.1" 200 OK
+2026-01-28 12:37:05.49
+57b91dc2
+User
+INFO: 35.191.74.21:0 - "GET /latest?metric=PRICE&limit=5 HTTP/1.1" 200 OK
+2026-01-28 12:37:07.32
+57b91dc2
+User
+INFO: 35.191.1.208:0 - "GET /time-series?asset=ethereum&metric=FEES&days=30 HTTP/1.1" 200 OK
+2026-01-28 12:40:07.90
+57b91dc2
+User
+INFO: 35.191.82.136:0 - "GET /admin/source-status HTTP/1.1" 200 OK
+2026-01-28 12:40:08.78
+57b91dc2
+User
+INFO: 35.191.1.177:0 - "GET /admin/metrics-summary HTTP/1.1" 200 OK
+2026-01-28 12:40:26.12
+57b91dc2
+User
+INFO: 35.191.76.105:0 - "GET / HTTP/1.1" 200 OK
+2026-01-28 12:40:42.78
+57b91dc2
+User
+INFO: 35.191.112.190:0 - "GET /stats HTTP/1.1" 200 OK
+2026-01-28 12:41:42.71
+57b91dc2
+User
+INFO: 35.191.82.130:0 - "GET /stats HTTP/1.1" 200 OK
