@@ -1,0 +1,116 @@
+2026-01-28 12:50:18.80
+b187d799
+User
+============================================================
+2026-01-28 12:50:18.80
+b187d799
+User
+Database setup complete.
+2026-01-28 12:50:18.80
+b187d799
+User
+Gap Check: every 6 hours
+2026-01-28 12:50:18.80
+b187d799
+User
+SMART STARTUP - ANALYZING DATA STATUS
+2026-01-28 12:50:18.80
+b187d799
+User
+Artemis: daily at 00:05 UTC
+2026-01-28 12:50:18.80
+b187d799
+User
+Seeding entity data...
+2026-01-28 12:50:18.80
+b187d799
+User
+Entity seed data loaded successfully
+2026-01-28 12:50:18.80
+b187d799
+User
+CoinGecko: hourly at XX:05 UTC
+2026-01-28 12:50:18.80
+b187d799
+User
+Creating views...
+2026-01-28 12:50:18.80
+b187d799
+User
+Schedule:
+2026-01-28 12:50:18.80
+b187d799
+User
+AlphaVantage: hourly at XX:05 UTC
+2026-01-28 12:50:19.30
+b187d799
+User
+LINE 2: SELECT COUNT(*), MIN(metric_date), MAX(metric_da...
+2026-01-28 12:50:19.30
+b187d799
+User
+Scheduler error: column "metric_date" does not exist
+2026-01-28 12:50:19.30
+b187d799
+User
+HINT: Perhaps you meant to reference the column "metrics.metric_name".
+2026-01-28 12:50:19.30
+b187d799
+User
+^
+2026-01-28 12:50:19.30
+b187d799
+User
+Traceback (most recent call last):
+2026-01-28 12:50:19.30
+b187d799
+User
+cur.execute("""
+2026-01-28 12:50:19.30
+b187d799
+User
+HINT: Perhaps you meant to reference the column "metrics.metric_name".
+2026-01-28 12:50:19.30
+b187d799
+User
+status = get_source_status()
+2026-01-28 12:50:19.30
+b187d799
+User
+File "/home/runner/workspace/scheduler.py", line 306, in smart_startup
+2026-01-28 12:50:19.30
+b187d799
+User
+psycopg2.errors.UndefinedColumn: column "metric_date" does not exist
+2026-01-28 12:50:19.30
+b187d799
+User
+File "/home/runner/workspace/scheduler.py", line 576, in main
+2026-01-28 12:50:19.30
+b187d799
+User
+smart_startup()
+2026-01-28 12:50:19.30
+b187d799
+User
+LINE 2: SELECT COUNT(*), MIN(metric_date), MAX(metric_da...
+2026-01-28 12:50:19.30
+b187d799
+User
+File "/home/runner/workspace/server.py", line 16, in run_scheduler
+2026-01-28 12:50:19.30
+b187d799
+User
+File "/home/runner/workspace/scheduler.py", line 79, in get_source_status
+2026-01-28 12:50:19.30
+b187d799
+User
+^
+2026-01-28 12:50:19.30
+b187d799
+User
+scheduler_main()
+2026-01-28 12:50:19.30
+b187d799
+User
+^^^^^^^^^^^^^^^^^^^
