@@ -92,10 +92,10 @@ def get_source_status():
             cur.execute("SELECT COUNT(*), MAX(pulled_at) FROM metrics WHERE source = %s", (source,))
             fallback = cur.fetchone()
             status[source] = {
-                'count': fallback[0] or 0,
+                'count': fallback[0] if fallback else 0,
                 'earliest': None,
                 'latest': None,
-                'last_pull': fallback[1],
+                'last_pull': fallback[1] if fallback else None,
             }
     
     cur.close()

@@ -27,8 +27,10 @@ REQUEST_DELAY = 0.5  # Minimum delay between API calls
 BATCH_SIZE = 50
 MAX_WORKERS = 2  # Reduced to avoid burst
 MAX_DAYS_PER_CHUNK = 365
-MAX_RETRIES = 3
+MAX_RETRIES = 2  # Reduced from 3
 RETRY_DELAY = 2
+REQUEST_TIMEOUT = 30  # Reduced from 120s to avoid hung tasks
+DB_BATCH_SIZE = 10  # Commit every N tasks instead of every task
 
 # Thread-safe rate limiter
 _rate_lock = threading.Lock()
@@ -135,7 +137,7 @@ def fetch_historical(api_key, metric, symbols, start_date, end_date):
     
     for attempt in range(MAX_RETRIES):
         try:
-            resp = requests.get(url, params=params, timeout=120)
+            resp = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
             
             if resp.status_code == 200 and resp.text.strip():
                 return resp.json()
@@ -279,8 +281,10 @@ def main():
     
     print("=" * 70)
     
-    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    conn = psycopg2.connect(os.environ['DATABASE_URL'], connect_timeout=30)
     cur = conn.cursor()
+    # Set statement timeout to prevent indefinite hangs (60 seconds)
+    cur.execute("SET statement_timeout = '60s'")
     
     total_records = 0
     api_calls = 0
@@ -295,9 +299,9 @@ def main():
                 batch = assets_for_metric[batch_start:batch_start + BATCH_SIZE]
                 fetch_tasks.append((metric, batch, chunk_start.strftime('%Y-%m-%d'), chunk_end.strftime('%Y-%m-%d')))
     
-    print(f"Total fetch tasks: {len(fetch_tasks)}")
-    print(f"Using {MAX_WORKERS} parallel workers")
-    print("=" * 70)
+    print(f"Total fetch tasks: {len(fetch_tasks)}", flush=True)
+    print(f"Using {MAX_WORKERS} parallel workers, {REQUEST_TIMEOUT}s timeout", flush=True)
+    print("=" * 70, flush=True)
     
     def fetch_task(task):
         metric, batch, start_str, end_str = task
@@ -308,6 +312,8 @@ def main():
     
     completed = 0
     failed_tasks = 0
+    pending_records = []  # Buffer for batch commits
+    
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {}
         for task in fetch_tasks:
@@ -318,45 +324,57 @@ def main():
         for future in as_completed(futures):
             completed += 1
             api_calls += 1
+            task_info = futures[future]
             try:
-                records = future.result()
+                # Timeout on result to avoid hung futures
+                records = future.result(timeout=REQUEST_TIMEOUT + 10)
                 if records:
-                    cur.executemany('''
-                        INSERT INTO metrics (pulled_at, source, asset, metric_name, value, metric_date)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (source, asset, metric_name, pulled_at, COALESCE(exchange, '')) DO NOTHING
-                    ''', records)
-                    conn.commit()
+                    pending_records.extend(records)
                     total_records += len(records)
                 else:
                     failed_tasks += 1
                 
-                if completed % 25 == 0 or completed == len(fetch_tasks):
+                # Batch commit every DB_BATCH_SIZE tasks or at the end
+                if len(pending_records) >= 500 or completed == len(fetch_tasks):
+                    if pending_records:
+                        cur.executemany('''
+                            INSERT INTO metrics (pulled_at, source, asset, metric_name, value, metric_date)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (source, asset, metric_name, pulled_at, COALESCE(exchange, '')) DO NOTHING
+                        ''', pending_records)
+                        conn.commit()
+                        pending_records = []
+                
+                # Progress logging every 10 tasks for visibility
+                if completed % 10 == 0 or completed == len(fetch_tasks):
                     elapsed = time.time() - start_time
                     rate = total_records / elapsed if elapsed > 0 else 0
                     pct = completed / len(fetch_tasks) * 100
                     print(f"  [{pct:5.1f}%] {completed}/{len(fetch_tasks)} tasks, "
-                          f"{total_records:,} records, {failed_tasks} empty, {rate:.0f} rec/sec")
+                          f"{total_records:,} records, {failed_tasks} empty, {rate:.0f} rec/sec", flush=True)
+            except TimeoutError:
+                errors += 1
+                failed_tasks += 1
+                print(f"  TIMEOUT on {task_info[0]} ({task_info[2]})", flush=True)
             except Exception as e:
                 errors += 1
                 failed_tasks += 1
-                task = futures[future]
-                print(f"  Error on {task[0]}: {e}")
+                print(f"  Error on {task_info[0]}: {e}", flush=True)
     
     conn.close()
     
     elapsed = time.time() - start_time
-    print("\n" + "=" * 70)
-    print("BACKFILL COMPLETE")
-    print("=" * 70)
-    print(f"Total records: {total_records:,}")
-    print(f"API calls: {api_calls}")
-    print(f"Tasks with no data: {failed_tasks}")
-    print(f"Errors: {errors}")
-    print(f"Time: {elapsed:.0f}s ({elapsed/60:.1f} min)")
+    print("\n" + "=" * 70, flush=True)
+    print("BACKFILL COMPLETE", flush=True)
+    print("=" * 70, flush=True)
+    print(f"Total records: {total_records:,}", flush=True)
+    print(f"API calls: {api_calls}", flush=True)
+    print(f"Tasks with no data: {failed_tasks}", flush=True)
+    print(f"Errors: {errors}", flush=True)
+    print(f"Time: {elapsed:.0f}s ({elapsed/60:.1f} min)", flush=True)
     if elapsed > 0:
-        print(f"Rate: {total_records/elapsed:.0f} records/sec")
-    print("=" * 70)
+        print(f"Rate: {total_records/elapsed:.0f} records/sec", flush=True)
+    print("=" * 70, flush=True)
 
 
 if __name__ == "__main__":
