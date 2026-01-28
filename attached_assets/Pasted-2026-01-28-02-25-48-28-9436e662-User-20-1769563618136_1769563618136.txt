@@ -1,0 +1,160 @@
+2026-01-28 02:25:48.28
+9436e662
+User
+============================================================
+2026-01-28 02:25:48.28
+9436e662
+User
+============================================================
+2026-01-28 02:25:48.28
+9436e662
+User
+RUNNING FULL BACKFILLS FOR 4 SOURCE(S) SEQUENTIALLY
+2026-01-28 02:25:48.28
+9436e662
+User
+velo: EMPTY - needs full backfill
+2026-01-28 02:25:48.28
+9436e662
+User
+[2026-01-28 01:25:48 UTC] Starting sequential backfill for defillama...
+2026-01-28 02:25:48.28
+9436e662
+User
+[2026-01-28 01:25:48 UTC] Starting defillama backfill...
+2026-01-28 02:25:50.04
+9436e662
+User
+Starting scheduler in background thread...
+2026-01-28 02:25:50.04
+9436e662
+User
+Scheduler thread started, launching API server...
+2026-01-28 02:25:50.05
+9436e662
+User
+============================================================
+2026-01-28 02:25:50.05
+9436e662
+User
+============================================================
+2026-01-28 02:25:50.05
+9436e662
+User
+[2026-01-28 01:25:50 UTC] Setting up database (tables, entities, views)...
+2026-01-28 02:25:50.05
+9436e662
+User
+SMART DATA PIPELINE SCHEDULER
+2026-01-28 02:25:50.52
+9436e662
+User
+INFO: Started server process [19]
+2026-01-28 02:25:50.52
+9436e662
+User
+INFO: Waiting for application startup.
+2026-01-28 02:25:50.52
+9436e662
+User
+INFO: Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+2026-01-28 02:25:50.52
+9436e662
+User
+INFO: Application startup complete.
+2026-01-28 02:25:51.54
+9436e662
+User
+Artemis: daily at 00:05 UTC
+2026-01-28 02:25:51.54
+9436e662
+User
+AlphaVantage: hourly at XX:05 UTC
+2026-01-28 02:25:51.54
+9436e662
+User
+CoinGecko: hourly at XX:05 UTC
+2026-01-28 02:25:51.54
+9436e662
+User
+Gap Check: every 6 hours
+2026-01-28 02:25:51.54
+9436e662
+User
+============================================================
+2026-01-28 02:25:51.54
+9436e662
+User
+SMART STARTUP - ANALYZING DATA STATUS
+2026-01-28 02:25:51.54
+9436e662
+User
+Database setup complete.
+2026-01-28 02:25:51.54
+9436e662
+User
+DefiLlama: hourly at XX:05 UTC
+2026-01-28 02:25:51.54
+9436e662
+User
+Schedule:
+2026-01-28 02:25:51.54
+9436e662
+User
+Entities already populated (985 records)
+2026-01-28 02:25:51.54
+9436e662
+User
+Views created successfully
+2026-01-28 02:25:51.54
+9436e662
+User
+============================================================
+2026-01-28 02:25:51.54
+9436e662
+User
+Velo: hourly at XX:05 UTC
+2026-01-28 02:25:51.54
+9436e662
+User
+Creating views...
+2026-01-28 02:25:52.30
+9436e662
+User
+[2026-01-28 01:25:52 UTC] Starting defillama backfill...
+2026-01-28 02:25:52.30
+9436e662
+User
+[2026-01-28 01:25:52 UTC] Starting sequential backfill for defillama...
+2026-01-28 02:25:52.30
+9436e662
+User
+alphavantage: EMPTY - needs full backfill
+2026-01-28 02:25:52.30
+9436e662
+User
+RUNNING FULL BACKFILLS FOR 4 SOURCE(S) SEQUENTIALLY
+2026-01-28 02:25:52.30
+9436e662
+User
+============================================================
+2026-01-28 02:25:52.30
+9436e662
+User
+artemis: 5,564 records, last update 17545.4h ago - needs gap fill
+2026-01-28 02:25:52.30
+9436e662
+User
+defillama: EMPTY - needs full backfill
+2026-01-28 02:25:52.30
+9436e662
+User
+coingecko: EMPTY - needs full backfill
+2026-01-28 02:25:52.30
+9436e662
+User
+velo: EMPTY - needs full backfill
+2026-01-28 02:25:52.30
+9436e662
+User
+===========================================================
