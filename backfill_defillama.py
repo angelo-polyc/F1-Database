@@ -1,6 +1,7 @@
 import os
 import gc
 import csv
+import json
 import time
 import argparse
 import threading
@@ -18,6 +19,8 @@ REQUEST_TIMEOUT = 15  # Short timeout
 ENTITY_BATCH_SIZE = 10  # Smaller batches to prevent memory issues
 URL_BATCH_SIZE = 100  # Fetch URLs in batches to show progress
 BATCH_COOLDOWN = 3  # Seconds to wait between entity batches
+
+CHECKPOINT_FILE = '/tmp/defillama_checkpoint.json'
 
 API_KEY = os.environ.get('DEFILLAMA_API_KEY')
 PRO_BASE_URL = "https://pro-api.llama.fi"
@@ -110,6 +113,40 @@ _rate_lock = threading.Lock()
 _last_request_time = [0.0]  # Mutable to allow modification in nested function
 _min_interval = 1.0 / RATE_LIMIT_PER_SEC
 _request_count = [0]  # Track requests for monitoring
+
+def save_checkpoint(entity_index, days, total_records):
+    """Save progress checkpoint for resume"""
+    checkpoint = {
+        'entity_index': entity_index,
+        'days': days,
+        'total_records': total_records,
+        'timestamp': datetime.now().isoformat()
+    }
+    try:
+        with open(CHECKPOINT_FILE, 'w') as f:
+            json.dump(checkpoint, f)
+    except Exception:
+        pass
+
+def load_checkpoint(days):
+    """Load checkpoint if it matches current run parameters"""
+    try:
+        if os.path.exists(CHECKPOINT_FILE):
+            with open(CHECKPOINT_FILE, 'r') as f:
+                checkpoint = json.load(f)
+            if checkpoint.get('days') == days:
+                return checkpoint.get('entity_index', 0), checkpoint.get('total_records', 0)
+    except Exception:
+        pass
+    return 0, 0
+
+def clear_checkpoint():
+    """Clear checkpoint file after successful completion"""
+    try:
+        if os.path.exists(CHECKPOINT_FILE):
+            os.remove(CHECKPOINT_FILE)
+    except Exception:
+        pass
 
 def _wait_for_rate_limit():
     """Wait if needed to respect rate limit"""
@@ -968,68 +1005,75 @@ def main():
         print("\n[DRY RUN] Would process the above configuration")
         return
     
+    # Check for checkpoint to resume from
+    days_value = args.days if args.days else 1095
+    checkpoint_idx, checkpoint_records = load_checkpoint(days_value)
+    resume_idx = 0
+    total_records = 0
+    
+    if checkpoint_idx > 0 and checkpoint_idx < len(entities):
+        print(f"RESUMING from checkpoint: entity {checkpoint_idx + start_idx + 1}, {checkpoint_records} records so far")
+        resume_idx = checkpoint_idx
+        total_records = checkpoint_records
+    
     conn = get_db_connection()
     start_time = time.time()
     
-    # Process entities in batches to prevent memory exhaustion
-    print(f"\nProcessing entities in batches of {ENTITY_BATCH_SIZE}...")
+    # STREAMING MODE: Process one entity at a time to minimize memory usage
+    print(f"\nSTREAMING MODE: Processing entities one at a time with checkpointing...")
     print("=" * 70, flush=True)
     
-    total_records = 0
     entities_processed = 0
-    batch_num = 0
     
-    for batch_start in range(0, len(entities), ENTITY_BATCH_SIZE):
-        batch_end = min(batch_start + ENTITY_BATCH_SIZE, len(entities))
-        batch_entities = entities[batch_start:batch_end]
-        batch_num += 1
+    for idx in range(resume_idx, len(entities)):
+        entity = entities[idx]
+        gecko_id = entity['gecko_id']
+        global_idx = start_idx + idx + 1
         
-        # Build URLs for this batch only
-        batch_urls = []
-        entity_url_map = {}
-        for entity in batch_entities:
-            gecko_id = entity['gecko_id']
+        try:
+            # Build URLs for just this one entity
             urls = build_entity_urls(entity)
-            entity_url_map[gecko_id] = urls
-            batch_urls.extend(urls.values())
-        
-        print(f"\n[Batch {batch_num}] Entities {batch_start+1}-{batch_end}/{len(entities)}, {len(batch_urls)} URLs", flush=True)
-        
-        # Fetch URLs for this batch
-        url_results = fetch_urls_parallel(batch_urls)
-        
-        # Process each entity in the batch
-        for i, entity in enumerate(batch_entities):
-            gecko_id = entity['gecko_id']
-            global_idx = batch_start + i + 1
+            url_list = list(urls.values())
             
-            try:
-                inserted, metrics = process_entity_data(entity, url_results, conn, start_ts, end_ts)
-                total_records += inserted
-                entities_processed += 1
-                
-                if metrics:
-                    metrics_str = ", ".join(metrics)
-                    print(f"  [{global_idx:3d}/{len(entities)}] {gecko_id:30s} +{inserted:6d} records ({metrics_str})", flush=True)
-            except Exception as e:
-                print(f"  [{global_idx:3d}/{len(entities)}] {gecko_id}: ERROR - {e}", flush=True)
-        
-        # Connection cycling and memory cleanup after each batch
-        conn.close()
-        del url_results
-        gc.collect()
-        conn = get_db_connection()
-        
-        elapsed = time.time() - start_time
-        rate = total_records / elapsed if elapsed > 0 else 0
-        print(f"  --- Batch complete: {total_records:,} total records, {rate:.0f} rec/sec ---", flush=True)
-        
-        # Cooldown between batches to avoid rate limiting
-        if batch_end < len(entities):
-            print(f"  Cooldown {BATCH_COOLDOWN}s before next batch...", flush=True)
-            time.sleep(BATCH_COOLDOWN)
+            # Fetch URLs for this entity only (streaming - process immediately)
+            url_results = {}
+            for url in url_list:
+                result = fetch_json(url)
+                if result is not None:
+                    url_results[url] = result
+            
+            # Process and insert immediately
+            inserted, metrics = process_entity_data(entity, url_results, conn, start_ts, end_ts)
+            total_records += inserted
+            entities_processed += 1
+            
+            if metrics:
+                metrics_str = ", ".join(metrics)
+                print(f"  [{global_idx:3d}/{len(all_entities)}] {gecko_id:30s} +{inserted:6d} records ({metrics_str})", flush=True)
+            else:
+                print(f"  [{global_idx:3d}/{len(all_entities)}] {gecko_id:30s} (no data)", flush=True)
+            
+            # Free memory immediately after each entity
+            del url_results
+            del urls
+            
+            # Save checkpoint after each entity
+            save_checkpoint(idx + 1, days_value, total_records)
+            
+            # Periodic gc and connection refresh every 20 entities
+            if (idx + 1) % 20 == 0:
+                gc.collect()
+                conn.close()
+                conn = get_db_connection()
+                elapsed = time.time() - start_time
+                rate = total_records / elapsed if elapsed > 0 else 0
+                print(f"  --- Progress: {total_records:,} records, {rate:.0f} rec/sec ---", flush=True)
+            
+        except Exception as e:
+            print(f"  [{global_idx:3d}/{len(all_entities)}] {gecko_id}: ERROR - {e}", flush=True)
     
     conn.close()
+    clear_checkpoint()  # Clear checkpoint on successful completion
     
     elapsed = time.time() - start_time
     
