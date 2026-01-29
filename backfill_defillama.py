@@ -10,13 +10,14 @@ import psycopg2
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-MAX_WORKERS = 6  # Moderate concurrency (was 10, reduced to prevent overload)
+MAX_WORKERS = 1  # Sequential only
 BATCH_SIZE = 500  # Reduced batch size
 MAX_RETRIES = 2  # Reduced from 3
-RETRY_DELAY = 2
-REQUEST_TIMEOUT = 30  # Explicit timeout
-ENTITY_BATCH_SIZE = 20  # Commit and cycle connection every N entities
+RETRY_DELAY = 3  # Slightly longer retry delay
+REQUEST_TIMEOUT = 15  # Short timeout
+ENTITY_BATCH_SIZE = 10  # Smaller batches to prevent memory issues
 URL_BATCH_SIZE = 100  # Fetch URLs in batches to show progress
+BATCH_COOLDOWN = 3  # Seconds to wait between entity batches
 
 API_KEY = os.environ.get('DEFILLAMA_API_KEY')
 PRO_BASE_URL = "https://pro-api.llama.fi"
@@ -101,22 +102,25 @@ ENDPOINTS = {
 def get_db_connection():
     return psycopg2.connect(os.environ['DATABASE_URL'])
 
-RATE_LIMIT_PER_SEC = 14  # 840/min, safely under 1000/min limit
+RATE_LIMIT_PER_SEC = 10  # 600/min, more conservative to avoid 429s
 
 # Global rate limiter using a simple token bucket
 import threading
 _rate_lock = threading.Lock()
 _last_request_time = [0.0]  # Mutable to allow modification in nested function
 _min_interval = 1.0 / RATE_LIMIT_PER_SEC
+_request_count = [0]  # Track requests for monitoring
 
 def _wait_for_rate_limit():
     """Wait if needed to respect rate limit"""
     with _rate_lock:
         now = time.time()
         elapsed = now - _last_request_time[0]
-        if elapsed < _min_interval:
-            time.sleep(_min_interval - elapsed)
+        wait_time = _min_interval - elapsed
+        if wait_time > 0:
+            time.sleep(wait_time)
         _last_request_time[0] = time.time()
+        _request_count[0] += 1
 
 def fetch_json(url):
     """Rate-limited fetch with retries"""
@@ -127,8 +131,8 @@ def fetch_json(url):
             if resp.status_code == 200:
                 return resp.json()
             elif resp.status_code == 429:
-                wait_time = RETRY_DELAY * (attempt + 2)
-                print(f"    Rate limited, waiting {wait_time}s...", flush=True)
+                wait_time = 10 + (attempt * 10)  # 10s, 20s backoff
+                print(f"    Rate limited (429), backing off {wait_time}s...", flush=True)
                 time.sleep(wait_time)
                 continue
             elif resp.status_code == 404:
@@ -137,6 +141,10 @@ def fetch_json(url):
                 if attempt < MAX_RETRIES - 1:
                     time.sleep(RETRY_DELAY)
                 continue
+        except requests.exceptions.Timeout:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+            continue
         except Exception:
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_DELAY)
@@ -152,7 +160,7 @@ def fetch_json_threadsafe(url):
             if resp.status_code == 200:
                 return resp.json()
             elif resp.status_code == 429:
-                wait_time = RETRY_DELAY * (attempt + 2)
+                wait_time = 10 + (attempt * 10)  # 10s, 20s backoff
                 time.sleep(wait_time)
                 continue
             elif resp.status_code == 404:
@@ -161,6 +169,10 @@ def fetch_json_threadsafe(url):
                 if attempt < MAX_RETRIES - 1:
                     time.sleep(RETRY_DELAY)
                 continue
+        except requests.exceptions.Timeout:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+            continue
         except Exception:
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_DELAY)
@@ -180,34 +192,36 @@ def fetch_pro_json(endpoint):
     except Exception as e:
         return None
 
-def fetch_urls_parallel(urls):
+def fetch_urls_sequential(urls):
+    """Fetch URLs sequentially with aggressive memory management."""
     results = {}
     total = len(urls)
     start_time = time.time()
+    done = 0
+    success = 0
     
-    # Use parallel fetch but each worker respects global rate limit
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        future_to_url = {executor.submit(fetch_json_threadsafe, url): url for url in urls}
-        done = 0
-        success = 0
-        for future in as_completed(future_to_url):
-            url = future_to_url[future]
-            try:
-                result = future.result()
-                results[url] = result
-                if result is not None:
-                    success += 1
-            except Exception:
-                results[url] = None
-            done += 1
-            # Progress every 50 URLs for better visibility
-            if done % 50 == 0 or done == total:
-                elapsed = time.time() - start_time
-                rate = done / elapsed if elapsed > 0 else 0
-                eta = (total - done) / rate if rate > 0 else 0
-                print(f"    [{done:4d}/{total}] Fetched, {success} successful, {rate:.1f} req/sec, ETA: {eta:.0f}s", flush=True)
+    for url in urls:
+        try:
+            result = fetch_json(url)
+            results[url] = result
+            if result is not None:
+                success += 1
+        except Exception as e:
+            results[url] = None
+        done += 1
+        
+        # Progress every 20 URLs for smaller batches
+        if done % 20 == 0 or done == total:
+            elapsed = time.time() - start_time
+            rate = done / elapsed if elapsed > 0 else 0
+            eta = (total - done) / rate if rate > 0 else 0
+            print(f"    [{done:4d}/{total}] Fetched, {success} successful, {rate:.1f} req/sec, ETA: {eta:.0f}s", flush=True)
     
     return results
+
+# Keep the old name for backwards compatibility
+def fetch_urls_parallel(urls):
+    return fetch_urls_sequential(urls)
 
 def fetch_stablecoin_historical(stablecoin_api_id, gecko_id):
     records = []
@@ -912,6 +926,8 @@ def main():
     parser.add_argument('--days', type=int, help='Number of days to backfill (default: 1095 = 3 years)')
     parser.add_argument('--start-date', type=str, help='Start date (YYYY-MM-DD)')
     parser.add_argument('--end-date', type=str, help='End date (YYYY-MM-DD, default: yesterday)')
+    parser.add_argument('--start-index', type=int, default=0, help='Start from entity index (0-based, for resuming)')
+    parser.add_argument('--end-index', type=int, help='End at entity index (exclusive, for chunking)')
     parser.add_argument('--dry-run', action='store_true', help='Preview without inserting')
     args = parser.parse_args()
     
@@ -937,8 +953,15 @@ def main():
     if args.dry_run:
         print("DRY RUN - no data will be inserted")
     
-    entities = load_config()
-    print(f"Entities to backfill: {len(entities)}")
+    all_entities = load_config()
+    
+    # Apply entity range filters
+    start_idx = args.start_index
+    end_idx = args.end_index if args.end_index else len(all_entities)
+    entities = all_entities[start_idx:end_idx]
+    
+    print(f"Total entities available: {len(all_entities)}")
+    print(f"Processing entities {start_idx+1} to {min(end_idx, len(all_entities))} ({len(entities)} entities)")
     print("=" * 70)
     
     if args.dry_run:
@@ -1000,6 +1023,11 @@ def main():
         elapsed = time.time() - start_time
         rate = total_records / elapsed if elapsed > 0 else 0
         print(f"  --- Batch complete: {total_records:,} total records, {rate:.0f} rec/sec ---", flush=True)
+        
+        # Cooldown between batches to avoid rate limiting
+        if batch_end < len(entities):
+            print(f"  Cooldown {BATCH_COOLDOWN}s before next batch...", flush=True)
+            time.sleep(BATCH_COOLDOWN)
     
     conn.close()
     
